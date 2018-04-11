@@ -6,8 +6,22 @@
 	objectVersion = 48;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C13A9FF92061ABD400D81A7D /* erlangSDL.c in Sources */ = {isa = PBXBuildFile; fileRef = C13A9FF82061ABD400D81A7D /* erlangSDL.c */; };
+		C13A9FFC2061B13400D81A7D /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13A9FFB2061B13400D81A7D /* SDL2.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		C13A9FF12061AAE600D81A7D /* liberlangSDL.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = liberlangSDL.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		C13A9FF82061ABD400D81A7D /* erlangSDL.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = erlangSDL.c; sourceTree = "<group>"; };
+		C13A9FFB2061B13400D81A7D /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
+		C13A9FFE206D2CFC00D81A7D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		C13AA000206D328100D81A7D /* sdl_test.erl */ = {isa = PBXFileReference; lastKnownFileType = text; path = sdl_test.erl; sourceTree = "<group>"; };
+		C13AA001206D32A800D81A7D /* sdl.erl */ = {isa = PBXFileReference; lastKnownFileType = text; path = sdl.erl; sourceTree = "<group>"; };
+		C13AA002206D353800D81A7D /* sdl.hrl */ = {isa = PBXFileReference; lastKnownFileType = text; path = sdl.hrl; sourceTree = "<group>"; };
+		C13AA0052076AF5600D81A7D /* ray.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ray.png; sourceTree = "<group>"; };
+		C13AA0062076AF5600D81A7D /* space_bg.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = space_bg.png; sourceTree = "<group>"; };
+		C13AA0072076AF5600D81A7D /* ship1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ship1.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -15,6 +29,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C13A9FFC2061B13400D81A7D /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -24,7 +39,14 @@
 		C13A9FE82061AAE600D81A7D = {
 			isa = PBXGroup;
 			children = (
+				C13AA0032076AEED00D81A7D /* resources */,
+				C13AA002206D353800D81A7D /* sdl.hrl */,
+				C13AA001206D32A800D81A7D /* sdl.erl */,
+				C13AA000206D328100D81A7D /* sdl_test.erl */,
+				C13A9FFE206D2CFC00D81A7D /* README.md */,
+				C13A9FF82061ABD400D81A7D /* erlangSDL.c */,
 				C13A9FF22061AAE600D81A7D /* Products */,
+				C13A9FFA2061B13400D81A7D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -34,6 +56,32 @@
 				C13A9FF12061AAE600D81A7D /* liberlangSDL.dylib */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C13A9FFA2061B13400D81A7D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C13A9FFB2061B13400D81A7D /* SDL2.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C13AA0032076AEED00D81A7D /* resources */ = {
+			isa = PBXGroup;
+			children = (
+				C13AA0042076AEF900D81A7D /* img */,
+			);
+			path = resources;
+			sourceTree = "<group>";
+		};
+		C13AA0042076AEF900D81A7D /* img */ = {
+			isa = PBXGroup;
+			children = (
+				C13AA0052076AF5600D81A7D /* ray.png */,
+				C13AA0072076AF5600D81A7D /* ship1.png */,
+				C13AA0062076AF5600D81A7D /* space_bg.png */,
+			);
+			path = img;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -103,6 +151,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C13A9FF92061ABD400D81A7D /* erlangSDL.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -219,6 +268,19 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				"HEADER_SEARCH_PATHS[arch=*]" = /usr/local/Cellar/erlang/20.3.1/lib/erlang/usr/include/;
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/erlang/20.3.1/lib/erlang/usr/include/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "/Users/fer/Projects/erlangSDL/SDL2-2.0.8/**";
+				MACH_O_TYPE = mh_dylib;
+				OTHER_LDFLAGS = (
+					"-flat_namespace",
+					"-undefined",
+					suppress,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -230,6 +292,19 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				"HEADER_SEARCH_PATHS[arch=*]" = /usr/local/Cellar/erlang/20.3.1/lib/erlang/usr/include/;
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/erlang/20.3.1/lib/erlang/usr/include/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "/Users/fer/Projects/erlangSDL/SDL2-2.0.8/**";
+				MACH_O_TYPE = mh_dylib;
+				OTHER_LDFLAGS = (
+					"-flat_namespace",
+					"-undefined",
+					suppress,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
