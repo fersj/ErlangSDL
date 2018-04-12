@@ -21,6 +21,9 @@
 -compile(export_all).
 -include("sdl.hrl").
 
+-define(SCREEN_WIDTH, 1280).
+-define(SCREEN_HEIGHT, 720).
+
 init () ->
 	% Init SDL, Window and Screen surface
 	Init = sdl:init(?SDL_INIT_VIDEO),
@@ -30,7 +33,7 @@ init () ->
 			exit(string:concat("SDL could not initialize! SDL_Error: ", sdl:getError()));
 		true -> ok
 	end,
-	Window = sdl:createWindow("Space TFM", 40, 40, 1280, 720, ?SDL_WINDOW_SHOWN),
+	Window = sdl:createWindow("Space TFM", ?SCREEN_WIDTH, ?SCREEN_HEIGHT, 1280, 720, ?SDL_WINDOW_SHOWN),
 	if
 		Window == null ->
 			%io:format("Window could not be created! SDL_Error: ~p~n", [sdl:getError()]);
@@ -75,7 +78,7 @@ init () ->
 							 vel = 2,
 							 w = ShipW div 2,
 							 h = ShipH div 2},
-	{LaserW, LaserH} = sdl:getSurfaceSize(Laser).
+	{LaserW, LaserH} = sdl:getSurfaceSize(Laser),
 	LaserRec = #surface{surface = Laser,
 							 vx = 0,
 							 vy = 13,

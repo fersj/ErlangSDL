@@ -374,6 +374,8 @@ static ErlNifFunc funcs[] = {
     {"getEventType", 1, GetEventType},
     {"imgLoad", 1, ImgLoad},
     {"imgGetError", 0, ImgGetError}
+    // TODO get event.key.keysym.sym...
+    //      SDL_ConvertSurface, getScreenFormat
 };
 
 ERL_NIF_INIT(sdl, funcs, on_load, NULL, NULL, NULL)
