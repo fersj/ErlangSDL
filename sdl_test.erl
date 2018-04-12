@@ -23,6 +23,8 @@
 
 -define(SCREEN_WIDTH, 1280).
 -define(SCREEN_HEIGHT, 720).
+-define(SCREEN_INIT_POS_X, 40).
+-define(SCREEN_INIT_POS_Y, 40).
 
 init () ->
 	% Init SDL, Window and Screen surface
@@ -33,7 +35,7 @@ init () ->
 			exit(string:concat("SDL could not initialize! SDL_Error: ", sdl:getError()));
 		true -> ok
 	end,
-	Window = sdl:createWindow("Space TFM", ?SCREEN_WIDTH, ?SCREEN_HEIGHT, 1280, 720, ?SDL_WINDOW_SHOWN),
+	Window = sdl:createWindow("Space TFM", ?SCREEN_INIT_POS_X, ?SCREEN_INIT_POS_Y, ?SCREEN_WIDTH, ?SCREEN_HEIGHT, ?SDL_WINDOW_SHOWN),
 	if
 		Window == null ->
 			%io:format("Window could not be created! SDL_Error: ~p~n", [sdl:getError()]);
