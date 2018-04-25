@@ -3,3 +3,4 @@
 /Index
 *.so
 *.beam
+ports/sdl_handler

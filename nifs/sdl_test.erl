@@ -103,7 +103,7 @@ mainLoop (_Window, _Screen, _Background, _Ship, _Laser, true) ->
 	ok;
 mainLoop (Window, Screen, Background, Ship, Laser, _Exit) ->
 	%Exit = handleEvent(),
-	%io:format("Poll Event: ~p~n", [sdl:pollEvent()]),
+	io:format("Poll Event: ~p~n", [sdl:pollEvent()]),
 	sdl:blitSurface(Background, null, Screen, null),
 	sdl:blitScaled(Ship#surface.surface, null, Screen, {Ship#surface.x, Ship#surface.y, Ship#surface.w, Ship#surface.h}),
 	sdl:updateWindowSurface(Window),

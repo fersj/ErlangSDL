@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		C13A9FF92061ABD400D81A7D /* erlangSDL.c in Sources */ = {isa = PBXBuildFile; fileRef = C13A9FF82061ABD400D81A7D /* erlangSDL.c */; };
 		C13A9FFC2061B13400D81A7D /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C13A9FFB2061B13400D81A7D /* SDL2.framework */; };
+		C1FB348A208E50E600888132 /* SDL2_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1FB3489208E50E500888132 /* SDL2_image.framework */; };
+		C1FB348B208E751900888132 /* sdl_handler.c in Sources */ = {isa = PBXBuildFile; fileRef = C1FB3486208E4DCB00888132 /* sdl_handler.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +24,13 @@
 		C13AA0052076AF5600D81A7D /* ray.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ray.png; sourceTree = "<group>"; };
 		C13AA0062076AF5600D81A7D /* space_bg.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = space_bg.png; sourceTree = "<group>"; };
 		C13AA0072076AF5600D81A7D /* ship1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ship1.png; sourceTree = "<group>"; };
+		C1FB347D208E4DCB00888132 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		C1FB3483208E4DCB00888132 /* ship1.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = ship1.bmp; sourceTree = "<group>"; };
+		C1FB3484208E4DCB00888132 /* space_bg.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = space_bg.bmp; sourceTree = "<group>"; };
+		C1FB3485208E4DCB00888132 /* sdl_ports.erl */ = {isa = PBXFileReference; lastKnownFileType = text; path = sdl_ports.erl; sourceTree = "<group>"; };
+		C1FB3486208E4DCB00888132 /* sdl_handler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl_handler.c; sourceTree = "<group>"; };
+		C1FB3487208E4DCB00888132 /* test_ports.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_ports.c; sourceTree = "<group>"; };
+		C1FB3489208E50E500888132 /* SDL2_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2_image.framework; path = ../../../../Library/Frameworks/SDL2_image.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -29,6 +38,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C1FB348A208E50E600888132 /* SDL2_image.framework in Frameworks */,
 				C13A9FFC2061B13400D81A7D /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -39,12 +49,9 @@
 		C13A9FE82061AAE600D81A7D = {
 			isa = PBXGroup;
 			children = (
-				C13AA0032076AEED00D81A7D /* resources */,
-				C13AA002206D353800D81A7D /* sdl.hrl */,
-				C13AA001206D32A800D81A7D /* sdl.erl */,
-				C13AA000206D328100D81A7D /* sdl_test.erl */,
+				C1FB347C208E4DCB00888132 /* ports */,
+				C1FB3462208E4D6200888132 /* nifs */,
 				C13A9FFE206D2CFC00D81A7D /* README.md */,
-				C13A9FF82061ABD400D81A7D /* erlangSDL.c */,
 				C13A9FF22061AAE600D81A7D /* Products */,
 				C13A9FFA2061B13400D81A7D /* Frameworks */,
 			);
@@ -61,6 +68,7 @@
 		C13A9FFA2061B13400D81A7D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C1FB3489208E50E500888132 /* SDL2_image.framework */,
 				C13A9FFB2061B13400D81A7D /* SDL2.framework */,
 			);
 			name = Frameworks;
@@ -80,6 +88,47 @@
 				C13AA0052076AF5600D81A7D /* ray.png */,
 				C13AA0072076AF5600D81A7D /* ship1.png */,
 				C13AA0062076AF5600D81A7D /* space_bg.png */,
+			);
+			path = img;
+			sourceTree = "<group>";
+		};
+		C1FB3462208E4D6200888132 /* nifs */ = {
+			isa = PBXGroup;
+			children = (
+				C13A9FF82061ABD400D81A7D /* erlangSDL.c */,
+				C13AA0032076AEED00D81A7D /* resources */,
+				C13AA002206D353800D81A7D /* sdl.hrl */,
+				C13AA001206D32A800D81A7D /* sdl.erl */,
+				C13AA000206D328100D81A7D /* sdl_test.erl */,
+			);
+			path = nifs;
+			sourceTree = "<group>";
+		};
+		C1FB347C208E4DCB00888132 /* ports */ = {
+			isa = PBXGroup;
+			children = (
+				C1FB347D208E4DCB00888132 /* Makefile */,
+				C1FB3481208E4DCB00888132 /* resources */,
+				C1FB3485208E4DCB00888132 /* sdl_ports.erl */,
+				C1FB3486208E4DCB00888132 /* sdl_handler.c */,
+				C1FB3487208E4DCB00888132 /* test_ports.c */,
+			);
+			path = ports;
+			sourceTree = "<group>";
+		};
+		C1FB3481208E4DCB00888132 /* resources */ = {
+			isa = PBXGroup;
+			children = (
+				C1FB3482208E4DCB00888132 /* img */,
+			);
+			path = resources;
+			sourceTree = "<group>";
+		};
+		C1FB3482208E4DCB00888132 /* img */ = {
+			isa = PBXGroup;
+			children = (
+				C1FB3483208E4DCB00888132 /* ship1.bmp */,
+				C1FB3484208E4DCB00888132 /* space_bg.bmp */,
 			);
 			path = img;
 			sourceTree = "<group>";
@@ -151,6 +200,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C1FB348B208E751900888132 /* sdl_handler.c in Sources */,
 				C13A9FF92061ABD400D81A7D /* erlangSDL.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
