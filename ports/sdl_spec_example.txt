@@ -1,0 +1,57 @@
+{spec,
+  [
+    {macro_spec, "SDL_INIT_VIDEO", 16#00000020 },
+    ...
+  ],
+  [
+    {type_spec, uint32, "Uint32", {int, 32}, [unsigned]},
+    {type_spec, uint8, "Uint8", {int, 8}, [unsigned]},
+    {type_spec, window, "SDL_Window", {struct, opaque}, []},
+    {type_spec, color, "SDL_Color", {struct, [
+      {struct_member, r, "r", uint8, []},
+      {struct_member, g, "g", uint8, []},
+      {struct_member, b, "b", uint8, []},
+      {struct_member, a, "a", uint8, []}
+      ]}, []},
+    {type_spec, palette, "SDL_Palette", {struct, [
+      {struct_member, ncolors, "ncolors", int, []},
+      {struct_member, colors, "colors", {pointer, color}, []},
+      {struct_member, version, "version", uint32, [internal]},
+      {struct_member, refcount, "refcount", int, [internal]}
+      ]}, []},
+    {type_spec, pixel_format, "SDL_PixelFormat", {struct, [
+      {struct_member, format, "format", uint32, []},
+      {struct_member, palette, "palette", {pointer, palette}, []},
+      {struct_member, bits_per_pixel, "BitsPerPixel", uint8, []},
+      ...
+      ]}, []},
+    {type_spec, surface, "SDL_Surface", {struct, [
+      {struct_member, flags, "flags", uint32, [internal]},
+      {struct_member, format, "format", {pointer, pixel_format}, []},
+      {struct_member, w, "w", int, [read_only]},
+      {struct_member, h, "h", int, [read_only]},
+      {struct_member, pitch, "pitch", int, []},
+      ...
+      ]}, []},
+    ...
+  ],
+  [
+    {fun_spec, create_window, "SDL_CreateWindow", [
+      {param_spec, string, []},
+      {param_spec, int, []},
+      {param_spec, int, []},
+      {param_spec, int, []},
+      {param_spec, int, []},
+      {param_spec, uint32, []}
+      ],
+      {pointer, window}, []},
+    {fun_spec, get_window_surface, "SDL_GetWindowSurface", [
+      {param_spec, {pointer, window}, []}
+      ],
+      {pointer, surface}, []},
+    ...
+  ]
+}.
+
+
+% 

@@ -1,9 +1,13 @@
--module(sdl_ports).
+-module(sdl_ports2).
 
--export([start/0, init_port/0, sdl_init/1, sdl_quit/0, sdl_create_window/6, sdl_get_window_surface/1,
-    sdl_load_bmp/1, sdl_blit_surface/4, sdl_update_window_surface/1, sdl_destroy_window/1, sdl_get_window_size/1,
-    sdl_free_surface/1, sdl_blit_scaled/4, sdl_get_surface_size/1, sdl_get_error/0, sdl_poll_event/0,
-    img_load/1, img_get_error/0, event_handler/1, add_shot/1, draw_shots/2, destroy_shots/1, loop/4]).
+% -export([start/0, init_port/0, sdl_init/1, sdl_quit/0, sdl_create_window/6, sdl_get_window_surface/1,
+%     sdl_load_bmp/1, sdl_blit_surface/4, sdl_update_window_surface/1, sdl_destroy_window/1, sdl_get_window_size/1,
+%     sdl_free_surface/1, sdl_blit_scaled/4, sdl_get_surface_size/1, sdl_get_error/0, sdl_poll_event/0,
+%     img_load/1, img_get_error/0, event_handler/1, add_shot/1, draw_shots/2, destroy_shots/1, loop/4]).
+
+-export([start/0]).
+
+-import(sdl_ports_gen, [init/1, quit/0, create_window/6, get_window_surface/1, load_bmp/1, free_surface/1, blit_surface/4, blit_scaled/4, update_window_surface/1, destroy_window/1, get_window_size/1, get_error/0, poll_event/0]).
 
 -include("sdl_ports.hrl").
 
@@ -16,34 +20,6 @@
 -define(SCREEN_WIDTH, 1280).
 -define(SCREEN_HEIGHT, 800).
 
-init_port() ->
-  Port = open_port({spawn, "./sdl_handler"}, [{packet, 2}]),
-  register(sdl_port, Port),
-  Port.
-
-sdl_init(Flags) ->
-  << X3, X2, X1, X0 >> = << Flags : 32 >>,
-  sdl_port ! {self(), {command, [1, X3, X2, X1, X0]}},
-  receive
-    { _, { data, [D3, D2, D1, D0] }} ->
-      << Result:32 >> = << D3, D2, D1, D0 >>,
-      ?DEBUG("Received: ~w~n", [Result]),
-      Result;
-    Msg ->
-      ?DEBUG("Unknown message: ~w~n", [Msg]),
-      {error, Msg}
-  end.
-
-sdl_quit() ->
-  sdl_port ! {self(), { command, [2] }},
-  receive
-    { _, { data, [] }} ->
-      ?DEBUG("Received: ~w~n", [[]]);
-    Msg ->
-      ?DEBUG("Unknown message: ~w~n", [Msg]),
-      { error, Msg }
-  end.
-
 sdl_create_window(Title, X, Y, W, H, Flags) ->
   LTitle = length(Title),
   <<Len3, Len2, Len1, Len0>> = << LTitle : 32 >>,
@@ -52,7 +28,7 @@ sdl_create_window(Title, X, Y, W, H, Flags) ->
   <<W3, W2, W1, W0>> = << W : 32 >>,
   <<H3, H2, H1, H0>> = << H : 32 >>,
   <<Flags3, Flags2, Flags1, Flags0>> = << Flags : 32 >>,
-  sdl_port ! { self(), { command, [3, Len3, Len2, Len1, Len0] ++ Title ++ [X3, X2, X1, X0, Y3, Y2, Y1, Y0, W3, W2, W1, W0, H3, H2, H1, H0, Flags3, Flags2, Flags1, Flags0] }},
+  sdl_port ! { self(), { command, [?SDL_CREATE_WINDOW_CODE, Len3, Len2, Len1, Len0] ++ Title ++ [X3, X2, X1, X0, Y3, Y2, Y1, Y0, W3, W2, W1, W0, H3, H2, H1, H0, Flags3, Flags2, Flags1, Flags0] }},
   receive
     { _, { data, [D3, D2, D1, D0] }} ->
       ?DEBUG("Received: ~w~n", [[D3, D2, D1, D0]]),
@@ -65,7 +41,7 @@ sdl_create_window(Title, X, Y, W, H, Flags) ->
 
 sdl_get_window_surface(Window) ->
   << W3, W2, W1, W0 >> = << Window : 32 >>,
-  sdl_port ! { self(), { command, [4, W3, W2, W1, W0] }},
+  sdl_port ! { self(), { command, [?SDL_GET_WINDOW_SURFACE_CODE, W3, W2, W1, W0] }},
   receive
     { _, { data, [D3, D2, D1, D0] }} ->
       ?DEBUG("Received: ~w~n", [[D3, D2, D1, D0]]),
@@ -79,7 +55,7 @@ sdl_get_window_surface(Window) ->
 sdl_load_bmp(Filename) ->
   LFilename = length(Filename),
   <<Len3, Len2, Len1, Len0>> = << LFilename : 32 >>,
-  sdl_port ! { self(), { command, [5, Len3, Len2, Len1, Len0] ++ Filename }},
+  sdl_port ! { self(), { command, [?SDL_LOAD_BMP_CODE, Len3, Len2, Len1, Len0] ++ Filename }},
   receive
     { _, { data, [D3, D2, D1, D0] }} ->
       ?DEBUG("Received: ~w~n", [[D3, D2, D1, D0]]),
@@ -101,7 +77,7 @@ serialize_rect(#sdl_rect{x = X, y = Y, w = W, h = H}) ->
 sdl_blit_surface(SrcSurface, SrcRect, DstSurface, DstRect) ->
   << Src3, Src2, Src1, Src0 >> = << SrcSurface:32 >>,
   << Dst3, Dst2, Dst1, Dst0 >> = << DstSurface:32 >>,
-  sdl_port ! { self(), { command, [6, Src3, Src2, Src1, Src0] ++ serialize_rect(SrcRect) ++ [Dst3, Dst2, Dst1, Dst0] ++ serialize_rect(DstRect) }},
+  sdl_port ! { self(), { command, [?SDL_BLIT_SURFACE_CODE, Src3, Src2, Src1, Src0] ++ serialize_rect(SrcRect) ++ [Dst3, Dst2, Dst1, Dst0] ++ serialize_rect(DstRect) }},
   receive
     { _, { data, [D3, D2, D1, D0] }} ->
       ?DEBUG("Received: ~w~n", [[D3, D2, D1, D0]]),
@@ -114,7 +90,7 @@ sdl_blit_surface(SrcSurface, SrcRect, DstSurface, DstRect) ->
 
 sdl_update_window_surface(Window)   ->
   << W3, W2, W1, W0 >> = << Window:32 >>,
-  sdl_port ! { self(), { command, [7, W3, W2, W1, W0] }},
+  sdl_port ! { self(), { command, [?SDL_UPDATE_WINDOW_SURFACE_CODE, W3, W2, W1, W0] }},
   receive
     { _, { data, [D3, D2, D1, D0] }} ->
       ?DEBUG("Received: ~w~n", [[D3, D2, D1, D0]]),
@@ -127,7 +103,7 @@ sdl_update_window_surface(Window)   ->
 
 sdl_destroy_window(Window) ->
   << W3, W2, W1, W0 >> = << Window:32 >>,
-  sdl_port ! { self(), { command, [8, W3, W2, W1, W0] }},
+  sdl_port ! { self(), { command, [?SDL_DESTROY_WINDOW_CODE, W3, W2, W1, W0] }},
   receive
     { _, { data, [] }} ->
       ?DEBUG("Received: ~w~n", [[]]),
@@ -189,17 +165,6 @@ sdl_get_surface_size(Surface) ->
     Msg ->
       ?DEBUG("Unknown message: ~w~n", [Msg]),
       {error, Msg}
-  end.
-
-sdl_get_error() ->
-  sdl_port ! {self(), { command, [?SDL_GET_ERROR_CODE] }},
-  receive
-    { _, { data, Error }} ->
-      ?DEBUG("Received: ~w~n", [Error]),
-      Error;
-    Msg ->
-      ?DEBUG("Unknown message: ~w~n", [Msg]),
-      { error, Msg }
   end.
 
 sdl_poll_event() ->
@@ -340,8 +305,8 @@ loop(WindowSurface, Background, Ship, _End) ->
   loop(WindowSurface, Background, OShip, End).
 
 start() ->
-  init_port(),
-  sdl_init(?SDL_INIT_VIDEO),
+  sdl_ports_gen:init_port(),
+  sdl_ports_gen:init(?SDL_INIT_VIDEO),
   Window = sdl_create_window("Game SDL", ?SDL_WINDOWPOS_CENTERED, ?SDL_WINDOWPOS_CENTERED, ?SCREEN_WIDTH, ?SCREEN_HEIGHT, ?SDL_WINDOW_SHOWN),
   WindowSurface = sdl_get_window_surface(Window),
   Background = sdl_load_bmp("resources/img/space_bg.bmp"),
@@ -362,5 +327,5 @@ start() ->
   sdl_free_surface(Ship#ship.surface),
   sdl_free_surface(Background),
   sdl_destroy_window(Window),
-  sdl_quit(),
+  sdl_ports_gen:quit(),
   init:stop().
