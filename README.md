@@ -8,13 +8,16 @@ $ gcc -o sdl_ports sdl_handler.c -framework SDL2 -framework SDL2_image
 ```
 - Build and run sdl_generator on macOS (with Rebar3):
 ```sh
-$ cd ./sdl_generator
+$ cd sdl_generator
 $ ./rebar3 escriptize
 $ ./_build/default/bin/sdl_generator
 ```
 - Build and run sdl_gametest on macOS (with Rebar3):
 ```sh
-$ cd ./sdl_gametest
+$ cd sdl_generator
+$ erlc sdl_ports_gen.erl
+$ gcc -o sdl_ports_gen sdl_ports_gen.c -framework SDL2
+$ cd ../sdl_gametest
 $ ./rebar3 escriptize
 $ ./_build/default/bin/sdl_gametest
 ```
