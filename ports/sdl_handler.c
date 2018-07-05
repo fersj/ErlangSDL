@@ -612,15 +612,15 @@ handler handlers[] = {
     SDL_CreateWindow_Handler,        // 3
     SDL_GetWindowSurface_Handler,    // 4
     SDL_LoadBMP_Handler,             // 5
-    SDL_FreeSurface_Handler,         // 6
-    SDL_BlitSurface_Handler,         // 7
-    SDL_BlitScaled_Handler,          // 8
-    SDL_UpdateWindowSurface_Handler, // 9
-    SDL_DestroyWindow_Handler,       // 10
-    SDL_GetWindowSize_Handler,       // 11
-    SDL_GetError_Handler,            // 12
-    SDL_PollEvent_Handler,           // 13
-    SDL_GetSurfaceSize_Handler,      // 14
+    SDL_BlitSurface_Handler,         // 6
+    SDL_UpdateWindowSurface_Handler, // 7
+    SDL_DestroyWindow_Handler,       // 8
+    SDL_GetWindowSize_Handler,       // 9
+    SDL_FreeSurface_Handler,         // 10
+    SDL_BlitScaled_Handler,          // 11
+    SDL_GetSurfaceSize_Handler,      // 12
+    SDL_GetError_Handler,            // 13
+    SDL_PollEvent_Handler,           // 14
     IMG_Load_Handler,                // 15
     IMG_GetError_Handler             // 16
 };

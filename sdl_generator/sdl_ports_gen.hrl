@@ -1,0 +1,46 @@
+-define(SDL_INIT_TIMER, 16#00000001).
+-define(SDL_INIT_AUDIO, 16#00000010).
+-define(SDL_INIT_VIDEO, 16#00000020).
+-define(SDL_QUIT, 16#100).
+-define(SDL_WINDOW_SHOWN, 16#00000004).
+-define(SDL_WINDOWPOS_CENTERED, 16#2fff0000).
+-define(SDL_KEYDOWN, 16#300).
+-define(SDL_KEYUP, 16#301).
+-define(SDLK_SCANCODE_MASK, 16#40000000).
+-define(SDLK_SPACE, $\s).
+-define(SDLK_ESCAPE, $\033).
+-define(SDLK_RIGHT, 79 bor ?SDLK_SCANCODE_MASK).
+-define(SDLK_LEFT, 80 bor ?SDLK_SCANCODE_MASK).
+-define(SDLK_DOWN, 81 bor ?SDLK_SCANCODE_MASK).
+-define(SDLK_UP, 82 bor ?SDLK_SCANCODE_MASK).
+
+-record(color, {r, g, b, a}).
+-record(palette, {ncolors, colors, version, refcount}).
+-record(pixel_format, {format, palette, bits_per_pixel, bytes_per_pixel, r_mask, g_mask, b_mask, a_mask, r_loss, g_loss, b_loss, a_loss, r_shift, g_shift, b_shift, a_shift, refcount, next}).
+-record(rect, {x, y, w, h}).
+-record(surface, {flags, format, w, h, pitch, pixels, userdata, locked, lock_data, clip_rect, map, refcount}).
+-record(keysym, {scancode, sym, mod, unused}).
+-record(common_event, {type, timestamp}).
+-record(window_event, {type, timestamp, windowID, event, padding1, padding2, padding3, data1, data2}).
+-record(keyboard_event, {type, timestamp, windowID, state, repeat, padding2, padding3, keysym}).
+-record(text_editing_event, {type, timestamp, windowID, text, start, length}).
+-record(text_input_event, {type, timestamp, windowID, text}).
+-record(mouse_motion_event, {type, timestamp, windowID, which, state, x, y, xrel, yrel}).
+-record(mouse_button_event, {type, timestamp, windowID, which, button, state, clicks, x, y}).
+-record(mouse_wheel_event, {type, timestamp, windowID, which, x, y, direction}).
+-record(joy_axis_event, {type, timestamp, which, axis, padding1, padding2, padding3, value}).
+-record(joy_ball_event, {type, timestamp, which, ball, padding1, padding2, padding3, xrel, yrel}).
+-record(joy_hat_event, {type, timestamp, which, hat, value, padding1, padding2}).
+-record(joy_button_event, {type, timestamp, which, button, state, padding1, padding2}).
+-record(joy_device_event, {type, timestamp, which}).
+-record(controller_axis_event, {type, timestamp, which, axis, padding1, padding2, padding3, value, padding4}).
+-record(controller_button_event, {type, timestamp, which, button, state, padding1, padding2}).
+-record(controller_device_event, {type, timestamp, which}).
+-record(audio_device_event, {type, timestamp, which, iscapture, padding1, padding2, padding3}).
+-record(quit_event, {type, timestamp}).
+-record(user_event, {type, timestamp, windowID, code, data1, data2}).
+-record(syswm_event, {type, timestamp, msg}).
+-record(touch_finger_event, {type, timestamp, touchId, fingerId, x, y, dx, dy, pressure}).
+-record(multi_gesture_event, {type, timestamp, touchId, dTheta, dDist, x, y, numFingers, padding}).
+-record(dollar_gesture_event, {type, timestamp, touchId, gestureId, numFingers, error, x, y}).
+-record(drop_event, {type, timestamp, file, windowID}).
