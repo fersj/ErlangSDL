@@ -13,6 +13,11 @@ typedef void (*handler)(byte *in, size_t len_in, byte *out, size_t *len_out);
 
 //--------------------------------------------------------
 
+byte * read_pointer(byte *in, void **result);
+byte * write_pointer(void **pointer, byte *out, size_t *len);
+
+// ---- Int ----
+
 byte * read_int8(byte *in, int8_t *result) {
 	byte *current_in = in;
 
@@ -100,6 +105,45 @@ byte * write_int(int *number, byte *current_out, size_t *len) {
 	return write_int32(number, current_out, len);
 }
 
+void pointer_deref_int_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_int(ptr, current_out, len_out);
+}
+
+void pointer_deref_int_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	int value;
+	current_in = read_int(current_in, &value);
+	*ptr = value;
+}
+
+void new_int_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr = malloc(sizeof(int));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_int_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- Float ----
+
 byte * read_float(byte *in, float *result) {
 	byte *current_in = in;
 	union {
@@ -130,6 +174,45 @@ byte * write_float(float *number, byte *out, size_t *len) {
 	return current_out;
 }
 
+void pointer_deref_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_float(ptr, current_out, len_out);
+}
+
+void pointer_deref_float_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	float value;
+	current_in = read_float(current_in, &value);
+	*ptr = value;
+}
+
+void new_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr = malloc(sizeof(float));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- Double ----
+
 byte * read_double(byte *in, double *result) {
 	byte *current_in = in;
 	union {
@@ -159,6 +242,45 @@ byte * write_double(double *number, byte *out, size_t *len) {
 
 	return current_out;
 }
+
+void pointer_deref_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_double(ptr, current_out, len_out);
+}
+
+void pointer_deref_double_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	double value;
+	current_in = read_double(current_in, &value);
+	*ptr = value;
+}
+
+void new_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr = malloc(sizeof(double));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- String ----
 
 byte * read_string(byte *in, string *result) {
 	byte *current_in = in;
@@ -192,6 +314,45 @@ byte * write_string(string *str, byte *out, size_t *len) {
 	return current_out;
 }
 
+void pointer_deref_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_string(ptr, current_out, len_out);
+}
+
+void pointer_deref_string_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	string value;
+	current_in = read_string(current_in, &value);
+	strcpy(*ptr, value);
+}
+
+void new_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr = malloc(sizeof(string));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- Pointer ----
+
 byte * read_pointer(byte *in, void **result) {
 	byte *current_in = in;
 	uintptr_t p;
@@ -209,7 +370,9 @@ byte * write_pointer(void **pointer, byte *out, size_t *len) {
 	current_out = write_int64(&p, current_out, len);
 
 	return current_out;
-}//--------------------------------------------------------
+}
+
+//--------------------------------------------------------
 
 byte * read_uint64(byte *in, Uint64 *result) {
 	byte *current_in = in;
@@ -386,6 +549,15 @@ void pointer_deref_color_Handler(byte *in, size_t len_in, byte *out, size_t *len
 	current_out = write_color(pointer, current_out, len_out);
 }
 
+void pointer_deref_color_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_Color *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_color(current_in, pointer);
+}
+
 void new_color_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -520,6 +692,15 @@ void pointer_deref_palette_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	SDL_Palette *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_palette(pointer, current_out, len_out);
+}
+
+void pointer_deref_palette_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_Palette *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_palette(current_in, pointer);
 }
 
 void new_palette_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -684,6 +865,15 @@ void pointer_deref_pixel_format_Handler(byte *in, size_t len_in, byte *out, size
 	SDL_PixelFormat *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_pixel_format(pointer, current_out, len_out);
+}
+
+void pointer_deref_pixel_format_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_PixelFormat *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_pixel_format(current_in, pointer);
 }
 
 void new_pixel_format_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1130,6 +1320,15 @@ void pointer_deref_rect_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 	current_out = write_rect(pointer, current_out, len_out);
 }
 
+void pointer_deref_rect_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_Rect *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_rect(current_in, pointer);
+}
+
 void new_rect_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -1296,6 +1495,15 @@ void pointer_deref_surface_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	SDL_Surface *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_surface(pointer, current_out, len_out);
+}
+
+void pointer_deref_surface_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_Surface *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_surface(current_in, pointer);
 }
 
 void new_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1642,6 +1850,15 @@ void pointer_deref_keysym_Handler(byte *in, size_t len_in, byte *out, size_t *le
 	current_out = write_keysym(pointer, current_out, len_out);
 }
 
+void pointer_deref_keysym_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_Keysym *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_keysym(current_in, pointer);
+}
+
 void new_keysym_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -1854,6 +2071,15 @@ void pointer_deref_common_event_Handler(byte *in, size_t len_in, byte *out, size
 	current_out = write_common_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_common_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_CommonEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_common_event(current_in, pointer);
+}
+
 void new_common_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -1954,6 +2180,15 @@ void pointer_deref_window_event_Handler(byte *in, size_t len_in, byte *out, size
 	SDL_WindowEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_window_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_window_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_WindowEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_window_event(current_in, pointer);
 }
 
 void new_window_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2210,6 +2445,15 @@ void pointer_deref_keyboard_event_Handler(byte *in, size_t len_in, byte *out, si
 	current_out = write_keyboard_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_keyboard_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_KeyboardEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_keyboard_event(current_in, pointer);
+}
+
 void new_keyboard_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -2438,6 +2682,15 @@ void pointer_deref_text_editing_event_Handler(byte *in, size_t len_in, byte *out
 	current_out = write_text_editing_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_text_editing_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_TextEditingEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_text_editing_event(current_in, pointer);
+}
+
 void new_text_editing_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -2618,6 +2871,15 @@ void pointer_deref_text_input_event_Handler(byte *in, size_t len_in, byte *out, 
 	current_out = write_text_input_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_text_input_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_TextInputEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_text_input_event(current_in, pointer);
+}
+
 void new_text_input_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -2762,6 +3024,15 @@ void pointer_deref_mouse_motion_event_Handler(byte *in, size_t len_in, byte *out
 	SDL_MouseMotionEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_mouse_motion_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_mouse_motion_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_MouseMotionEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_mouse_motion_event(current_in, pointer);
 }
 
 void new_mouse_motion_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3020,6 +3291,15 @@ void pointer_deref_mouse_button_event_Handler(byte *in, size_t len_in, byte *out
 	current_out = write_mouse_button_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_mouse_button_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_MouseButtonEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_mouse_button_event(current_in, pointer);
+}
+
 void new_mouse_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -3272,6 +3552,15 @@ void pointer_deref_mouse_wheel_event_Handler(byte *in, size_t len_in, byte *out,
 	current_out = write_mouse_wheel_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_mouse_wheel_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_MouseWheelEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_mouse_wheel_event(current_in, pointer);
+}
+
 void new_mouse_wheel_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -3480,6 +3769,15 @@ void pointer_deref_joy_axis_event_Handler(byte *in, size_t len_in, byte *out, si
 	SDL_JoyAxisEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_joy_axis_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_joy_axis_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_JoyAxisEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_joy_axis_event(current_in, pointer);
 }
 
 void new_joy_axis_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3714,6 +4012,15 @@ void pointer_deref_joy_ball_event_Handler(byte *in, size_t len_in, byte *out, si
 	SDL_JoyBallEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_joy_ball_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_joy_ball_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_JoyBallEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_joy_ball_event(current_in, pointer);
 }
 
 void new_joy_ball_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3968,6 +4275,15 @@ void pointer_deref_joy_hat_event_Handler(byte *in, size_t len_in, byte *out, siz
 	current_out = write_joy_hat_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_joy_hat_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_JoyHatEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_joy_hat_event(current_in, pointer);
+}
+
 void new_joy_hat_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -4176,6 +4492,15 @@ void pointer_deref_joy_button_event_Handler(byte *in, size_t len_in, byte *out, 
 	current_out = write_joy_button_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_joy_button_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_JoyButtonEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_joy_button_event(current_in, pointer);
+}
+
 void new_joy_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -4376,6 +4701,15 @@ void pointer_deref_joy_device_event_Handler(byte *in, size_t len_in, byte *out, 
 	current_out = write_joy_device_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_joy_device_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_JoyDeviceEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_joy_device_event(current_in, pointer);
+}
+
 void new_joy_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -4498,6 +4832,15 @@ void pointer_deref_controller_axis_event_Handler(byte *in, size_t len_in, byte *
 	SDL_ControllerAxisEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_controller_axis_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_controller_axis_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_ControllerAxisEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_controller_axis_event(current_in, pointer);
 }
 
 void new_controller_axis_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4752,6 +5095,15 @@ void pointer_deref_controller_button_event_Handler(byte *in, size_t len_in, byte
 	current_out = write_controller_button_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_controller_button_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_ControllerButtonEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_controller_button_event(current_in, pointer);
+}
+
 void new_controller_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -4952,6 +5304,15 @@ void pointer_deref_controller_device_event_Handler(byte *in, size_t len_in, byte
 	current_out = write_controller_device_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_controller_device_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_ControllerDeviceEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_controller_device_event(current_in, pointer);
+}
+
 void new_controller_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -5070,6 +5431,15 @@ void pointer_deref_audio_device_event_Handler(byte *in, size_t len_in, byte *out
 	SDL_AudioDeviceEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_audio_device_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_audio_device_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_AudioDeviceEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_audio_device_event(current_in, pointer);
 }
 
 void new_audio_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5270,6 +5640,15 @@ void pointer_deref_quit_event_Handler(byte *in, size_t len_in, byte *out, size_t
 	current_out = write_quit_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_quit_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_QuitEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_quit_event(current_in, pointer);
+}
+
 void new_quit_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -5364,6 +5743,15 @@ void pointer_deref_user_event_Handler(byte *in, size_t len_in, byte *out, size_t
 	SDL_UserEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_user_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_user_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_UserEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_user_event(current_in, pointer);
 }
 
 void new_user_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5544,6 +5932,15 @@ void pointer_deref_syswm_event_Handler(byte *in, size_t len_in, byte *out, size_
 	current_out = write_syswm_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_syswm_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_SysWMEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_syswm_event(current_in, pointer);
+}
+
 void new_syswm_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -5666,6 +6063,15 @@ void pointer_deref_touch_finger_event_Handler(byte *in, size_t len_in, byte *out
 	SDL_TouchFingerEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_touch_finger_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_touch_finger_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_TouchFingerEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_touch_finger_event(current_in, pointer);
 }
 
 void new_touch_finger_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5924,6 +6330,15 @@ void pointer_deref_multi_gesture_event_Handler(byte *in, size_t len_in, byte *ou
 	current_out = write_multi_gesture_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_multi_gesture_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_MultiGestureEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_multi_gesture_event(current_in, pointer);
+}
+
 void new_multi_gesture_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -6178,6 +6593,15 @@ void pointer_deref_dollar_gesture_event_Handler(byte *in, size_t len_in, byte *o
 	current_out = write_dollar_gesture_event(pointer, current_out, len_out);
 }
 
+void pointer_deref_dollar_gesture_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_DollarGestureEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_dollar_gesture_event(current_in, pointer);
+}
+
 void new_dollar_gesture_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	byte *current_in = in, *current_out = out;
 	*len_out = 0; current_in+=4;
@@ -6400,6 +6824,15 @@ void pointer_deref_drop_event_Handler(byte *in, size_t len_in, byte *out, size_t
 	SDL_DropEvent *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_out = write_drop_event(pointer, current_out, len_out);
+}
+
+void pointer_deref_drop_event_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	SDL_DropEvent *pointer;
+	current_in = read_pointer(current_in, (void **) &pointer);
+	current_in = read_drop_event(current_in, pointer);
 }
 
 void new_drop_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7240,561 +7673,607 @@ void SDL_PollEvent_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) 
 
 handler handlers[] = {
 	0,
-	pointer_deref_color_Handler,		//1
-	new_color_Handler,		//2
-	delete_color_Handler,		//3
-	color_get_r_Handler,		//4
-	color_set_r_Handler,		//5
-	color_get_g_Handler,		//6
-	color_set_g_Handler,		//7
-	color_get_b_Handler,		//8
-	color_set_b_Handler,		//9
-	color_get_a_Handler,		//10
-	color_set_a_Handler,		//11
-	pointer_deref_palette_Handler,		//12
-	new_palette_Handler,		//13
-	delete_palette_Handler,		//14
-	palette_get_ncolors_Handler,		//15
-	palette_set_ncolors_Handler,		//16
-	palette_get_colors_Handler,		//17
-	palette_set_colors_Handler,		//18
-	palette_get_version_Handler,		//19
-	palette_set_version_Handler,		//20
-	palette_get_refcount_Handler,		//21
-	palette_set_refcount_Handler,		//22
-	pointer_deref_pixel_format_Handler,		//23
-	new_pixel_format_Handler,		//24
-	delete_pixel_format_Handler,		//25
-	pixel_format_get_format_Handler,		//26
-	pixel_format_set_format_Handler,		//27
-	pixel_format_get_palette_Handler,		//28
-	pixel_format_set_palette_Handler,		//29
-	pixel_format_get_bits_per_pixel_Handler,		//30
-	pixel_format_set_bits_per_pixel_Handler,		//31
-	pixel_format_get_bytes_per_pixel_Handler,		//32
-	pixel_format_set_bytes_per_pixel_Handler,		//33
-	pixel_format_get_r_mask_Handler,		//34
-	pixel_format_set_r_mask_Handler,		//35
-	pixel_format_get_g_mask_Handler,		//36
-	pixel_format_set_g_mask_Handler,		//37
-	pixel_format_get_b_mask_Handler,		//38
-	pixel_format_set_b_mask_Handler,		//39
-	pixel_format_get_a_mask_Handler,		//40
-	pixel_format_set_a_mask_Handler,		//41
-	pixel_format_get_r_loss_Handler,		//42
-	pixel_format_set_r_loss_Handler,		//43
-	pixel_format_get_g_loss_Handler,		//44
-	pixel_format_set_g_loss_Handler,		//45
-	pixel_format_get_b_loss_Handler,		//46
-	pixel_format_set_b_loss_Handler,		//47
-	pixel_format_get_a_loss_Handler,		//48
-	pixel_format_set_a_loss_Handler,		//49
-	pixel_format_get_r_shift_Handler,		//50
-	pixel_format_set_r_shift_Handler,		//51
-	pixel_format_get_g_shift_Handler,		//52
-	pixel_format_set_g_shift_Handler,		//53
-	pixel_format_get_b_shift_Handler,		//54
-	pixel_format_set_b_shift_Handler,		//55
-	pixel_format_get_a_shift_Handler,		//56
-	pixel_format_set_a_shift_Handler,		//57
-	pixel_format_get_refcount_Handler,		//58
-	pixel_format_set_refcount_Handler,		//59
-	pixel_format_get_next_Handler,		//60
-	pixel_format_set_next_Handler,		//61
-	pointer_deref_rect_Handler,		//62
-	new_rect_Handler,		//63
-	delete_rect_Handler,		//64
-	rect_get_x_Handler,		//65
-	rect_set_x_Handler,		//66
-	rect_get_y_Handler,		//67
-	rect_set_y_Handler,		//68
-	rect_get_w_Handler,		//69
-	rect_set_w_Handler,		//70
-	rect_get_h_Handler,		//71
-	rect_set_h_Handler,		//72
-	pointer_deref_surface_Handler,		//73
-	new_surface_Handler,		//74
-	delete_surface_Handler,		//75
-	surface_get_flags_Handler,		//76
-	surface_set_flags_Handler,		//77
-	surface_get_format_Handler,		//78
-	surface_set_format_Handler,		//79
-	surface_get_w_Handler,		//80
-	surface_set_w_Handler,		//81
-	surface_get_h_Handler,		//82
-	surface_set_h_Handler,		//83
-	surface_get_pitch_Handler,		//84
-	surface_set_pitch_Handler,		//85
-	surface_get_pixels_Handler,		//86
-	surface_set_pixels_Handler,		//87
-	surface_get_userdata_Handler,		//88
-	surface_set_userdata_Handler,		//89
-	surface_get_locked_Handler,		//90
-	surface_set_locked_Handler,		//91
-	surface_get_lock_data_Handler,		//92
-	surface_set_lock_data_Handler,		//93
-	surface_get_clip_rect_Handler,		//94
-	surface_set_clip_rect_Handler,		//95
-	surface_get_map_Handler,		//96
-	surface_set_map_Handler,		//97
-	surface_get_refcount_Handler,		//98
-	surface_set_refcount_Handler,		//99
-	pointer_deref_keysym_Handler,		//100
-	new_keysym_Handler,		//101
-	delete_keysym_Handler,		//102
-	keysym_get_scancode_Handler,		//103
-	keysym_set_scancode_Handler,		//104
-	keysym_get_sym_Handler,		//105
-	keysym_set_sym_Handler,		//106
-	keysym_get_mod_Handler,		//107
-	keysym_set_mod_Handler,		//108
-	keysym_get_unused_Handler,		//109
-	keysym_set_unused_Handler,		//110
-	pointer_deref_common_event_Handler,		//111
-	new_common_event_Handler,		//112
-	delete_common_event_Handler,		//113
-	common_event_get_type_Handler,		//114
-	common_event_set_type_Handler,		//115
-	common_event_get_timestamp_Handler,		//116
-	common_event_set_timestamp_Handler,		//117
-	pointer_deref_window_event_Handler,		//118
-	new_window_event_Handler,		//119
-	delete_window_event_Handler,		//120
-	window_event_get_type_Handler,		//121
-	window_event_set_type_Handler,		//122
-	window_event_get_timestamp_Handler,		//123
-	window_event_set_timestamp_Handler,		//124
-	window_event_get_windowID_Handler,		//125
-	window_event_set_windowID_Handler,		//126
-	window_event_get_event_Handler,		//127
-	window_event_set_event_Handler,		//128
-	window_event_get_padding1_Handler,		//129
-	window_event_set_padding1_Handler,		//130
-	window_event_get_padding2_Handler,		//131
-	window_event_set_padding2_Handler,		//132
-	window_event_get_padding3_Handler,		//133
-	window_event_set_padding3_Handler,		//134
-	window_event_get_data1_Handler,		//135
-	window_event_set_data1_Handler,		//136
-	window_event_get_data2_Handler,		//137
-	window_event_set_data2_Handler,		//138
-	pointer_deref_keyboard_event_Handler,		//139
-	new_keyboard_event_Handler,		//140
-	delete_keyboard_event_Handler,		//141
-	keyboard_event_get_type_Handler,		//142
-	keyboard_event_set_type_Handler,		//143
-	keyboard_event_get_timestamp_Handler,		//144
-	keyboard_event_set_timestamp_Handler,		//145
-	keyboard_event_get_windowID_Handler,		//146
-	keyboard_event_set_windowID_Handler,		//147
-	keyboard_event_get_state_Handler,		//148
-	keyboard_event_set_state_Handler,		//149
-	keyboard_event_get_repeat_Handler,		//150
-	keyboard_event_set_repeat_Handler,		//151
-	keyboard_event_get_padding2_Handler,		//152
-	keyboard_event_set_padding2_Handler,		//153
-	keyboard_event_get_padding3_Handler,		//154
-	keyboard_event_set_padding3_Handler,		//155
-	keyboard_event_get_keysym_Handler,		//156
-	keyboard_event_set_keysym_Handler,		//157
-	pointer_deref_text_editing_event_Handler,		//158
-	new_text_editing_event_Handler,		//159
-	delete_text_editing_event_Handler,		//160
-	text_editing_event_get_type_Handler,		//161
-	text_editing_event_set_type_Handler,		//162
-	text_editing_event_get_timestamp_Handler,		//163
-	text_editing_event_set_timestamp_Handler,		//164
-	text_editing_event_get_windowID_Handler,		//165
-	text_editing_event_set_windowID_Handler,		//166
-	text_editing_event_get_text_Handler,		//167
-	text_editing_event_set_text_Handler,		//168
-	text_editing_event_get_start_Handler,		//169
-	text_editing_event_set_start_Handler,		//170
-	text_editing_event_get_length_Handler,		//171
-	text_editing_event_set_length_Handler,		//172
-	pointer_deref_text_input_event_Handler,		//173
-	new_text_input_event_Handler,		//174
-	delete_text_input_event_Handler,		//175
-	text_input_event_get_type_Handler,		//176
-	text_input_event_set_type_Handler,		//177
-	text_input_event_get_timestamp_Handler,		//178
-	text_input_event_set_timestamp_Handler,		//179
-	text_input_event_get_windowID_Handler,		//180
-	text_input_event_set_windowID_Handler,		//181
-	text_input_event_get_text_Handler,		//182
-	text_input_event_set_text_Handler,		//183
-	pointer_deref_mouse_motion_event_Handler,		//184
-	new_mouse_motion_event_Handler,		//185
-	delete_mouse_motion_event_Handler,		//186
-	mouse_motion_event_get_type_Handler,		//187
-	mouse_motion_event_set_type_Handler,		//188
-	mouse_motion_event_get_timestamp_Handler,		//189
-	mouse_motion_event_set_timestamp_Handler,		//190
-	mouse_motion_event_get_windowID_Handler,		//191
-	mouse_motion_event_set_windowID_Handler,		//192
-	mouse_motion_event_get_which_Handler,		//193
-	mouse_motion_event_set_which_Handler,		//194
-	mouse_motion_event_get_state_Handler,		//195
-	mouse_motion_event_set_state_Handler,		//196
-	mouse_motion_event_get_x_Handler,		//197
-	mouse_motion_event_set_x_Handler,		//198
-	mouse_motion_event_get_y_Handler,		//199
-	mouse_motion_event_set_y_Handler,		//200
-	mouse_motion_event_get_xrel_Handler,		//201
-	mouse_motion_event_set_xrel_Handler,		//202
-	mouse_motion_event_get_yrel_Handler,		//203
-	mouse_motion_event_set_yrel_Handler,		//204
-	pointer_deref_mouse_button_event_Handler,		//205
-	new_mouse_button_event_Handler,		//206
-	delete_mouse_button_event_Handler,		//207
-	mouse_button_event_get_type_Handler,		//208
-	mouse_button_event_set_type_Handler,		//209
-	mouse_button_event_get_timestamp_Handler,		//210
-	mouse_button_event_set_timestamp_Handler,		//211
-	mouse_button_event_get_windowID_Handler,		//212
-	mouse_button_event_set_windowID_Handler,		//213
-	mouse_button_event_get_which_Handler,		//214
-	mouse_button_event_set_which_Handler,		//215
-	mouse_button_event_get_button_Handler,		//216
-	mouse_button_event_set_button_Handler,		//217
-	mouse_button_event_get_state_Handler,		//218
-	mouse_button_event_set_state_Handler,		//219
-	mouse_button_event_get_clicks_Handler,		//220
-	mouse_button_event_set_clicks_Handler,		//221
-	mouse_button_event_get_x_Handler,		//222
-	mouse_button_event_set_x_Handler,		//223
-	mouse_button_event_get_y_Handler,		//224
-	mouse_button_event_set_y_Handler,		//225
-	pointer_deref_mouse_wheel_event_Handler,		//226
-	new_mouse_wheel_event_Handler,		//227
-	delete_mouse_wheel_event_Handler,		//228
-	mouse_wheel_event_get_type_Handler,		//229
-	mouse_wheel_event_set_type_Handler,		//230
-	mouse_wheel_event_get_timestamp_Handler,		//231
-	mouse_wheel_event_set_timestamp_Handler,		//232
-	mouse_wheel_event_get_windowID_Handler,		//233
-	mouse_wheel_event_set_windowID_Handler,		//234
-	mouse_wheel_event_get_which_Handler,		//235
-	mouse_wheel_event_set_which_Handler,		//236
-	mouse_wheel_event_get_x_Handler,		//237
-	mouse_wheel_event_set_x_Handler,		//238
-	mouse_wheel_event_get_y_Handler,		//239
-	mouse_wheel_event_set_y_Handler,		//240
-	mouse_wheel_event_get_direction_Handler,		//241
-	mouse_wheel_event_set_direction_Handler,		//242
-	pointer_deref_joy_axis_event_Handler,		//243
-	new_joy_axis_event_Handler,		//244
-	delete_joy_axis_event_Handler,		//245
-	joy_axis_event_get_type_Handler,		//246
-	joy_axis_event_set_type_Handler,		//247
-	joy_axis_event_get_timestamp_Handler,		//248
-	joy_axis_event_set_timestamp_Handler,		//249
-	joy_axis_event_get_which_Handler,		//250
-	joy_axis_event_set_which_Handler,		//251
-	joy_axis_event_get_axis_Handler,		//252
-	joy_axis_event_set_axis_Handler,		//253
-	joy_axis_event_get_padding1_Handler,		//254
-	joy_axis_event_set_padding1_Handler,		//255
-	joy_axis_event_get_padding2_Handler,		//256
-	joy_axis_event_set_padding2_Handler,		//257
-	joy_axis_event_get_padding3_Handler,		//258
-	joy_axis_event_set_padding3_Handler,		//259
-	joy_axis_event_get_value_Handler,		//260
-	joy_axis_event_set_value_Handler,		//261
-	pointer_deref_joy_ball_event_Handler,		//262
-	new_joy_ball_event_Handler,		//263
-	delete_joy_ball_event_Handler,		//264
-	joy_ball_event_get_type_Handler,		//265
-	joy_ball_event_set_type_Handler,		//266
-	joy_ball_event_get_timestamp_Handler,		//267
-	joy_ball_event_set_timestamp_Handler,		//268
-	joy_ball_event_get_which_Handler,		//269
-	joy_ball_event_set_which_Handler,		//270
-	joy_ball_event_get_ball_Handler,		//271
-	joy_ball_event_set_ball_Handler,		//272
-	joy_ball_event_get_padding1_Handler,		//273
-	joy_ball_event_set_padding1_Handler,		//274
-	joy_ball_event_get_padding2_Handler,		//275
-	joy_ball_event_set_padding2_Handler,		//276
-	joy_ball_event_get_padding3_Handler,		//277
-	joy_ball_event_set_padding3_Handler,		//278
-	joy_ball_event_get_xrel_Handler,		//279
-	joy_ball_event_set_xrel_Handler,		//280
-	joy_ball_event_get_yrel_Handler,		//281
-	joy_ball_event_set_yrel_Handler,		//282
-	pointer_deref_joy_hat_event_Handler,		//283
-	new_joy_hat_event_Handler,		//284
-	delete_joy_hat_event_Handler,		//285
-	joy_hat_event_get_type_Handler,		//286
-	joy_hat_event_set_type_Handler,		//287
-	joy_hat_event_get_timestamp_Handler,		//288
-	joy_hat_event_set_timestamp_Handler,		//289
-	joy_hat_event_get_which_Handler,		//290
-	joy_hat_event_set_which_Handler,		//291
-	joy_hat_event_get_hat_Handler,		//292
-	joy_hat_event_set_hat_Handler,		//293
-	joy_hat_event_get_value_Handler,		//294
-	joy_hat_event_set_value_Handler,		//295
-	joy_hat_event_get_padding1_Handler,		//296
-	joy_hat_event_set_padding1_Handler,		//297
-	joy_hat_event_get_padding2_Handler,		//298
-	joy_hat_event_set_padding2_Handler,		//299
-	pointer_deref_joy_button_event_Handler,		//300
-	new_joy_button_event_Handler,		//301
-	delete_joy_button_event_Handler,		//302
-	joy_button_event_get_type_Handler,		//303
-	joy_button_event_set_type_Handler,		//304
-	joy_button_event_get_timestamp_Handler,		//305
-	joy_button_event_set_timestamp_Handler,		//306
-	joy_button_event_get_which_Handler,		//307
-	joy_button_event_set_which_Handler,		//308
-	joy_button_event_get_button_Handler,		//309
-	joy_button_event_set_button_Handler,		//310
-	joy_button_event_get_state_Handler,		//311
-	joy_button_event_set_state_Handler,		//312
-	joy_button_event_get_padding1_Handler,		//313
-	joy_button_event_set_padding1_Handler,		//314
-	joy_button_event_get_padding2_Handler,		//315
-	joy_button_event_set_padding2_Handler,		//316
-	pointer_deref_joy_device_event_Handler,		//317
-	new_joy_device_event_Handler,		//318
-	delete_joy_device_event_Handler,		//319
-	joy_device_event_get_type_Handler,		//320
-	joy_device_event_set_type_Handler,		//321
-	joy_device_event_get_timestamp_Handler,		//322
-	joy_device_event_set_timestamp_Handler,		//323
-	joy_device_event_get_which_Handler,		//324
-	joy_device_event_set_which_Handler,		//325
-	pointer_deref_controller_axis_event_Handler,		//326
-	new_controller_axis_event_Handler,		//327
-	delete_controller_axis_event_Handler,		//328
-	controller_axis_event_get_type_Handler,		//329
-	controller_axis_event_set_type_Handler,		//330
-	controller_axis_event_get_timestamp_Handler,		//331
-	controller_axis_event_set_timestamp_Handler,		//332
-	controller_axis_event_get_which_Handler,		//333
-	controller_axis_event_set_which_Handler,		//334
-	controller_axis_event_get_axis_Handler,		//335
-	controller_axis_event_set_axis_Handler,		//336
-	controller_axis_event_get_padding1_Handler,		//337
-	controller_axis_event_set_padding1_Handler,		//338
-	controller_axis_event_get_padding2_Handler,		//339
-	controller_axis_event_set_padding2_Handler,		//340
-	controller_axis_event_get_padding3_Handler,		//341
-	controller_axis_event_set_padding3_Handler,		//342
-	controller_axis_event_get_value_Handler,		//343
-	controller_axis_event_set_value_Handler,		//344
-	controller_axis_event_get_padding4_Handler,		//345
-	controller_axis_event_set_padding4_Handler,		//346
-	pointer_deref_controller_button_event_Handler,		//347
-	new_controller_button_event_Handler,		//348
-	delete_controller_button_event_Handler,		//349
-	controller_button_event_get_type_Handler,		//350
-	controller_button_event_set_type_Handler,		//351
-	controller_button_event_get_timestamp_Handler,		//352
-	controller_button_event_set_timestamp_Handler,		//353
-	controller_button_event_get_which_Handler,		//354
-	controller_button_event_set_which_Handler,		//355
-	controller_button_event_get_button_Handler,		//356
-	controller_button_event_set_button_Handler,		//357
-	controller_button_event_get_state_Handler,		//358
-	controller_button_event_set_state_Handler,		//359
-	controller_button_event_get_padding1_Handler,		//360
-	controller_button_event_set_padding1_Handler,		//361
-	controller_button_event_get_padding2_Handler,		//362
-	controller_button_event_set_padding2_Handler,		//363
-	pointer_deref_controller_device_event_Handler,		//364
-	new_controller_device_event_Handler,		//365
-	delete_controller_device_event_Handler,		//366
-	controller_device_event_get_type_Handler,		//367
-	controller_device_event_set_type_Handler,		//368
-	controller_device_event_get_timestamp_Handler,		//369
-	controller_device_event_set_timestamp_Handler,		//370
-	controller_device_event_get_which_Handler,		//371
-	controller_device_event_set_which_Handler,		//372
-	pointer_deref_audio_device_event_Handler,		//373
-	new_audio_device_event_Handler,		//374
-	delete_audio_device_event_Handler,		//375
-	audio_device_event_get_type_Handler,		//376
-	audio_device_event_set_type_Handler,		//377
-	audio_device_event_get_timestamp_Handler,		//378
-	audio_device_event_set_timestamp_Handler,		//379
-	audio_device_event_get_which_Handler,		//380
-	audio_device_event_set_which_Handler,		//381
-	audio_device_event_get_iscapture_Handler,		//382
-	audio_device_event_set_iscapture_Handler,		//383
-	audio_device_event_get_padding1_Handler,		//384
-	audio_device_event_set_padding1_Handler,		//385
-	audio_device_event_get_padding2_Handler,		//386
-	audio_device_event_set_padding2_Handler,		//387
-	audio_device_event_get_padding3_Handler,		//388
-	audio_device_event_set_padding3_Handler,		//389
-	pointer_deref_quit_event_Handler,		//390
-	new_quit_event_Handler,		//391
-	delete_quit_event_Handler,		//392
-	quit_event_get_type_Handler,		//393
-	quit_event_set_type_Handler,		//394
-	quit_event_get_timestamp_Handler,		//395
-	quit_event_set_timestamp_Handler,		//396
-	pointer_deref_user_event_Handler,		//397
-	new_user_event_Handler,		//398
-	delete_user_event_Handler,		//399
-	user_event_get_type_Handler,		//400
-	user_event_set_type_Handler,		//401
-	user_event_get_timestamp_Handler,		//402
-	user_event_set_timestamp_Handler,		//403
-	user_event_get_windowID_Handler,		//404
-	user_event_set_windowID_Handler,		//405
-	user_event_get_code_Handler,		//406
-	user_event_set_code_Handler,		//407
-	user_event_get_data1_Handler,		//408
-	user_event_set_data1_Handler,		//409
-	user_event_get_data2_Handler,		//410
-	user_event_set_data2_Handler,		//411
-	pointer_deref_syswm_event_Handler,		//412
-	new_syswm_event_Handler,		//413
-	delete_syswm_event_Handler,		//414
-	syswm_event_get_type_Handler,		//415
-	syswm_event_set_type_Handler,		//416
-	syswm_event_get_timestamp_Handler,		//417
-	syswm_event_set_timestamp_Handler,		//418
-	syswm_event_get_msg_Handler,		//419
-	syswm_event_set_msg_Handler,		//420
-	pointer_deref_touch_finger_event_Handler,		//421
-	new_touch_finger_event_Handler,		//422
-	delete_touch_finger_event_Handler,		//423
-	touch_finger_event_get_type_Handler,		//424
-	touch_finger_event_set_type_Handler,		//425
-	touch_finger_event_get_timestamp_Handler,		//426
-	touch_finger_event_set_timestamp_Handler,		//427
-	touch_finger_event_get_touchId_Handler,		//428
-	touch_finger_event_set_touchId_Handler,		//429
-	touch_finger_event_get_fingerId_Handler,		//430
-	touch_finger_event_set_fingerId_Handler,		//431
-	touch_finger_event_get_x_Handler,		//432
-	touch_finger_event_set_x_Handler,		//433
-	touch_finger_event_get_y_Handler,		//434
-	touch_finger_event_set_y_Handler,		//435
-	touch_finger_event_get_dx_Handler,		//436
-	touch_finger_event_set_dx_Handler,		//437
-	touch_finger_event_get_dy_Handler,		//438
-	touch_finger_event_set_dy_Handler,		//439
-	touch_finger_event_get_pressure_Handler,		//440
-	touch_finger_event_set_pressure_Handler,		//441
-	pointer_deref_multi_gesture_event_Handler,		//442
-	new_multi_gesture_event_Handler,		//443
-	delete_multi_gesture_event_Handler,		//444
-	multi_gesture_event_get_type_Handler,		//445
-	multi_gesture_event_set_type_Handler,		//446
-	multi_gesture_event_get_timestamp_Handler,		//447
-	multi_gesture_event_set_timestamp_Handler,		//448
-	multi_gesture_event_get_touchId_Handler,		//449
-	multi_gesture_event_set_touchId_Handler,		//450
-	multi_gesture_event_get_dTheta_Handler,		//451
-	multi_gesture_event_set_dTheta_Handler,		//452
-	multi_gesture_event_get_dDist_Handler,		//453
-	multi_gesture_event_set_dDist_Handler,		//454
-	multi_gesture_event_get_x_Handler,		//455
-	multi_gesture_event_set_x_Handler,		//456
-	multi_gesture_event_get_y_Handler,		//457
-	multi_gesture_event_set_y_Handler,		//458
-	multi_gesture_event_get_numFingers_Handler,		//459
-	multi_gesture_event_set_numFingers_Handler,		//460
-	multi_gesture_event_get_padding_Handler,		//461
-	multi_gesture_event_set_padding_Handler,		//462
-	pointer_deref_dollar_gesture_event_Handler,		//463
-	new_dollar_gesture_event_Handler,		//464
-	delete_dollar_gesture_event_Handler,		//465
-	dollar_gesture_event_get_type_Handler,		//466
-	dollar_gesture_event_set_type_Handler,		//467
-	dollar_gesture_event_get_timestamp_Handler,		//468
-	dollar_gesture_event_set_timestamp_Handler,		//469
-	dollar_gesture_event_get_touchId_Handler,		//470
-	dollar_gesture_event_set_touchId_Handler,		//471
-	dollar_gesture_event_get_gestureId_Handler,		//472
-	dollar_gesture_event_set_gestureId_Handler,		//473
-	dollar_gesture_event_get_numFingers_Handler,		//474
-	dollar_gesture_event_set_numFingers_Handler,		//475
-	dollar_gesture_event_get_error_Handler,		//476
-	dollar_gesture_event_set_error_Handler,		//477
-	dollar_gesture_event_get_x_Handler,		//478
-	dollar_gesture_event_set_x_Handler,		//479
-	dollar_gesture_event_get_y_Handler,		//480
-	dollar_gesture_event_set_y_Handler,		//481
-	pointer_deref_drop_event_Handler,		//482
-	new_drop_event_Handler,		//483
-	delete_drop_event_Handler,		//484
-	drop_event_get_type_Handler,		//485
-	drop_event_set_type_Handler,		//486
-	drop_event_get_timestamp_Handler,		//487
-	drop_event_set_timestamp_Handler,		//488
-	drop_event_get_file_Handler,		//489
-	drop_event_set_file_Handler,		//490
-	drop_event_get_windowID_Handler,		//491
-	drop_event_set_windowID_Handler,		//492
-	event_get_type_Handler,		//493
-	event_set_type_Handler,		//494
-	event_get_common_Handler,		//495
-	event_set_common_Handler,		//496
-	event_get_window_Handler,		//497
-	event_set_window_Handler,		//498
-	event_get_key_Handler,		//499
-	event_set_key_Handler,		//500
-	event_get_edit_Handler,		//501
-	event_set_edit_Handler,		//502
-	event_get_text_Handler,		//503
-	event_set_text_Handler,		//504
-	event_get_motion_Handler,		//505
-	event_set_motion_Handler,		//506
-	event_get_button_Handler,		//507
-	event_set_button_Handler,		//508
-	event_get_wheel_Handler,		//509
-	event_set_wheel_Handler,		//510
-	event_get_jaxis_Handler,		//511
-	event_set_jaxis_Handler,		//512
-	event_get_jball_Handler,		//513
-	event_set_jball_Handler,		//514
-	event_get_jhat_Handler,		//515
-	event_set_jhat_Handler,		//516
-	event_get_jbutton_Handler,		//517
-	event_set_jbutton_Handler,		//518
-	event_get_jdevice_Handler,		//519
-	event_set_jdevice_Handler,		//520
-	event_get_caxis_Handler,		//521
-	event_set_caxis_Handler,		//522
-	event_get_cbutton_Handler,		//523
-	event_set_cbutton_Handler,		//524
-	event_get_cdevice_Handler,		//525
-	event_set_cdevice_Handler,		//526
-	event_get_adevice_Handler,		//527
-	event_set_adevice_Handler,		//528
-	event_get_quit_Handler,		//529
-	event_set_quit_Handler,		//530
-	event_get_user_Handler,		//531
-	event_set_user_Handler,		//532
-	event_get_syswm_Handler,		//533
-	event_set_syswm_Handler,		//534
-	event_get_tfinger_Handler,		//535
-	event_set_tfinger_Handler,		//536
-	event_get_mgesture_Handler,		//537
-	event_set_mgesture_Handler,		//538
-	event_get_dgesture_Handler,		//539
-	event_set_dgesture_Handler,		//540
-	event_get_drop_Handler,		//541
-	event_set_drop_Handler,		//542
-	SDL_Init_Handler,		//543
-	SDL_Quit_Handler,		//544
-	SDL_CreateWindow_Handler,		//545
-	SDL_GetWindowSurface_Handler,		//546
-	SDL_LoadBMP_Handler,		//547
-	SDL_FreeSurface_Handler,		//548
-	SDL_BlitSurface_Handler,		//549
-	SDL_BlitScaled_Handler,		//550
-	SDL_UpdateWindowSurface_Handler,		//551
-	SDL_DestroyWindow_Handler,		//552
-	SDL_GetWindowSize_Handler,		//553
-	SDL_GetError_Handler,		//554
-	SDL_PollEvent_Handler		//555
+	pointer_deref_int_Handler,		//1
+	pointer_deref_int_assign_Handler,		//2
+	new_int_Handler,		//3
+	delete_int_Handler,		//4
+	pointer_deref_float_Handler,		//5
+	pointer_deref_float_assign_Handler,		//6
+	new_float_Handler,		//7
+	delete_float_Handler,		//8
+	pointer_deref_double_Handler,		//9
+	pointer_deref_double_assign_Handler,		//10
+	new_double_Handler,		//11
+	delete_double_Handler,		//12
+	pointer_deref_string_Handler,		//13
+	pointer_deref_string_assign_Handler,		//14
+	new_string_Handler,		//15
+	delete_string_Handler,		//16
+	pointer_deref_color_Handler,		//17
+	pointer_deref_color_assign_Handler,		//18
+	new_color_Handler,		//19
+	delete_color_Handler,		//20
+	color_get_r_Handler,		//21
+	color_set_r_Handler,		//22
+	color_get_g_Handler,		//23
+	color_set_g_Handler,		//24
+	color_get_b_Handler,		//25
+	color_set_b_Handler,		//26
+	color_get_a_Handler,		//27
+	color_set_a_Handler,		//28
+	pointer_deref_palette_Handler,		//29
+	pointer_deref_palette_assign_Handler,		//30
+	new_palette_Handler,		//31
+	delete_palette_Handler,		//32
+	palette_get_ncolors_Handler,		//33
+	palette_set_ncolors_Handler,		//34
+	palette_get_colors_Handler,		//35
+	palette_set_colors_Handler,		//36
+	palette_get_version_Handler,		//37
+	palette_set_version_Handler,		//38
+	palette_get_refcount_Handler,		//39
+	palette_set_refcount_Handler,		//40
+	pointer_deref_pixel_format_Handler,		//41
+	pointer_deref_pixel_format_assign_Handler,		//42
+	new_pixel_format_Handler,		//43
+	delete_pixel_format_Handler,		//44
+	pixel_format_get_format_Handler,		//45
+	pixel_format_set_format_Handler,		//46
+	pixel_format_get_palette_Handler,		//47
+	pixel_format_set_palette_Handler,		//48
+	pixel_format_get_bits_per_pixel_Handler,		//49
+	pixel_format_set_bits_per_pixel_Handler,		//50
+	pixel_format_get_bytes_per_pixel_Handler,		//51
+	pixel_format_set_bytes_per_pixel_Handler,		//52
+	pixel_format_get_r_mask_Handler,		//53
+	pixel_format_set_r_mask_Handler,		//54
+	pixel_format_get_g_mask_Handler,		//55
+	pixel_format_set_g_mask_Handler,		//56
+	pixel_format_get_b_mask_Handler,		//57
+	pixel_format_set_b_mask_Handler,		//58
+	pixel_format_get_a_mask_Handler,		//59
+	pixel_format_set_a_mask_Handler,		//60
+	pixel_format_get_r_loss_Handler,		//61
+	pixel_format_set_r_loss_Handler,		//62
+	pixel_format_get_g_loss_Handler,		//63
+	pixel_format_set_g_loss_Handler,		//64
+	pixel_format_get_b_loss_Handler,		//65
+	pixel_format_set_b_loss_Handler,		//66
+	pixel_format_get_a_loss_Handler,		//67
+	pixel_format_set_a_loss_Handler,		//68
+	pixel_format_get_r_shift_Handler,		//69
+	pixel_format_set_r_shift_Handler,		//70
+	pixel_format_get_g_shift_Handler,		//71
+	pixel_format_set_g_shift_Handler,		//72
+	pixel_format_get_b_shift_Handler,		//73
+	pixel_format_set_b_shift_Handler,		//74
+	pixel_format_get_a_shift_Handler,		//75
+	pixel_format_set_a_shift_Handler,		//76
+	pixel_format_get_refcount_Handler,		//77
+	pixel_format_set_refcount_Handler,		//78
+	pixel_format_get_next_Handler,		//79
+	pixel_format_set_next_Handler,		//80
+	pointer_deref_rect_Handler,		//81
+	pointer_deref_rect_assign_Handler,		//82
+	new_rect_Handler,		//83
+	delete_rect_Handler,		//84
+	rect_get_x_Handler,		//85
+	rect_set_x_Handler,		//86
+	rect_get_y_Handler,		//87
+	rect_set_y_Handler,		//88
+	rect_get_w_Handler,		//89
+	rect_set_w_Handler,		//90
+	rect_get_h_Handler,		//91
+	rect_set_h_Handler,		//92
+	pointer_deref_surface_Handler,		//93
+	pointer_deref_surface_assign_Handler,		//94
+	new_surface_Handler,		//95
+	delete_surface_Handler,		//96
+	surface_get_flags_Handler,		//97
+	surface_set_flags_Handler,		//98
+	surface_get_format_Handler,		//99
+	surface_set_format_Handler,		//100
+	surface_get_w_Handler,		//101
+	surface_set_w_Handler,		//102
+	surface_get_h_Handler,		//103
+	surface_set_h_Handler,		//104
+	surface_get_pitch_Handler,		//105
+	surface_set_pitch_Handler,		//106
+	surface_get_pixels_Handler,		//107
+	surface_set_pixels_Handler,		//108
+	surface_get_userdata_Handler,		//109
+	surface_set_userdata_Handler,		//110
+	surface_get_locked_Handler,		//111
+	surface_set_locked_Handler,		//112
+	surface_get_lock_data_Handler,		//113
+	surface_set_lock_data_Handler,		//114
+	surface_get_clip_rect_Handler,		//115
+	surface_set_clip_rect_Handler,		//116
+	surface_get_map_Handler,		//117
+	surface_set_map_Handler,		//118
+	surface_get_refcount_Handler,		//119
+	surface_set_refcount_Handler,		//120
+	pointer_deref_keysym_Handler,		//121
+	pointer_deref_keysym_assign_Handler,		//122
+	new_keysym_Handler,		//123
+	delete_keysym_Handler,		//124
+	keysym_get_scancode_Handler,		//125
+	keysym_set_scancode_Handler,		//126
+	keysym_get_sym_Handler,		//127
+	keysym_set_sym_Handler,		//128
+	keysym_get_mod_Handler,		//129
+	keysym_set_mod_Handler,		//130
+	keysym_get_unused_Handler,		//131
+	keysym_set_unused_Handler,		//132
+	pointer_deref_common_event_Handler,		//133
+	pointer_deref_common_event_assign_Handler,		//134
+	new_common_event_Handler,		//135
+	delete_common_event_Handler,		//136
+	common_event_get_type_Handler,		//137
+	common_event_set_type_Handler,		//138
+	common_event_get_timestamp_Handler,		//139
+	common_event_set_timestamp_Handler,		//140
+	pointer_deref_window_event_Handler,		//141
+	pointer_deref_window_event_assign_Handler,		//142
+	new_window_event_Handler,		//143
+	delete_window_event_Handler,		//144
+	window_event_get_type_Handler,		//145
+	window_event_set_type_Handler,		//146
+	window_event_get_timestamp_Handler,		//147
+	window_event_set_timestamp_Handler,		//148
+	window_event_get_windowID_Handler,		//149
+	window_event_set_windowID_Handler,		//150
+	window_event_get_event_Handler,		//151
+	window_event_set_event_Handler,		//152
+	window_event_get_padding1_Handler,		//153
+	window_event_set_padding1_Handler,		//154
+	window_event_get_padding2_Handler,		//155
+	window_event_set_padding2_Handler,		//156
+	window_event_get_padding3_Handler,		//157
+	window_event_set_padding3_Handler,		//158
+	window_event_get_data1_Handler,		//159
+	window_event_set_data1_Handler,		//160
+	window_event_get_data2_Handler,		//161
+	window_event_set_data2_Handler,		//162
+	pointer_deref_keyboard_event_Handler,		//163
+	pointer_deref_keyboard_event_assign_Handler,		//164
+	new_keyboard_event_Handler,		//165
+	delete_keyboard_event_Handler,		//166
+	keyboard_event_get_type_Handler,		//167
+	keyboard_event_set_type_Handler,		//168
+	keyboard_event_get_timestamp_Handler,		//169
+	keyboard_event_set_timestamp_Handler,		//170
+	keyboard_event_get_windowID_Handler,		//171
+	keyboard_event_set_windowID_Handler,		//172
+	keyboard_event_get_state_Handler,		//173
+	keyboard_event_set_state_Handler,		//174
+	keyboard_event_get_repeat_Handler,		//175
+	keyboard_event_set_repeat_Handler,		//176
+	keyboard_event_get_padding2_Handler,		//177
+	keyboard_event_set_padding2_Handler,		//178
+	keyboard_event_get_padding3_Handler,		//179
+	keyboard_event_set_padding3_Handler,		//180
+	keyboard_event_get_keysym_Handler,		//181
+	keyboard_event_set_keysym_Handler,		//182
+	pointer_deref_text_editing_event_Handler,		//183
+	pointer_deref_text_editing_event_assign_Handler,		//184
+	new_text_editing_event_Handler,		//185
+	delete_text_editing_event_Handler,		//186
+	text_editing_event_get_type_Handler,		//187
+	text_editing_event_set_type_Handler,		//188
+	text_editing_event_get_timestamp_Handler,		//189
+	text_editing_event_set_timestamp_Handler,		//190
+	text_editing_event_get_windowID_Handler,		//191
+	text_editing_event_set_windowID_Handler,		//192
+	text_editing_event_get_text_Handler,		//193
+	text_editing_event_set_text_Handler,		//194
+	text_editing_event_get_start_Handler,		//195
+	text_editing_event_set_start_Handler,		//196
+	text_editing_event_get_length_Handler,		//197
+	text_editing_event_set_length_Handler,		//198
+	pointer_deref_text_input_event_Handler,		//199
+	pointer_deref_text_input_event_assign_Handler,		//200
+	new_text_input_event_Handler,		//201
+	delete_text_input_event_Handler,		//202
+	text_input_event_get_type_Handler,		//203
+	text_input_event_set_type_Handler,		//204
+	text_input_event_get_timestamp_Handler,		//205
+	text_input_event_set_timestamp_Handler,		//206
+	text_input_event_get_windowID_Handler,		//207
+	text_input_event_set_windowID_Handler,		//208
+	text_input_event_get_text_Handler,		//209
+	text_input_event_set_text_Handler,		//210
+	pointer_deref_mouse_motion_event_Handler,		//211
+	pointer_deref_mouse_motion_event_assign_Handler,		//212
+	new_mouse_motion_event_Handler,		//213
+	delete_mouse_motion_event_Handler,		//214
+	mouse_motion_event_get_type_Handler,		//215
+	mouse_motion_event_set_type_Handler,		//216
+	mouse_motion_event_get_timestamp_Handler,		//217
+	mouse_motion_event_set_timestamp_Handler,		//218
+	mouse_motion_event_get_windowID_Handler,		//219
+	mouse_motion_event_set_windowID_Handler,		//220
+	mouse_motion_event_get_which_Handler,		//221
+	mouse_motion_event_set_which_Handler,		//222
+	mouse_motion_event_get_state_Handler,		//223
+	mouse_motion_event_set_state_Handler,		//224
+	mouse_motion_event_get_x_Handler,		//225
+	mouse_motion_event_set_x_Handler,		//226
+	mouse_motion_event_get_y_Handler,		//227
+	mouse_motion_event_set_y_Handler,		//228
+	mouse_motion_event_get_xrel_Handler,		//229
+	mouse_motion_event_set_xrel_Handler,		//230
+	mouse_motion_event_get_yrel_Handler,		//231
+	mouse_motion_event_set_yrel_Handler,		//232
+	pointer_deref_mouse_button_event_Handler,		//233
+	pointer_deref_mouse_button_event_assign_Handler,		//234
+	new_mouse_button_event_Handler,		//235
+	delete_mouse_button_event_Handler,		//236
+	mouse_button_event_get_type_Handler,		//237
+	mouse_button_event_set_type_Handler,		//238
+	mouse_button_event_get_timestamp_Handler,		//239
+	mouse_button_event_set_timestamp_Handler,		//240
+	mouse_button_event_get_windowID_Handler,		//241
+	mouse_button_event_set_windowID_Handler,		//242
+	mouse_button_event_get_which_Handler,		//243
+	mouse_button_event_set_which_Handler,		//244
+	mouse_button_event_get_button_Handler,		//245
+	mouse_button_event_set_button_Handler,		//246
+	mouse_button_event_get_state_Handler,		//247
+	mouse_button_event_set_state_Handler,		//248
+	mouse_button_event_get_clicks_Handler,		//249
+	mouse_button_event_set_clicks_Handler,		//250
+	mouse_button_event_get_x_Handler,		//251
+	mouse_button_event_set_x_Handler,		//252
+	mouse_button_event_get_y_Handler,		//253
+	mouse_button_event_set_y_Handler,		//254
+	pointer_deref_mouse_wheel_event_Handler,		//255
+	pointer_deref_mouse_wheel_event_assign_Handler,		//256
+	new_mouse_wheel_event_Handler,		//257
+	delete_mouse_wheel_event_Handler,		//258
+	mouse_wheel_event_get_type_Handler,		//259
+	mouse_wheel_event_set_type_Handler,		//260
+	mouse_wheel_event_get_timestamp_Handler,		//261
+	mouse_wheel_event_set_timestamp_Handler,		//262
+	mouse_wheel_event_get_windowID_Handler,		//263
+	mouse_wheel_event_set_windowID_Handler,		//264
+	mouse_wheel_event_get_which_Handler,		//265
+	mouse_wheel_event_set_which_Handler,		//266
+	mouse_wheel_event_get_x_Handler,		//267
+	mouse_wheel_event_set_x_Handler,		//268
+	mouse_wheel_event_get_y_Handler,		//269
+	mouse_wheel_event_set_y_Handler,		//270
+	mouse_wheel_event_get_direction_Handler,		//271
+	mouse_wheel_event_set_direction_Handler,		//272
+	pointer_deref_joy_axis_event_Handler,		//273
+	pointer_deref_joy_axis_event_assign_Handler,		//274
+	new_joy_axis_event_Handler,		//275
+	delete_joy_axis_event_Handler,		//276
+	joy_axis_event_get_type_Handler,		//277
+	joy_axis_event_set_type_Handler,		//278
+	joy_axis_event_get_timestamp_Handler,		//279
+	joy_axis_event_set_timestamp_Handler,		//280
+	joy_axis_event_get_which_Handler,		//281
+	joy_axis_event_set_which_Handler,		//282
+	joy_axis_event_get_axis_Handler,		//283
+	joy_axis_event_set_axis_Handler,		//284
+	joy_axis_event_get_padding1_Handler,		//285
+	joy_axis_event_set_padding1_Handler,		//286
+	joy_axis_event_get_padding2_Handler,		//287
+	joy_axis_event_set_padding2_Handler,		//288
+	joy_axis_event_get_padding3_Handler,		//289
+	joy_axis_event_set_padding3_Handler,		//290
+	joy_axis_event_get_value_Handler,		//291
+	joy_axis_event_set_value_Handler,		//292
+	pointer_deref_joy_ball_event_Handler,		//293
+	pointer_deref_joy_ball_event_assign_Handler,		//294
+	new_joy_ball_event_Handler,		//295
+	delete_joy_ball_event_Handler,		//296
+	joy_ball_event_get_type_Handler,		//297
+	joy_ball_event_set_type_Handler,		//298
+	joy_ball_event_get_timestamp_Handler,		//299
+	joy_ball_event_set_timestamp_Handler,		//300
+	joy_ball_event_get_which_Handler,		//301
+	joy_ball_event_set_which_Handler,		//302
+	joy_ball_event_get_ball_Handler,		//303
+	joy_ball_event_set_ball_Handler,		//304
+	joy_ball_event_get_padding1_Handler,		//305
+	joy_ball_event_set_padding1_Handler,		//306
+	joy_ball_event_get_padding2_Handler,		//307
+	joy_ball_event_set_padding2_Handler,		//308
+	joy_ball_event_get_padding3_Handler,		//309
+	joy_ball_event_set_padding3_Handler,		//310
+	joy_ball_event_get_xrel_Handler,		//311
+	joy_ball_event_set_xrel_Handler,		//312
+	joy_ball_event_get_yrel_Handler,		//313
+	joy_ball_event_set_yrel_Handler,		//314
+	pointer_deref_joy_hat_event_Handler,		//315
+	pointer_deref_joy_hat_event_assign_Handler,		//316
+	new_joy_hat_event_Handler,		//317
+	delete_joy_hat_event_Handler,		//318
+	joy_hat_event_get_type_Handler,		//319
+	joy_hat_event_set_type_Handler,		//320
+	joy_hat_event_get_timestamp_Handler,		//321
+	joy_hat_event_set_timestamp_Handler,		//322
+	joy_hat_event_get_which_Handler,		//323
+	joy_hat_event_set_which_Handler,		//324
+	joy_hat_event_get_hat_Handler,		//325
+	joy_hat_event_set_hat_Handler,		//326
+	joy_hat_event_get_value_Handler,		//327
+	joy_hat_event_set_value_Handler,		//328
+	joy_hat_event_get_padding1_Handler,		//329
+	joy_hat_event_set_padding1_Handler,		//330
+	joy_hat_event_get_padding2_Handler,		//331
+	joy_hat_event_set_padding2_Handler,		//332
+	pointer_deref_joy_button_event_Handler,		//333
+	pointer_deref_joy_button_event_assign_Handler,		//334
+	new_joy_button_event_Handler,		//335
+	delete_joy_button_event_Handler,		//336
+	joy_button_event_get_type_Handler,		//337
+	joy_button_event_set_type_Handler,		//338
+	joy_button_event_get_timestamp_Handler,		//339
+	joy_button_event_set_timestamp_Handler,		//340
+	joy_button_event_get_which_Handler,		//341
+	joy_button_event_set_which_Handler,		//342
+	joy_button_event_get_button_Handler,		//343
+	joy_button_event_set_button_Handler,		//344
+	joy_button_event_get_state_Handler,		//345
+	joy_button_event_set_state_Handler,		//346
+	joy_button_event_get_padding1_Handler,		//347
+	joy_button_event_set_padding1_Handler,		//348
+	joy_button_event_get_padding2_Handler,		//349
+	joy_button_event_set_padding2_Handler,		//350
+	pointer_deref_joy_device_event_Handler,		//351
+	pointer_deref_joy_device_event_assign_Handler,		//352
+	new_joy_device_event_Handler,		//353
+	delete_joy_device_event_Handler,		//354
+	joy_device_event_get_type_Handler,		//355
+	joy_device_event_set_type_Handler,		//356
+	joy_device_event_get_timestamp_Handler,		//357
+	joy_device_event_set_timestamp_Handler,		//358
+	joy_device_event_get_which_Handler,		//359
+	joy_device_event_set_which_Handler,		//360
+	pointer_deref_controller_axis_event_Handler,		//361
+	pointer_deref_controller_axis_event_assign_Handler,		//362
+	new_controller_axis_event_Handler,		//363
+	delete_controller_axis_event_Handler,		//364
+	controller_axis_event_get_type_Handler,		//365
+	controller_axis_event_set_type_Handler,		//366
+	controller_axis_event_get_timestamp_Handler,		//367
+	controller_axis_event_set_timestamp_Handler,		//368
+	controller_axis_event_get_which_Handler,		//369
+	controller_axis_event_set_which_Handler,		//370
+	controller_axis_event_get_axis_Handler,		//371
+	controller_axis_event_set_axis_Handler,		//372
+	controller_axis_event_get_padding1_Handler,		//373
+	controller_axis_event_set_padding1_Handler,		//374
+	controller_axis_event_get_padding2_Handler,		//375
+	controller_axis_event_set_padding2_Handler,		//376
+	controller_axis_event_get_padding3_Handler,		//377
+	controller_axis_event_set_padding3_Handler,		//378
+	controller_axis_event_get_value_Handler,		//379
+	controller_axis_event_set_value_Handler,		//380
+	controller_axis_event_get_padding4_Handler,		//381
+	controller_axis_event_set_padding4_Handler,		//382
+	pointer_deref_controller_button_event_Handler,		//383
+	pointer_deref_controller_button_event_assign_Handler,		//384
+	new_controller_button_event_Handler,		//385
+	delete_controller_button_event_Handler,		//386
+	controller_button_event_get_type_Handler,		//387
+	controller_button_event_set_type_Handler,		//388
+	controller_button_event_get_timestamp_Handler,		//389
+	controller_button_event_set_timestamp_Handler,		//390
+	controller_button_event_get_which_Handler,		//391
+	controller_button_event_set_which_Handler,		//392
+	controller_button_event_get_button_Handler,		//393
+	controller_button_event_set_button_Handler,		//394
+	controller_button_event_get_state_Handler,		//395
+	controller_button_event_set_state_Handler,		//396
+	controller_button_event_get_padding1_Handler,		//397
+	controller_button_event_set_padding1_Handler,		//398
+	controller_button_event_get_padding2_Handler,		//399
+	controller_button_event_set_padding2_Handler,		//400
+	pointer_deref_controller_device_event_Handler,		//401
+	pointer_deref_controller_device_event_assign_Handler,		//402
+	new_controller_device_event_Handler,		//403
+	delete_controller_device_event_Handler,		//404
+	controller_device_event_get_type_Handler,		//405
+	controller_device_event_set_type_Handler,		//406
+	controller_device_event_get_timestamp_Handler,		//407
+	controller_device_event_set_timestamp_Handler,		//408
+	controller_device_event_get_which_Handler,		//409
+	controller_device_event_set_which_Handler,		//410
+	pointer_deref_audio_device_event_Handler,		//411
+	pointer_deref_audio_device_event_assign_Handler,		//412
+	new_audio_device_event_Handler,		//413
+	delete_audio_device_event_Handler,		//414
+	audio_device_event_get_type_Handler,		//415
+	audio_device_event_set_type_Handler,		//416
+	audio_device_event_get_timestamp_Handler,		//417
+	audio_device_event_set_timestamp_Handler,		//418
+	audio_device_event_get_which_Handler,		//419
+	audio_device_event_set_which_Handler,		//420
+	audio_device_event_get_iscapture_Handler,		//421
+	audio_device_event_set_iscapture_Handler,		//422
+	audio_device_event_get_padding1_Handler,		//423
+	audio_device_event_set_padding1_Handler,		//424
+	audio_device_event_get_padding2_Handler,		//425
+	audio_device_event_set_padding2_Handler,		//426
+	audio_device_event_get_padding3_Handler,		//427
+	audio_device_event_set_padding3_Handler,		//428
+	pointer_deref_quit_event_Handler,		//429
+	pointer_deref_quit_event_assign_Handler,		//430
+	new_quit_event_Handler,		//431
+	delete_quit_event_Handler,		//432
+	quit_event_get_type_Handler,		//433
+	quit_event_set_type_Handler,		//434
+	quit_event_get_timestamp_Handler,		//435
+	quit_event_set_timestamp_Handler,		//436
+	pointer_deref_user_event_Handler,		//437
+	pointer_deref_user_event_assign_Handler,		//438
+	new_user_event_Handler,		//439
+	delete_user_event_Handler,		//440
+	user_event_get_type_Handler,		//441
+	user_event_set_type_Handler,		//442
+	user_event_get_timestamp_Handler,		//443
+	user_event_set_timestamp_Handler,		//444
+	user_event_get_windowID_Handler,		//445
+	user_event_set_windowID_Handler,		//446
+	user_event_get_code_Handler,		//447
+	user_event_set_code_Handler,		//448
+	user_event_get_data1_Handler,		//449
+	user_event_set_data1_Handler,		//450
+	user_event_get_data2_Handler,		//451
+	user_event_set_data2_Handler,		//452
+	pointer_deref_syswm_event_Handler,		//453
+	pointer_deref_syswm_event_assign_Handler,		//454
+	new_syswm_event_Handler,		//455
+	delete_syswm_event_Handler,		//456
+	syswm_event_get_type_Handler,		//457
+	syswm_event_set_type_Handler,		//458
+	syswm_event_get_timestamp_Handler,		//459
+	syswm_event_set_timestamp_Handler,		//460
+	syswm_event_get_msg_Handler,		//461
+	syswm_event_set_msg_Handler,		//462
+	pointer_deref_touch_finger_event_Handler,		//463
+	pointer_deref_touch_finger_event_assign_Handler,		//464
+	new_touch_finger_event_Handler,		//465
+	delete_touch_finger_event_Handler,		//466
+	touch_finger_event_get_type_Handler,		//467
+	touch_finger_event_set_type_Handler,		//468
+	touch_finger_event_get_timestamp_Handler,		//469
+	touch_finger_event_set_timestamp_Handler,		//470
+	touch_finger_event_get_touchId_Handler,		//471
+	touch_finger_event_set_touchId_Handler,		//472
+	touch_finger_event_get_fingerId_Handler,		//473
+	touch_finger_event_set_fingerId_Handler,		//474
+	touch_finger_event_get_x_Handler,		//475
+	touch_finger_event_set_x_Handler,		//476
+	touch_finger_event_get_y_Handler,		//477
+	touch_finger_event_set_y_Handler,		//478
+	touch_finger_event_get_dx_Handler,		//479
+	touch_finger_event_set_dx_Handler,		//480
+	touch_finger_event_get_dy_Handler,		//481
+	touch_finger_event_set_dy_Handler,		//482
+	touch_finger_event_get_pressure_Handler,		//483
+	touch_finger_event_set_pressure_Handler,		//484
+	pointer_deref_multi_gesture_event_Handler,		//485
+	pointer_deref_multi_gesture_event_assign_Handler,		//486
+	new_multi_gesture_event_Handler,		//487
+	delete_multi_gesture_event_Handler,		//488
+	multi_gesture_event_get_type_Handler,		//489
+	multi_gesture_event_set_type_Handler,		//490
+	multi_gesture_event_get_timestamp_Handler,		//491
+	multi_gesture_event_set_timestamp_Handler,		//492
+	multi_gesture_event_get_touchId_Handler,		//493
+	multi_gesture_event_set_touchId_Handler,		//494
+	multi_gesture_event_get_dTheta_Handler,		//495
+	multi_gesture_event_set_dTheta_Handler,		//496
+	multi_gesture_event_get_dDist_Handler,		//497
+	multi_gesture_event_set_dDist_Handler,		//498
+	multi_gesture_event_get_x_Handler,		//499
+	multi_gesture_event_set_x_Handler,		//500
+	multi_gesture_event_get_y_Handler,		//501
+	multi_gesture_event_set_y_Handler,		//502
+	multi_gesture_event_get_numFingers_Handler,		//503
+	multi_gesture_event_set_numFingers_Handler,		//504
+	multi_gesture_event_get_padding_Handler,		//505
+	multi_gesture_event_set_padding_Handler,		//506
+	pointer_deref_dollar_gesture_event_Handler,		//507
+	pointer_deref_dollar_gesture_event_assign_Handler,		//508
+	new_dollar_gesture_event_Handler,		//509
+	delete_dollar_gesture_event_Handler,		//510
+	dollar_gesture_event_get_type_Handler,		//511
+	dollar_gesture_event_set_type_Handler,		//512
+	dollar_gesture_event_get_timestamp_Handler,		//513
+	dollar_gesture_event_set_timestamp_Handler,		//514
+	dollar_gesture_event_get_touchId_Handler,		//515
+	dollar_gesture_event_set_touchId_Handler,		//516
+	dollar_gesture_event_get_gestureId_Handler,		//517
+	dollar_gesture_event_set_gestureId_Handler,		//518
+	dollar_gesture_event_get_numFingers_Handler,		//519
+	dollar_gesture_event_set_numFingers_Handler,		//520
+	dollar_gesture_event_get_error_Handler,		//521
+	dollar_gesture_event_set_error_Handler,		//522
+	dollar_gesture_event_get_x_Handler,		//523
+	dollar_gesture_event_set_x_Handler,		//524
+	dollar_gesture_event_get_y_Handler,		//525
+	dollar_gesture_event_set_y_Handler,		//526
+	pointer_deref_drop_event_Handler,		//527
+	pointer_deref_drop_event_assign_Handler,		//528
+	new_drop_event_Handler,		//529
+	delete_drop_event_Handler,		//530
+	drop_event_get_type_Handler,		//531
+	drop_event_set_type_Handler,		//532
+	drop_event_get_timestamp_Handler,		//533
+	drop_event_set_timestamp_Handler,		//534
+	drop_event_get_file_Handler,		//535
+	drop_event_set_file_Handler,		//536
+	drop_event_get_windowID_Handler,		//537
+	drop_event_set_windowID_Handler,		//538
+	event_get_type_Handler,		//539
+	event_set_type_Handler,		//540
+	event_get_common_Handler,		//541
+	event_set_common_Handler,		//542
+	event_get_window_Handler,		//543
+	event_set_window_Handler,		//544
+	event_get_key_Handler,		//545
+	event_set_key_Handler,		//546
+	event_get_edit_Handler,		//547
+	event_set_edit_Handler,		//548
+	event_get_text_Handler,		//549
+	event_set_text_Handler,		//550
+	event_get_motion_Handler,		//551
+	event_set_motion_Handler,		//552
+	event_get_button_Handler,		//553
+	event_set_button_Handler,		//554
+	event_get_wheel_Handler,		//555
+	event_set_wheel_Handler,		//556
+	event_get_jaxis_Handler,		//557
+	event_set_jaxis_Handler,		//558
+	event_get_jball_Handler,		//559
+	event_set_jball_Handler,		//560
+	event_get_jhat_Handler,		//561
+	event_set_jhat_Handler,		//562
+	event_get_jbutton_Handler,		//563
+	event_set_jbutton_Handler,		//564
+	event_get_jdevice_Handler,		//565
+	event_set_jdevice_Handler,		//566
+	event_get_caxis_Handler,		//567
+	event_set_caxis_Handler,		//568
+	event_get_cbutton_Handler,		//569
+	event_set_cbutton_Handler,		//570
+	event_get_cdevice_Handler,		//571
+	event_set_cdevice_Handler,		//572
+	event_get_adevice_Handler,		//573
+	event_set_adevice_Handler,		//574
+	event_get_quit_Handler,		//575
+	event_set_quit_Handler,		//576
+	event_get_user_Handler,		//577
+	event_set_user_Handler,		//578
+	event_get_syswm_Handler,		//579
+	event_set_syswm_Handler,		//580
+	event_get_tfinger_Handler,		//581
+	event_set_tfinger_Handler,		//582
+	event_get_mgesture_Handler,		//583
+	event_set_mgesture_Handler,		//584
+	event_get_dgesture_Handler,		//585
+	event_set_dgesture_Handler,		//586
+	event_get_drop_Handler,		//587
+	event_set_drop_Handler,		//588
+	SDL_Init_Handler,		//589
+	SDL_Quit_Handler,		//590
+	SDL_CreateWindow_Handler,		//591
+	SDL_GetWindowSurface_Handler,		//592
+	SDL_LoadBMP_Handler,		//593
+	SDL_FreeSurface_Handler,		//594
+	SDL_BlitSurface_Handler,		//595
+	SDL_BlitScaled_Handler,		//596
+	SDL_UpdateWindowSurface_Handler,		//597
+	SDL_DestroyWindow_Handler,		//598
+	SDL_GetWindowSize_Handler,		//599
+	SDL_GetError_Handler,		//600
+	SDL_PollEvent_Handler		//601
 };
 
 //--------------------------------------------------------

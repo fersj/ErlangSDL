@@ -4,7 +4,24 @@
 
 -export([
 	init_port/0,
+	pointer_deref_int/1,
+	pointer_deref_int_assign/2,
+	new_int/0,
+	delete_int/1,
+	pointer_deref_float/1,
+	pointer_deref_float_assign/2,
+	new_float/0,
+	delete_float/1,
+	pointer_deref_double/1,
+	pointer_deref_double_assign/2,
+	new_double/0,
+	delete_double/1,
+	pointer_deref_string/1,
+	pointer_deref_string_assign/2,
+	new_string/0,
+	delete_string/1,
 	pointer_deref_color/1,
+	pointer_deref_color_assign/2,
 	new_color/0,
 	delete_color/1,
 	color_get_r/1,
@@ -16,6 +33,7 @@
 	color_get_a/1,
 	color_set_a/2,
 	pointer_deref_palette/1,
+	pointer_deref_palette_assign/2,
 	new_palette/0,
 	delete_palette/1,
 	palette_get_ncolors/1,
@@ -27,6 +45,7 @@
 	palette_get_refcount/1,
 	palette_set_refcount/2,
 	pointer_deref_pixel_format/1,
+	pointer_deref_pixel_format_assign/2,
 	new_pixel_format/0,
 	delete_pixel_format/1,
 	pixel_format_get_format/1,
@@ -66,6 +85,7 @@
 	pixel_format_get_next/1,
 	pixel_format_set_next/2,
 	pointer_deref_rect/1,
+	pointer_deref_rect_assign/2,
 	new_rect/0,
 	delete_rect/1,
 	rect_get_x/1,
@@ -77,6 +97,7 @@
 	rect_get_h/1,
 	rect_set_h/2,
 	pointer_deref_surface/1,
+	pointer_deref_surface_assign/2,
 	new_surface/0,
 	delete_surface/1,
 	surface_get_flags/1,
@@ -104,6 +125,7 @@
 	surface_get_refcount/1,
 	surface_set_refcount/2,
 	pointer_deref_keysym/1,
+	pointer_deref_keysym_assign/2,
 	new_keysym/0,
 	delete_keysym/1,
 	keysym_get_scancode/1,
@@ -115,6 +137,7 @@
 	keysym_get_unused/1,
 	keysym_set_unused/2,
 	pointer_deref_common_event/1,
+	pointer_deref_common_event_assign/2,
 	new_common_event/0,
 	delete_common_event/1,
 	common_event_get_type/1,
@@ -122,6 +145,7 @@
 	common_event_get_timestamp/1,
 	common_event_set_timestamp/2,
 	pointer_deref_window_event/1,
+	pointer_deref_window_event_assign/2,
 	new_window_event/0,
 	delete_window_event/1,
 	window_event_get_type/1,
@@ -143,6 +167,7 @@
 	window_event_get_data2/1,
 	window_event_set_data2/2,
 	pointer_deref_keyboard_event/1,
+	pointer_deref_keyboard_event_assign/2,
 	new_keyboard_event/0,
 	delete_keyboard_event/1,
 	keyboard_event_get_type/1,
@@ -162,6 +187,7 @@
 	keyboard_event_get_keysym/1,
 	keyboard_event_set_keysym/2,
 	pointer_deref_text_editing_event/1,
+	pointer_deref_text_editing_event_assign/2,
 	new_text_editing_event/0,
 	delete_text_editing_event/1,
 	text_editing_event_get_type/1,
@@ -177,6 +203,7 @@
 	text_editing_event_get_length/1,
 	text_editing_event_set_length/2,
 	pointer_deref_text_input_event/1,
+	pointer_deref_text_input_event_assign/2,
 	new_text_input_event/0,
 	delete_text_input_event/1,
 	text_input_event_get_type/1,
@@ -188,6 +215,7 @@
 	text_input_event_get_text/1,
 	text_input_event_set_text/2,
 	pointer_deref_mouse_motion_event/1,
+	pointer_deref_mouse_motion_event_assign/2,
 	new_mouse_motion_event/0,
 	delete_mouse_motion_event/1,
 	mouse_motion_event_get_type/1,
@@ -209,6 +237,7 @@
 	mouse_motion_event_get_yrel/1,
 	mouse_motion_event_set_yrel/2,
 	pointer_deref_mouse_button_event/1,
+	pointer_deref_mouse_button_event_assign/2,
 	new_mouse_button_event/0,
 	delete_mouse_button_event/1,
 	mouse_button_event_get_type/1,
@@ -230,6 +259,7 @@
 	mouse_button_event_get_y/1,
 	mouse_button_event_set_y/2,
 	pointer_deref_mouse_wheel_event/1,
+	pointer_deref_mouse_wheel_event_assign/2,
 	new_mouse_wheel_event/0,
 	delete_mouse_wheel_event/1,
 	mouse_wheel_event_get_type/1,
@@ -247,6 +277,7 @@
 	mouse_wheel_event_get_direction/1,
 	mouse_wheel_event_set_direction/2,
 	pointer_deref_joy_axis_event/1,
+	pointer_deref_joy_axis_event_assign/2,
 	new_joy_axis_event/0,
 	delete_joy_axis_event/1,
 	joy_axis_event_get_type/1,
@@ -266,6 +297,7 @@
 	joy_axis_event_get_value/1,
 	joy_axis_event_set_value/2,
 	pointer_deref_joy_ball_event/1,
+	pointer_deref_joy_ball_event_assign/2,
 	new_joy_ball_event/0,
 	delete_joy_ball_event/1,
 	joy_ball_event_get_type/1,
@@ -287,6 +319,7 @@
 	joy_ball_event_get_yrel/1,
 	joy_ball_event_set_yrel/2,
 	pointer_deref_joy_hat_event/1,
+	pointer_deref_joy_hat_event_assign/2,
 	new_joy_hat_event/0,
 	delete_joy_hat_event/1,
 	joy_hat_event_get_type/1,
@@ -304,6 +337,7 @@
 	joy_hat_event_get_padding2/1,
 	joy_hat_event_set_padding2/2,
 	pointer_deref_joy_button_event/1,
+	pointer_deref_joy_button_event_assign/2,
 	new_joy_button_event/0,
 	delete_joy_button_event/1,
 	joy_button_event_get_type/1,
@@ -321,6 +355,7 @@
 	joy_button_event_get_padding2/1,
 	joy_button_event_set_padding2/2,
 	pointer_deref_joy_device_event/1,
+	pointer_deref_joy_device_event_assign/2,
 	new_joy_device_event/0,
 	delete_joy_device_event/1,
 	joy_device_event_get_type/1,
@@ -330,6 +365,7 @@
 	joy_device_event_get_which/1,
 	joy_device_event_set_which/2,
 	pointer_deref_controller_axis_event/1,
+	pointer_deref_controller_axis_event_assign/2,
 	new_controller_axis_event/0,
 	delete_controller_axis_event/1,
 	controller_axis_event_get_type/1,
@@ -351,6 +387,7 @@
 	controller_axis_event_get_padding4/1,
 	controller_axis_event_set_padding4/2,
 	pointer_deref_controller_button_event/1,
+	pointer_deref_controller_button_event_assign/2,
 	new_controller_button_event/0,
 	delete_controller_button_event/1,
 	controller_button_event_get_type/1,
@@ -368,6 +405,7 @@
 	controller_button_event_get_padding2/1,
 	controller_button_event_set_padding2/2,
 	pointer_deref_controller_device_event/1,
+	pointer_deref_controller_device_event_assign/2,
 	new_controller_device_event/0,
 	delete_controller_device_event/1,
 	controller_device_event_get_type/1,
@@ -377,6 +415,7 @@
 	controller_device_event_get_which/1,
 	controller_device_event_set_which/2,
 	pointer_deref_audio_device_event/1,
+	pointer_deref_audio_device_event_assign/2,
 	new_audio_device_event/0,
 	delete_audio_device_event/1,
 	audio_device_event_get_type/1,
@@ -394,6 +433,7 @@
 	audio_device_event_get_padding3/1,
 	audio_device_event_set_padding3/2,
 	pointer_deref_quit_event/1,
+	pointer_deref_quit_event_assign/2,
 	new_quit_event/0,
 	delete_quit_event/1,
 	quit_event_get_type/1,
@@ -401,6 +441,7 @@
 	quit_event_get_timestamp/1,
 	quit_event_set_timestamp/2,
 	pointer_deref_user_event/1,
+	pointer_deref_user_event_assign/2,
 	new_user_event/0,
 	delete_user_event/1,
 	user_event_get_type/1,
@@ -416,6 +457,7 @@
 	user_event_get_data2/1,
 	user_event_set_data2/2,
 	pointer_deref_syswm_event/1,
+	pointer_deref_syswm_event_assign/2,
 	new_syswm_event/0,
 	delete_syswm_event/1,
 	syswm_event_get_type/1,
@@ -425,6 +467,7 @@
 	syswm_event_get_msg/1,
 	syswm_event_set_msg/2,
 	pointer_deref_touch_finger_event/1,
+	pointer_deref_touch_finger_event_assign/2,
 	new_touch_finger_event/0,
 	delete_touch_finger_event/1,
 	touch_finger_event_get_type/1,
@@ -446,6 +489,7 @@
 	touch_finger_event_get_pressure/1,
 	touch_finger_event_set_pressure/2,
 	pointer_deref_multi_gesture_event/1,
+	pointer_deref_multi_gesture_event_assign/2,
 	new_multi_gesture_event/0,
 	delete_multi_gesture_event/1,
 	multi_gesture_event_get_type/1,
@@ -467,6 +511,7 @@
 	multi_gesture_event_get_padding/1,
 	multi_gesture_event_set_padding/2,
 	pointer_deref_dollar_gesture_event/1,
+	pointer_deref_dollar_gesture_event_assign/2,
 	new_dollar_gesture_event/0,
 	delete_dollar_gesture_event/1,
 	dollar_gesture_event_get_type/1,
@@ -486,6 +531,7 @@
 	dollar_gesture_event_get_y/1,
 	dollar_gesture_event_set_y/2,
 	pointer_deref_drop_event/1,
+	pointer_deref_drop_event_assign/2,
 	new_drop_event/0,
 	delete_drop_event/1,
 	drop_event_get_type/1,
@@ -566,6 +612,8 @@ init_port() ->
 
 %--------------------------------------------------------
 
+% ---- Int ----
+
 int_to_bytelist(Value) ->
 	int_to_bytelist(Value, 32).
 
@@ -587,6 +635,52 @@ parse_int([B|Rest], NBytes, Cnt, Result) when Cnt>0 ->
 	parse_int(Rest, NBytes, Cnt-8, [B|Result]);
 parse_int(Bytelist, NBytes, _Cnt, Result) ->
 	{bytelist_to_int(lists:reverse(Result), NBytes), Bytelist}.
+
+pointer_deref_int(Pointer) ->
+	Code = int_to_bytelist(1),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_int(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+pointer_deref_int_assign(Pointer, Value) ->
+	Code = int_to_bytelist(2),
+	PList = pointer_to_bytelist(Pointer),
+	VList = int_to_bytelist(Value),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+new_int() ->
+	Code = int_to_bytelist(3),
+	sdl_port ! {self(), {command, [Code]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_pointer(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+delete_int(Pointer) ->
+	Code = int_to_bytelist(4),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+% ---- Float ----
 
 float_to_bytelist(Value) ->
 	float_to_bytelist(Value, 32).
@@ -610,6 +704,52 @@ parse_float([B|Rest], NBytes, Cnt, Result) when Cnt>0 ->
 parse_float(Bytelist, NBytes, _Cnt, Result) ->
 	{bytelist_to_float(lists:reverse(Result), NBytes), Bytelist}.
 
+pointer_deref_float(Pointer) ->
+	Code = int_to_bytelist(5),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_float(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+pointer_deref_float_assign(Pointer, Value) ->
+	Code = int_to_bytelist(6),
+	PList = pointer_to_bytelist(Pointer),
+	VList = float_to_bytelist(Value),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+new_float() ->
+	Code = int_to_bytelist(7),
+	sdl_port ! {self(), {command, [Code]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_pointer(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+delete_float(Pointer) ->
+	Code = int_to_bytelist(8),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+% ---- Double ----
+
 double_to_bytelist(Value) ->
 	float_to_bytelist(Value, 64).
 
@@ -618,6 +758,52 @@ bytelist_to_double(Bytelist) ->
 
 parse_double(Bytelist) ->
 	parse_float(Bytelist, 64).
+
+pointer_deref_double(Pointer) ->
+	Code = int_to_bytelist(9),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_double(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+pointer_deref_double_assign(Pointer, Value) ->
+	Code = int_to_bytelist(10),
+	PList = pointer_to_bytelist(Pointer),
+	VList = double_to_bytelist(Value),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+new_double() ->
+	Code = int_to_bytelist(11),
+	sdl_port ! {self(), {command, [Code]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_pointer(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+delete_double(Pointer) ->
+	Code = int_to_bytelist(12),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+% ---- String ----
 
 string_to_bytelist(Value, Encoding) ->
 	binary:bin_to_list(unicode:characters_to_binary(Value, Encoding))++[$\0].
@@ -637,6 +823,52 @@ parse_string([$\0|Rest], Result) ->
 	{bytelist_to_string(lists:reverse(Result)), Rest};
 parse_string([B|Rest], Result) ->
 	parse_string(Rest, [B|Result]).
+
+pointer_deref_string(Pointer) ->
+	Code = int_to_bytelist(13),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_string(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+pointer_deref_string_assign(Pointer, Value) ->
+	Code = int_to_bytelist(14),
+	PList = pointer_to_bytelist(Pointer),
+	VList = string_to_bytelist(Value),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+new_string() ->
+	Code = int_to_bytelist(15),
+	sdl_port ! {self(), {command, [Code]}},
+	receive
+		{_, { data, DataList}} ->
+			bytelist_to_pointer(DataList);
+		Msg ->
+			{error, Msg}
+	end.
+
+delete_string(Pointer) ->
+	Code = int_to_bytelist(16),
+	PList = pointer_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
+% ---- Pointer ----
 
 pointer_to_bytelist(Value) ->
 	int_to_bytelist(Value, 64).
@@ -754,7 +986,7 @@ parse_color(Bytelist) ->
 	{#color{r=R, g=G, b=B, a=A}, R4}.
 
 pointer_deref_color(Pointer) ->
-	Code = int_to_bytelist(1),
+	Code = int_to_bytelist(17),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -764,8 +996,20 @@ pointer_deref_color(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_color_assign(Pointer, Value) ->
+	Code = int_to_bytelist(18),
+	PList = pointer_to_bytelist(Pointer),
+	VList = color_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_color() ->
-	Code = int_to_bytelist(2),
+	Code = int_to_bytelist(19),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -775,7 +1019,7 @@ new_color() ->
 	end.
 
 delete_color(Pointer) ->
-	Code = int_to_bytelist(3),
+	Code = int_to_bytelist(20),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -786,7 +1030,7 @@ delete_color(Pointer) ->
 	end.
 
 color_get_r(Pointer) ->
-	Code = int_to_bytelist(4),
+	Code = int_to_bytelist(21),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -797,7 +1041,7 @@ color_get_r(Pointer) ->
 	end.
 
 color_set_r(Pointer, Attrib) ->
-	Code = int_to_bytelist(5),
+	Code = int_to_bytelist(22),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -809,7 +1053,7 @@ color_set_r(Pointer, Attrib) ->
 	end.
 
 color_get_g(Pointer) ->
-	Code = int_to_bytelist(6),
+	Code = int_to_bytelist(23),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -820,7 +1064,7 @@ color_get_g(Pointer) ->
 	end.
 
 color_set_g(Pointer, Attrib) ->
-	Code = int_to_bytelist(7),
+	Code = int_to_bytelist(24),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -832,7 +1076,7 @@ color_set_g(Pointer, Attrib) ->
 	end.
 
 color_get_b(Pointer) ->
-	Code = int_to_bytelist(8),
+	Code = int_to_bytelist(25),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -843,7 +1087,7 @@ color_get_b(Pointer) ->
 	end.
 
 color_set_b(Pointer, Attrib) ->
-	Code = int_to_bytelist(9),
+	Code = int_to_bytelist(26),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -855,7 +1099,7 @@ color_set_b(Pointer, Attrib) ->
 	end.
 
 color_get_a(Pointer) ->
-	Code = int_to_bytelist(10),
+	Code = int_to_bytelist(27),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -866,7 +1110,7 @@ color_get_a(Pointer) ->
 	end.
 
 color_set_a(Pointer, Attrib) ->
-	Code = int_to_bytelist(11),
+	Code = int_to_bytelist(28),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -901,7 +1145,7 @@ parse_palette(Bytelist) ->
 	{#palette{ncolors=Ncolors, colors=Colors, version=Version, refcount=Refcount}, R4}.
 
 pointer_deref_palette(Pointer) ->
-	Code = int_to_bytelist(12),
+	Code = int_to_bytelist(29),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -911,8 +1155,20 @@ pointer_deref_palette(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_palette_assign(Pointer, Value) ->
+	Code = int_to_bytelist(30),
+	PList = pointer_to_bytelist(Pointer),
+	VList = palette_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_palette() ->
-	Code = int_to_bytelist(13),
+	Code = int_to_bytelist(31),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -922,7 +1178,7 @@ new_palette() ->
 	end.
 
 delete_palette(Pointer) ->
-	Code = int_to_bytelist(14),
+	Code = int_to_bytelist(32),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -933,7 +1189,7 @@ delete_palette(Pointer) ->
 	end.
 
 palette_get_ncolors(Pointer) ->
-	Code = int_to_bytelist(15),
+	Code = int_to_bytelist(33),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -944,7 +1200,7 @@ palette_get_ncolors(Pointer) ->
 	end.
 
 palette_set_ncolors(Pointer, Attrib) ->
-	Code = int_to_bytelist(16),
+	Code = int_to_bytelist(34),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -956,7 +1212,7 @@ palette_set_ncolors(Pointer, Attrib) ->
 	end.
 
 palette_get_colors(Pointer) ->
-	Code = int_to_bytelist(17),
+	Code = int_to_bytelist(35),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -967,7 +1223,7 @@ palette_get_colors(Pointer) ->
 	end.
 
 palette_set_colors(Pointer, Attrib) ->
-	Code = int_to_bytelist(18),
+	Code = int_to_bytelist(36),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -979,7 +1235,7 @@ palette_set_colors(Pointer, Attrib) ->
 	end.
 
 palette_get_version(Pointer) ->
-	Code = int_to_bytelist(19),
+	Code = int_to_bytelist(37),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -990,7 +1246,7 @@ palette_get_version(Pointer) ->
 	end.
 
 palette_set_version(Pointer, Attrib) ->
-	Code = int_to_bytelist(20),
+	Code = int_to_bytelist(38),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1002,7 +1258,7 @@ palette_set_version(Pointer, Attrib) ->
 	end.
 
 palette_get_refcount(Pointer) ->
-	Code = int_to_bytelist(21),
+	Code = int_to_bytelist(39),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1013,7 +1269,7 @@ palette_get_refcount(Pointer) ->
 	end.
 
 palette_set_refcount(Pointer, Attrib) ->
-	Code = int_to_bytelist(22),
+	Code = int_to_bytelist(40),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1090,7 +1346,7 @@ parse_pixel_format(Bytelist) ->
 	{#pixel_format{format=Format, palette=Palette, bits_per_pixel=Bits_per_pixel, bytes_per_pixel=Bytes_per_pixel, r_mask=R_mask, g_mask=G_mask, b_mask=B_mask, a_mask=A_mask, r_loss=R_loss, g_loss=G_loss, b_loss=B_loss, a_loss=A_loss, r_shift=R_shift, g_shift=G_shift, b_shift=B_shift, a_shift=A_shift, refcount=Refcount, next=Next}, R18}.
 
 pointer_deref_pixel_format(Pointer) ->
-	Code = int_to_bytelist(23),
+	Code = int_to_bytelist(41),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1100,8 +1356,20 @@ pointer_deref_pixel_format(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_pixel_format_assign(Pointer, Value) ->
+	Code = int_to_bytelist(42),
+	PList = pointer_to_bytelist(Pointer),
+	VList = pixel_format_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_pixel_format() ->
-	Code = int_to_bytelist(24),
+	Code = int_to_bytelist(43),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -1111,7 +1379,7 @@ new_pixel_format() ->
 	end.
 
 delete_pixel_format(Pointer) ->
-	Code = int_to_bytelist(25),
+	Code = int_to_bytelist(44),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1122,7 +1390,7 @@ delete_pixel_format(Pointer) ->
 	end.
 
 pixel_format_get_format(Pointer) ->
-	Code = int_to_bytelist(26),
+	Code = int_to_bytelist(45),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1133,7 +1401,7 @@ pixel_format_get_format(Pointer) ->
 	end.
 
 pixel_format_set_format(Pointer, Attrib) ->
-	Code = int_to_bytelist(27),
+	Code = int_to_bytelist(46),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1145,7 +1413,7 @@ pixel_format_set_format(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_palette(Pointer) ->
-	Code = int_to_bytelist(28),
+	Code = int_to_bytelist(47),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1156,7 +1424,7 @@ pixel_format_get_palette(Pointer) ->
 	end.
 
 pixel_format_set_palette(Pointer, Attrib) ->
-	Code = int_to_bytelist(29),
+	Code = int_to_bytelist(48),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1168,7 +1436,7 @@ pixel_format_set_palette(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_bits_per_pixel(Pointer) ->
-	Code = int_to_bytelist(30),
+	Code = int_to_bytelist(49),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1179,7 +1447,7 @@ pixel_format_get_bits_per_pixel(Pointer) ->
 	end.
 
 pixel_format_set_bits_per_pixel(Pointer, Attrib) ->
-	Code = int_to_bytelist(31),
+	Code = int_to_bytelist(50),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1191,7 +1459,7 @@ pixel_format_set_bits_per_pixel(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_bytes_per_pixel(Pointer) ->
-	Code = int_to_bytelist(32),
+	Code = int_to_bytelist(51),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1202,7 +1470,7 @@ pixel_format_get_bytes_per_pixel(Pointer) ->
 	end.
 
 pixel_format_set_bytes_per_pixel(Pointer, Attrib) ->
-	Code = int_to_bytelist(33),
+	Code = int_to_bytelist(52),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1214,7 +1482,7 @@ pixel_format_set_bytes_per_pixel(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_r_mask(Pointer) ->
-	Code = int_to_bytelist(34),
+	Code = int_to_bytelist(53),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1225,7 +1493,7 @@ pixel_format_get_r_mask(Pointer) ->
 	end.
 
 pixel_format_set_r_mask(Pointer, Attrib) ->
-	Code = int_to_bytelist(35),
+	Code = int_to_bytelist(54),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1237,7 +1505,7 @@ pixel_format_set_r_mask(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_g_mask(Pointer) ->
-	Code = int_to_bytelist(36),
+	Code = int_to_bytelist(55),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1248,7 +1516,7 @@ pixel_format_get_g_mask(Pointer) ->
 	end.
 
 pixel_format_set_g_mask(Pointer, Attrib) ->
-	Code = int_to_bytelist(37),
+	Code = int_to_bytelist(56),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1260,7 +1528,7 @@ pixel_format_set_g_mask(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_b_mask(Pointer) ->
-	Code = int_to_bytelist(38),
+	Code = int_to_bytelist(57),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1271,7 +1539,7 @@ pixel_format_get_b_mask(Pointer) ->
 	end.
 
 pixel_format_set_b_mask(Pointer, Attrib) ->
-	Code = int_to_bytelist(39),
+	Code = int_to_bytelist(58),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1283,7 +1551,7 @@ pixel_format_set_b_mask(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_a_mask(Pointer) ->
-	Code = int_to_bytelist(40),
+	Code = int_to_bytelist(59),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1294,7 +1562,7 @@ pixel_format_get_a_mask(Pointer) ->
 	end.
 
 pixel_format_set_a_mask(Pointer, Attrib) ->
-	Code = int_to_bytelist(41),
+	Code = int_to_bytelist(60),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1306,7 +1574,7 @@ pixel_format_set_a_mask(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_r_loss(Pointer) ->
-	Code = int_to_bytelist(42),
+	Code = int_to_bytelist(61),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1317,7 +1585,7 @@ pixel_format_get_r_loss(Pointer) ->
 	end.
 
 pixel_format_set_r_loss(Pointer, Attrib) ->
-	Code = int_to_bytelist(43),
+	Code = int_to_bytelist(62),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1329,7 +1597,7 @@ pixel_format_set_r_loss(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_g_loss(Pointer) ->
-	Code = int_to_bytelist(44),
+	Code = int_to_bytelist(63),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1340,7 +1608,7 @@ pixel_format_get_g_loss(Pointer) ->
 	end.
 
 pixel_format_set_g_loss(Pointer, Attrib) ->
-	Code = int_to_bytelist(45),
+	Code = int_to_bytelist(64),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1352,7 +1620,7 @@ pixel_format_set_g_loss(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_b_loss(Pointer) ->
-	Code = int_to_bytelist(46),
+	Code = int_to_bytelist(65),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1363,7 +1631,7 @@ pixel_format_get_b_loss(Pointer) ->
 	end.
 
 pixel_format_set_b_loss(Pointer, Attrib) ->
-	Code = int_to_bytelist(47),
+	Code = int_to_bytelist(66),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1375,7 +1643,7 @@ pixel_format_set_b_loss(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_a_loss(Pointer) ->
-	Code = int_to_bytelist(48),
+	Code = int_to_bytelist(67),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1386,7 +1654,7 @@ pixel_format_get_a_loss(Pointer) ->
 	end.
 
 pixel_format_set_a_loss(Pointer, Attrib) ->
-	Code = int_to_bytelist(49),
+	Code = int_to_bytelist(68),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1398,7 +1666,7 @@ pixel_format_set_a_loss(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_r_shift(Pointer) ->
-	Code = int_to_bytelist(50),
+	Code = int_to_bytelist(69),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1409,7 +1677,7 @@ pixel_format_get_r_shift(Pointer) ->
 	end.
 
 pixel_format_set_r_shift(Pointer, Attrib) ->
-	Code = int_to_bytelist(51),
+	Code = int_to_bytelist(70),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1421,7 +1689,7 @@ pixel_format_set_r_shift(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_g_shift(Pointer) ->
-	Code = int_to_bytelist(52),
+	Code = int_to_bytelist(71),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1432,7 +1700,7 @@ pixel_format_get_g_shift(Pointer) ->
 	end.
 
 pixel_format_set_g_shift(Pointer, Attrib) ->
-	Code = int_to_bytelist(53),
+	Code = int_to_bytelist(72),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1444,7 +1712,7 @@ pixel_format_set_g_shift(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_b_shift(Pointer) ->
-	Code = int_to_bytelist(54),
+	Code = int_to_bytelist(73),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1455,7 +1723,7 @@ pixel_format_get_b_shift(Pointer) ->
 	end.
 
 pixel_format_set_b_shift(Pointer, Attrib) ->
-	Code = int_to_bytelist(55),
+	Code = int_to_bytelist(74),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1467,7 +1735,7 @@ pixel_format_set_b_shift(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_a_shift(Pointer) ->
-	Code = int_to_bytelist(56),
+	Code = int_to_bytelist(75),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1478,7 +1746,7 @@ pixel_format_get_a_shift(Pointer) ->
 	end.
 
 pixel_format_set_a_shift(Pointer, Attrib) ->
-	Code = int_to_bytelist(57),
+	Code = int_to_bytelist(76),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1490,7 +1758,7 @@ pixel_format_set_a_shift(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_refcount(Pointer) ->
-	Code = int_to_bytelist(58),
+	Code = int_to_bytelist(77),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1501,7 +1769,7 @@ pixel_format_get_refcount(Pointer) ->
 	end.
 
 pixel_format_set_refcount(Pointer, Attrib) ->
-	Code = int_to_bytelist(59),
+	Code = int_to_bytelist(78),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1513,7 +1781,7 @@ pixel_format_set_refcount(Pointer, Attrib) ->
 	end.
 
 pixel_format_get_next(Pointer) ->
-	Code = int_to_bytelist(60),
+	Code = int_to_bytelist(79),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1524,7 +1792,7 @@ pixel_format_get_next(Pointer) ->
 	end.
 
 pixel_format_set_next(Pointer, Attrib) ->
-	Code = int_to_bytelist(61),
+	Code = int_to_bytelist(80),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1559,7 +1827,7 @@ parse_rect(Bytelist) ->
 	{#rect{x=X, y=Y, w=W, h=H}, R4}.
 
 pointer_deref_rect(Pointer) ->
-	Code = int_to_bytelist(62),
+	Code = int_to_bytelist(81),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1569,8 +1837,20 @@ pointer_deref_rect(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_rect_assign(Pointer, Value) ->
+	Code = int_to_bytelist(82),
+	PList = pointer_to_bytelist(Pointer),
+	VList = rect_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_rect() ->
-	Code = int_to_bytelist(63),
+	Code = int_to_bytelist(83),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -1580,7 +1860,7 @@ new_rect() ->
 	end.
 
 delete_rect(Pointer) ->
-	Code = int_to_bytelist(64),
+	Code = int_to_bytelist(84),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1591,7 +1871,7 @@ delete_rect(Pointer) ->
 	end.
 
 rect_get_x(Pointer) ->
-	Code = int_to_bytelist(65),
+	Code = int_to_bytelist(85),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1602,7 +1882,7 @@ rect_get_x(Pointer) ->
 	end.
 
 rect_set_x(Pointer, Attrib) ->
-	Code = int_to_bytelist(66),
+	Code = int_to_bytelist(86),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1614,7 +1894,7 @@ rect_set_x(Pointer, Attrib) ->
 	end.
 
 rect_get_y(Pointer) ->
-	Code = int_to_bytelist(67),
+	Code = int_to_bytelist(87),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1625,7 +1905,7 @@ rect_get_y(Pointer) ->
 	end.
 
 rect_set_y(Pointer, Attrib) ->
-	Code = int_to_bytelist(68),
+	Code = int_to_bytelist(88),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1637,7 +1917,7 @@ rect_set_y(Pointer, Attrib) ->
 	end.
 
 rect_get_w(Pointer) ->
-	Code = int_to_bytelist(69),
+	Code = int_to_bytelist(89),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1648,7 +1928,7 @@ rect_get_w(Pointer) ->
 	end.
 
 rect_set_w(Pointer, Attrib) ->
-	Code = int_to_bytelist(70),
+	Code = int_to_bytelist(90),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1660,7 +1940,7 @@ rect_set_w(Pointer, Attrib) ->
 	end.
 
 rect_get_h(Pointer) ->
-	Code = int_to_bytelist(71),
+	Code = int_to_bytelist(91),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1671,7 +1951,7 @@ rect_get_h(Pointer) ->
 	end.
 
 rect_set_h(Pointer, Attrib) ->
-	Code = int_to_bytelist(72),
+	Code = int_to_bytelist(92),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1739,7 +2019,7 @@ parse_surface(Bytelist) ->
 	{#surface{flags=Flags, format=Format, w=W, h=H, pitch=Pitch, pixels=Pixels, userdata=Userdata, locked=Locked, lock_data=Lock_data, clip_rect=Clip_rect, map=Map, refcount=Refcount}, R12}.
 
 pointer_deref_surface(Pointer) ->
-	Code = int_to_bytelist(73),
+	Code = int_to_bytelist(93),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1749,8 +2029,20 @@ pointer_deref_surface(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_surface_assign(Pointer, Value) ->
+	Code = int_to_bytelist(94),
+	PList = pointer_to_bytelist(Pointer),
+	VList = surface_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_surface() ->
-	Code = int_to_bytelist(74),
+	Code = int_to_bytelist(95),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -1760,7 +2052,7 @@ new_surface() ->
 	end.
 
 delete_surface(Pointer) ->
-	Code = int_to_bytelist(75),
+	Code = int_to_bytelist(96),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1771,7 +2063,7 @@ delete_surface(Pointer) ->
 	end.
 
 surface_get_flags(Pointer) ->
-	Code = int_to_bytelist(76),
+	Code = int_to_bytelist(97),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1782,7 +2074,7 @@ surface_get_flags(Pointer) ->
 	end.
 
 surface_set_flags(Pointer, Attrib) ->
-	Code = int_to_bytelist(77),
+	Code = int_to_bytelist(98),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1794,7 +2086,7 @@ surface_set_flags(Pointer, Attrib) ->
 	end.
 
 surface_get_format(Pointer) ->
-	Code = int_to_bytelist(78),
+	Code = int_to_bytelist(99),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1805,7 +2097,7 @@ surface_get_format(Pointer) ->
 	end.
 
 surface_set_format(Pointer, Attrib) ->
-	Code = int_to_bytelist(79),
+	Code = int_to_bytelist(100),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1817,7 +2109,7 @@ surface_set_format(Pointer, Attrib) ->
 	end.
 
 surface_get_w(Pointer) ->
-	Code = int_to_bytelist(80),
+	Code = int_to_bytelist(101),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1828,7 +2120,7 @@ surface_get_w(Pointer) ->
 	end.
 
 surface_set_w(Pointer, Attrib) ->
-	Code = int_to_bytelist(81),
+	Code = int_to_bytelist(102),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1840,7 +2132,7 @@ surface_set_w(Pointer, Attrib) ->
 	end.
 
 surface_get_h(Pointer) ->
-	Code = int_to_bytelist(82),
+	Code = int_to_bytelist(103),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1851,7 +2143,7 @@ surface_get_h(Pointer) ->
 	end.
 
 surface_set_h(Pointer, Attrib) ->
-	Code = int_to_bytelist(83),
+	Code = int_to_bytelist(104),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1863,7 +2155,7 @@ surface_set_h(Pointer, Attrib) ->
 	end.
 
 surface_get_pitch(Pointer) ->
-	Code = int_to_bytelist(84),
+	Code = int_to_bytelist(105),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1874,7 +2166,7 @@ surface_get_pitch(Pointer) ->
 	end.
 
 surface_set_pitch(Pointer, Attrib) ->
-	Code = int_to_bytelist(85),
+	Code = int_to_bytelist(106),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1886,7 +2178,7 @@ surface_set_pitch(Pointer, Attrib) ->
 	end.
 
 surface_get_pixels(Pointer) ->
-	Code = int_to_bytelist(86),
+	Code = int_to_bytelist(107),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1897,7 +2189,7 @@ surface_get_pixels(Pointer) ->
 	end.
 
 surface_set_pixels(Pointer, Attrib) ->
-	Code = int_to_bytelist(87),
+	Code = int_to_bytelist(108),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1909,7 +2201,7 @@ surface_set_pixels(Pointer, Attrib) ->
 	end.
 
 surface_get_userdata(Pointer) ->
-	Code = int_to_bytelist(88),
+	Code = int_to_bytelist(109),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1920,7 +2212,7 @@ surface_get_userdata(Pointer) ->
 	end.
 
 surface_set_userdata(Pointer, Attrib) ->
-	Code = int_to_bytelist(89),
+	Code = int_to_bytelist(110),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1932,7 +2224,7 @@ surface_set_userdata(Pointer, Attrib) ->
 	end.
 
 surface_get_locked(Pointer) ->
-	Code = int_to_bytelist(90),
+	Code = int_to_bytelist(111),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1943,7 +2235,7 @@ surface_get_locked(Pointer) ->
 	end.
 
 surface_set_locked(Pointer, Attrib) ->
-	Code = int_to_bytelist(91),
+	Code = int_to_bytelist(112),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1955,7 +2247,7 @@ surface_set_locked(Pointer, Attrib) ->
 	end.
 
 surface_get_lock_data(Pointer) ->
-	Code = int_to_bytelist(92),
+	Code = int_to_bytelist(113),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1966,7 +2258,7 @@ surface_get_lock_data(Pointer) ->
 	end.
 
 surface_set_lock_data(Pointer, Attrib) ->
-	Code = int_to_bytelist(93),
+	Code = int_to_bytelist(114),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -1978,7 +2270,7 @@ surface_set_lock_data(Pointer, Attrib) ->
 	end.
 
 surface_get_clip_rect(Pointer) ->
-	Code = int_to_bytelist(94),
+	Code = int_to_bytelist(115),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -1989,7 +2281,7 @@ surface_get_clip_rect(Pointer) ->
 	end.
 
 surface_set_clip_rect(Pointer, Attrib) ->
-	Code = int_to_bytelist(95),
+	Code = int_to_bytelist(116),
 	PList = pointer_to_bytelist(Pointer),
 	AList = rect_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2001,7 +2293,7 @@ surface_set_clip_rect(Pointer, Attrib) ->
 	end.
 
 surface_get_map(Pointer) ->
-	Code = int_to_bytelist(96),
+	Code = int_to_bytelist(117),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2012,7 +2304,7 @@ surface_get_map(Pointer) ->
 	end.
 
 surface_set_map(Pointer, Attrib) ->
-	Code = int_to_bytelist(97),
+	Code = int_to_bytelist(118),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2024,7 +2316,7 @@ surface_set_map(Pointer, Attrib) ->
 	end.
 
 surface_get_refcount(Pointer) ->
-	Code = int_to_bytelist(98),
+	Code = int_to_bytelist(119),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2035,7 +2327,7 @@ surface_get_refcount(Pointer) ->
 	end.
 
 surface_set_refcount(Pointer, Attrib) ->
-	Code = int_to_bytelist(99),
+	Code = int_to_bytelist(120),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2589,7 +2881,7 @@ parse_keysym(Bytelist) ->
 	{#keysym{scancode=Scancode, sym=Sym, mod=Mod, unused=Unused}, R4}.
 
 pointer_deref_keysym(Pointer) ->
-	Code = int_to_bytelist(100),
+	Code = int_to_bytelist(121),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2599,8 +2891,20 @@ pointer_deref_keysym(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_keysym_assign(Pointer, Value) ->
+	Code = int_to_bytelist(122),
+	PList = pointer_to_bytelist(Pointer),
+	VList = keysym_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_keysym() ->
-	Code = int_to_bytelist(101),
+	Code = int_to_bytelist(123),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -2610,7 +2914,7 @@ new_keysym() ->
 	end.
 
 delete_keysym(Pointer) ->
-	Code = int_to_bytelist(102),
+	Code = int_to_bytelist(124),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2621,7 +2925,7 @@ delete_keysym(Pointer) ->
 	end.
 
 keysym_get_scancode(Pointer) ->
-	Code = int_to_bytelist(103),
+	Code = int_to_bytelist(125),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2632,7 +2936,7 @@ keysym_get_scancode(Pointer) ->
 	end.
 
 keysym_set_scancode(Pointer, Attrib) ->
-	Code = int_to_bytelist(104),
+	Code = int_to_bytelist(126),
 	PList = pointer_to_bytelist(Pointer),
 	AList = scancode_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2644,7 +2948,7 @@ keysym_set_scancode(Pointer, Attrib) ->
 	end.
 
 keysym_get_sym(Pointer) ->
-	Code = int_to_bytelist(105),
+	Code = int_to_bytelist(127),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2655,7 +2959,7 @@ keysym_get_sym(Pointer) ->
 	end.
 
 keysym_set_sym(Pointer, Attrib) ->
-	Code = int_to_bytelist(106),
+	Code = int_to_bytelist(128),
 	PList = pointer_to_bytelist(Pointer),
 	AList = keycode_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2667,7 +2971,7 @@ keysym_set_sym(Pointer, Attrib) ->
 	end.
 
 keysym_get_mod(Pointer) ->
-	Code = int_to_bytelist(107),
+	Code = int_to_bytelist(129),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2678,7 +2982,7 @@ keysym_get_mod(Pointer) ->
 	end.
 
 keysym_set_mod(Pointer, Attrib) ->
-	Code = int_to_bytelist(108),
+	Code = int_to_bytelist(130),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2690,7 +2994,7 @@ keysym_set_mod(Pointer, Attrib) ->
 	end.
 
 keysym_get_unused(Pointer) ->
-	Code = int_to_bytelist(109),
+	Code = int_to_bytelist(131),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2701,7 +3005,7 @@ keysym_get_unused(Pointer) ->
 	end.
 
 keysym_set_unused(Pointer, Attrib) ->
-	Code = int_to_bytelist(110),
+	Code = int_to_bytelist(132),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2775,7 +3079,7 @@ parse_common_event(Bytelist) ->
 	{#common_event{type=Type, timestamp=Timestamp}, R2}.
 
 pointer_deref_common_event(Pointer) ->
-	Code = int_to_bytelist(111),
+	Code = int_to_bytelist(133),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2785,8 +3089,20 @@ pointer_deref_common_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_common_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(134),
+	PList = pointer_to_bytelist(Pointer),
+	VList = common_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_common_event() ->
-	Code = int_to_bytelist(112),
+	Code = int_to_bytelist(135),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -2796,7 +3112,7 @@ new_common_event() ->
 	end.
 
 delete_common_event(Pointer) ->
-	Code = int_to_bytelist(113),
+	Code = int_to_bytelist(136),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2807,7 +3123,7 @@ delete_common_event(Pointer) ->
 	end.
 
 common_event_get_type(Pointer) ->
-	Code = int_to_bytelist(114),
+	Code = int_to_bytelist(137),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2818,7 +3134,7 @@ common_event_get_type(Pointer) ->
 	end.
 
 common_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(115),
+	Code = int_to_bytelist(138),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2830,7 +3146,7 @@ common_event_set_type(Pointer, Attrib) ->
 	end.
 
 common_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(116),
+	Code = int_to_bytelist(139),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2841,7 +3157,7 @@ common_event_get_timestamp(Pointer) ->
 	end.
 
 common_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(117),
+	Code = int_to_bytelist(140),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2891,7 +3207,7 @@ parse_window_event(Bytelist) ->
 	{#window_event{type=Type, timestamp=Timestamp, windowID=WindowID, event=Event, padding1=Padding1, padding2=Padding2, padding3=Padding3, data1=Data1, data2=Data2}, R9}.
 
 pointer_deref_window_event(Pointer) ->
-	Code = int_to_bytelist(118),
+	Code = int_to_bytelist(141),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2901,8 +3217,20 @@ pointer_deref_window_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_window_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(142),
+	PList = pointer_to_bytelist(Pointer),
+	VList = window_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_window_event() ->
-	Code = int_to_bytelist(119),
+	Code = int_to_bytelist(143),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -2912,7 +3240,7 @@ new_window_event() ->
 	end.
 
 delete_window_event(Pointer) ->
-	Code = int_to_bytelist(120),
+	Code = int_to_bytelist(144),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2923,7 +3251,7 @@ delete_window_event(Pointer) ->
 	end.
 
 window_event_get_type(Pointer) ->
-	Code = int_to_bytelist(121),
+	Code = int_to_bytelist(145),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2934,7 +3262,7 @@ window_event_get_type(Pointer) ->
 	end.
 
 window_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(122),
+	Code = int_to_bytelist(146),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2946,7 +3274,7 @@ window_event_set_type(Pointer, Attrib) ->
 	end.
 
 window_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(123),
+	Code = int_to_bytelist(147),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2957,7 +3285,7 @@ window_event_get_timestamp(Pointer) ->
 	end.
 
 window_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(124),
+	Code = int_to_bytelist(148),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2969,7 +3297,7 @@ window_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 window_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(125),
+	Code = int_to_bytelist(149),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -2980,7 +3308,7 @@ window_event_get_windowID(Pointer) ->
 	end.
 
 window_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(126),
+	Code = int_to_bytelist(150),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -2992,7 +3320,7 @@ window_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 window_event_get_event(Pointer) ->
-	Code = int_to_bytelist(127),
+	Code = int_to_bytelist(151),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3003,7 +3331,7 @@ window_event_get_event(Pointer) ->
 	end.
 
 window_event_set_event(Pointer, Attrib) ->
-	Code = int_to_bytelist(128),
+	Code = int_to_bytelist(152),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3015,7 +3343,7 @@ window_event_set_event(Pointer, Attrib) ->
 	end.
 
 window_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(129),
+	Code = int_to_bytelist(153),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3026,7 +3354,7 @@ window_event_get_padding1(Pointer) ->
 	end.
 
 window_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(130),
+	Code = int_to_bytelist(154),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3038,7 +3366,7 @@ window_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 window_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(131),
+	Code = int_to_bytelist(155),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3049,7 +3377,7 @@ window_event_get_padding2(Pointer) ->
 	end.
 
 window_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(132),
+	Code = int_to_bytelist(156),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3061,7 +3389,7 @@ window_event_set_padding2(Pointer, Attrib) ->
 	end.
 
 window_event_get_padding3(Pointer) ->
-	Code = int_to_bytelist(133),
+	Code = int_to_bytelist(157),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3072,7 +3400,7 @@ window_event_get_padding3(Pointer) ->
 	end.
 
 window_event_set_padding3(Pointer, Attrib) ->
-	Code = int_to_bytelist(134),
+	Code = int_to_bytelist(158),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3084,7 +3412,7 @@ window_event_set_padding3(Pointer, Attrib) ->
 	end.
 
 window_event_get_data1(Pointer) ->
-	Code = int_to_bytelist(135),
+	Code = int_to_bytelist(159),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3095,7 +3423,7 @@ window_event_get_data1(Pointer) ->
 	end.
 
 window_event_set_data1(Pointer, Attrib) ->
-	Code = int_to_bytelist(136),
+	Code = int_to_bytelist(160),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3107,7 +3435,7 @@ window_event_set_data1(Pointer, Attrib) ->
 	end.
 
 window_event_get_data2(Pointer) ->
-	Code = int_to_bytelist(137),
+	Code = int_to_bytelist(161),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3118,7 +3446,7 @@ window_event_get_data2(Pointer) ->
 	end.
 
 window_event_set_data2(Pointer, Attrib) ->
-	Code = int_to_bytelist(138),
+	Code = int_to_bytelist(162),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3165,7 +3493,7 @@ parse_keyboard_event(Bytelist) ->
 	{#keyboard_event{type=Type, timestamp=Timestamp, windowID=WindowID, state=State, repeat=Repeat, padding2=Padding2, padding3=Padding3, keysym=Keysym}, R8}.
 
 pointer_deref_keyboard_event(Pointer) ->
-	Code = int_to_bytelist(139),
+	Code = int_to_bytelist(163),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3175,8 +3503,20 @@ pointer_deref_keyboard_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_keyboard_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(164),
+	PList = pointer_to_bytelist(Pointer),
+	VList = keyboard_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_keyboard_event() ->
-	Code = int_to_bytelist(140),
+	Code = int_to_bytelist(165),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -3186,7 +3526,7 @@ new_keyboard_event() ->
 	end.
 
 delete_keyboard_event(Pointer) ->
-	Code = int_to_bytelist(141),
+	Code = int_to_bytelist(166),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3197,7 +3537,7 @@ delete_keyboard_event(Pointer) ->
 	end.
 
 keyboard_event_get_type(Pointer) ->
-	Code = int_to_bytelist(142),
+	Code = int_to_bytelist(167),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3208,7 +3548,7 @@ keyboard_event_get_type(Pointer) ->
 	end.
 
 keyboard_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(143),
+	Code = int_to_bytelist(168),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3220,7 +3560,7 @@ keyboard_event_set_type(Pointer, Attrib) ->
 	end.
 
 keyboard_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(144),
+	Code = int_to_bytelist(169),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3231,7 +3571,7 @@ keyboard_event_get_timestamp(Pointer) ->
 	end.
 
 keyboard_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(145),
+	Code = int_to_bytelist(170),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3243,7 +3583,7 @@ keyboard_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 keyboard_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(146),
+	Code = int_to_bytelist(171),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3254,7 +3594,7 @@ keyboard_event_get_windowID(Pointer) ->
 	end.
 
 keyboard_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(147),
+	Code = int_to_bytelist(172),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3266,7 +3606,7 @@ keyboard_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 keyboard_event_get_state(Pointer) ->
-	Code = int_to_bytelist(148),
+	Code = int_to_bytelist(173),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3277,7 +3617,7 @@ keyboard_event_get_state(Pointer) ->
 	end.
 
 keyboard_event_set_state(Pointer, Attrib) ->
-	Code = int_to_bytelist(149),
+	Code = int_to_bytelist(174),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3289,7 +3629,7 @@ keyboard_event_set_state(Pointer, Attrib) ->
 	end.
 
 keyboard_event_get_repeat(Pointer) ->
-	Code = int_to_bytelist(150),
+	Code = int_to_bytelist(175),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3300,7 +3640,7 @@ keyboard_event_get_repeat(Pointer) ->
 	end.
 
 keyboard_event_set_repeat(Pointer, Attrib) ->
-	Code = int_to_bytelist(151),
+	Code = int_to_bytelist(176),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3312,7 +3652,7 @@ keyboard_event_set_repeat(Pointer, Attrib) ->
 	end.
 
 keyboard_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(152),
+	Code = int_to_bytelist(177),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3323,7 +3663,7 @@ keyboard_event_get_padding2(Pointer) ->
 	end.
 
 keyboard_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(153),
+	Code = int_to_bytelist(178),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3335,7 +3675,7 @@ keyboard_event_set_padding2(Pointer, Attrib) ->
 	end.
 
 keyboard_event_get_padding3(Pointer) ->
-	Code = int_to_bytelist(154),
+	Code = int_to_bytelist(179),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3346,7 +3686,7 @@ keyboard_event_get_padding3(Pointer) ->
 	end.
 
 keyboard_event_set_padding3(Pointer, Attrib) ->
-	Code = int_to_bytelist(155),
+	Code = int_to_bytelist(180),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3358,7 +3698,7 @@ keyboard_event_set_padding3(Pointer, Attrib) ->
 	end.
 
 keyboard_event_get_keysym(Pointer) ->
-	Code = int_to_bytelist(156),
+	Code = int_to_bytelist(181),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3369,7 +3709,7 @@ keyboard_event_get_keysym(Pointer) ->
 	end.
 
 keyboard_event_set_keysym(Pointer, Attrib) ->
-	Code = int_to_bytelist(157),
+	Code = int_to_bytelist(182),
 	PList = pointer_to_bytelist(Pointer),
 	AList = keysym_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3410,7 +3750,7 @@ parse_text_editing_event(Bytelist) ->
 	{#text_editing_event{type=Type, timestamp=Timestamp, windowID=WindowID, text=Text, start=Start, length=Length}, R6}.
 
 pointer_deref_text_editing_event(Pointer) ->
-	Code = int_to_bytelist(158),
+	Code = int_to_bytelist(183),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3420,8 +3760,20 @@ pointer_deref_text_editing_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_text_editing_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(184),
+	PList = pointer_to_bytelist(Pointer),
+	VList = text_editing_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_text_editing_event() ->
-	Code = int_to_bytelist(159),
+	Code = int_to_bytelist(185),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -3431,7 +3783,7 @@ new_text_editing_event() ->
 	end.
 
 delete_text_editing_event(Pointer) ->
-	Code = int_to_bytelist(160),
+	Code = int_to_bytelist(186),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3442,7 +3794,7 @@ delete_text_editing_event(Pointer) ->
 	end.
 
 text_editing_event_get_type(Pointer) ->
-	Code = int_to_bytelist(161),
+	Code = int_to_bytelist(187),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3453,7 +3805,7 @@ text_editing_event_get_type(Pointer) ->
 	end.
 
 text_editing_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(162),
+	Code = int_to_bytelist(188),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3465,7 +3817,7 @@ text_editing_event_set_type(Pointer, Attrib) ->
 	end.
 
 text_editing_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(163),
+	Code = int_to_bytelist(189),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3476,7 +3828,7 @@ text_editing_event_get_timestamp(Pointer) ->
 	end.
 
 text_editing_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(164),
+	Code = int_to_bytelist(190),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3488,7 +3840,7 @@ text_editing_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 text_editing_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(165),
+	Code = int_to_bytelist(191),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3499,7 +3851,7 @@ text_editing_event_get_windowID(Pointer) ->
 	end.
 
 text_editing_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(166),
+	Code = int_to_bytelist(192),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3511,7 +3863,7 @@ text_editing_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 text_editing_event_get_text(Pointer) ->
-	Code = int_to_bytelist(167),
+	Code = int_to_bytelist(193),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3522,7 +3874,7 @@ text_editing_event_get_text(Pointer) ->
 	end.
 
 text_editing_event_set_text(Pointer, Attrib) ->
-	Code = int_to_bytelist(168),
+	Code = int_to_bytelist(194),
 	PList = pointer_to_bytelist(Pointer),
 	AList = string_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3534,7 +3886,7 @@ text_editing_event_set_text(Pointer, Attrib) ->
 	end.
 
 text_editing_event_get_start(Pointer) ->
-	Code = int_to_bytelist(169),
+	Code = int_to_bytelist(195),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3545,7 +3897,7 @@ text_editing_event_get_start(Pointer) ->
 	end.
 
 text_editing_event_set_start(Pointer, Attrib) ->
-	Code = int_to_bytelist(170),
+	Code = int_to_bytelist(196),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3557,7 +3909,7 @@ text_editing_event_set_start(Pointer, Attrib) ->
 	end.
 
 text_editing_event_get_length(Pointer) ->
-	Code = int_to_bytelist(171),
+	Code = int_to_bytelist(197),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3568,7 +3920,7 @@ text_editing_event_get_length(Pointer) ->
 	end.
 
 text_editing_event_set_length(Pointer, Attrib) ->
-	Code = int_to_bytelist(172),
+	Code = int_to_bytelist(198),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3603,7 +3955,7 @@ parse_text_input_event(Bytelist) ->
 	{#text_input_event{type=Type, timestamp=Timestamp, windowID=WindowID, text=Text}, R4}.
 
 pointer_deref_text_input_event(Pointer) ->
-	Code = int_to_bytelist(173),
+	Code = int_to_bytelist(199),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3613,8 +3965,20 @@ pointer_deref_text_input_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_text_input_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(200),
+	PList = pointer_to_bytelist(Pointer),
+	VList = text_input_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_text_input_event() ->
-	Code = int_to_bytelist(174),
+	Code = int_to_bytelist(201),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -3624,7 +3988,7 @@ new_text_input_event() ->
 	end.
 
 delete_text_input_event(Pointer) ->
-	Code = int_to_bytelist(175),
+	Code = int_to_bytelist(202),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3635,7 +3999,7 @@ delete_text_input_event(Pointer) ->
 	end.
 
 text_input_event_get_type(Pointer) ->
-	Code = int_to_bytelist(176),
+	Code = int_to_bytelist(203),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3646,7 +4010,7 @@ text_input_event_get_type(Pointer) ->
 	end.
 
 text_input_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(177),
+	Code = int_to_bytelist(204),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3658,7 +4022,7 @@ text_input_event_set_type(Pointer, Attrib) ->
 	end.
 
 text_input_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(178),
+	Code = int_to_bytelist(205),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3669,7 +4033,7 @@ text_input_event_get_timestamp(Pointer) ->
 	end.
 
 text_input_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(179),
+	Code = int_to_bytelist(206),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3681,7 +4045,7 @@ text_input_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 text_input_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(180),
+	Code = int_to_bytelist(207),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3692,7 +4056,7 @@ text_input_event_get_windowID(Pointer) ->
 	end.
 
 text_input_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(181),
+	Code = int_to_bytelist(208),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3704,7 +4068,7 @@ text_input_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 text_input_event_get_text(Pointer) ->
-	Code = int_to_bytelist(182),
+	Code = int_to_bytelist(209),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3715,7 +4079,7 @@ text_input_event_get_text(Pointer) ->
 	end.
 
 text_input_event_set_text(Pointer, Attrib) ->
-	Code = int_to_bytelist(183),
+	Code = int_to_bytelist(210),
 	PList = pointer_to_bytelist(Pointer),
 	AList = string_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3765,7 +4129,7 @@ parse_mouse_motion_event(Bytelist) ->
 	{#mouse_motion_event{type=Type, timestamp=Timestamp, windowID=WindowID, which=Which, state=State, x=X, y=Y, xrel=Xrel, yrel=Yrel}, R9}.
 
 pointer_deref_mouse_motion_event(Pointer) ->
-	Code = int_to_bytelist(184),
+	Code = int_to_bytelist(211),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3775,8 +4139,20 @@ pointer_deref_mouse_motion_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_mouse_motion_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(212),
+	PList = pointer_to_bytelist(Pointer),
+	VList = mouse_motion_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_mouse_motion_event() ->
-	Code = int_to_bytelist(185),
+	Code = int_to_bytelist(213),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -3786,7 +4162,7 @@ new_mouse_motion_event() ->
 	end.
 
 delete_mouse_motion_event(Pointer) ->
-	Code = int_to_bytelist(186),
+	Code = int_to_bytelist(214),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3797,7 +4173,7 @@ delete_mouse_motion_event(Pointer) ->
 	end.
 
 mouse_motion_event_get_type(Pointer) ->
-	Code = int_to_bytelist(187),
+	Code = int_to_bytelist(215),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3808,7 +4184,7 @@ mouse_motion_event_get_type(Pointer) ->
 	end.
 
 mouse_motion_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(188),
+	Code = int_to_bytelist(216),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3820,7 +4196,7 @@ mouse_motion_event_set_type(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(189),
+	Code = int_to_bytelist(217),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3831,7 +4207,7 @@ mouse_motion_event_get_timestamp(Pointer) ->
 	end.
 
 mouse_motion_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(190),
+	Code = int_to_bytelist(218),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3843,7 +4219,7 @@ mouse_motion_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(191),
+	Code = int_to_bytelist(219),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3854,7 +4230,7 @@ mouse_motion_event_get_windowID(Pointer) ->
 	end.
 
 mouse_motion_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(192),
+	Code = int_to_bytelist(220),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3866,7 +4242,7 @@ mouse_motion_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_which(Pointer) ->
-	Code = int_to_bytelist(193),
+	Code = int_to_bytelist(221),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3877,7 +4253,7 @@ mouse_motion_event_get_which(Pointer) ->
 	end.
 
 mouse_motion_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(194),
+	Code = int_to_bytelist(222),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3889,7 +4265,7 @@ mouse_motion_event_set_which(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_state(Pointer) ->
-	Code = int_to_bytelist(195),
+	Code = int_to_bytelist(223),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3900,7 +4276,7 @@ mouse_motion_event_get_state(Pointer) ->
 	end.
 
 mouse_motion_event_set_state(Pointer, Attrib) ->
-	Code = int_to_bytelist(196),
+	Code = int_to_bytelist(224),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3912,7 +4288,7 @@ mouse_motion_event_set_state(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_x(Pointer) ->
-	Code = int_to_bytelist(197),
+	Code = int_to_bytelist(225),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3923,7 +4299,7 @@ mouse_motion_event_get_x(Pointer) ->
 	end.
 
 mouse_motion_event_set_x(Pointer, Attrib) ->
-	Code = int_to_bytelist(198),
+	Code = int_to_bytelist(226),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3935,7 +4311,7 @@ mouse_motion_event_set_x(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_y(Pointer) ->
-	Code = int_to_bytelist(199),
+	Code = int_to_bytelist(227),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3946,7 +4322,7 @@ mouse_motion_event_get_y(Pointer) ->
 	end.
 
 mouse_motion_event_set_y(Pointer, Attrib) ->
-	Code = int_to_bytelist(200),
+	Code = int_to_bytelist(228),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3958,7 +4334,7 @@ mouse_motion_event_set_y(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_xrel(Pointer) ->
-	Code = int_to_bytelist(201),
+	Code = int_to_bytelist(229),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3969,7 +4345,7 @@ mouse_motion_event_get_xrel(Pointer) ->
 	end.
 
 mouse_motion_event_set_xrel(Pointer, Attrib) ->
-	Code = int_to_bytelist(202),
+	Code = int_to_bytelist(230),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -3981,7 +4357,7 @@ mouse_motion_event_set_xrel(Pointer, Attrib) ->
 	end.
 
 mouse_motion_event_get_yrel(Pointer) ->
-	Code = int_to_bytelist(203),
+	Code = int_to_bytelist(231),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -3992,7 +4368,7 @@ mouse_motion_event_get_yrel(Pointer) ->
 	end.
 
 mouse_motion_event_set_yrel(Pointer, Attrib) ->
-	Code = int_to_bytelist(204),
+	Code = int_to_bytelist(232),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4042,7 +4418,7 @@ parse_mouse_button_event(Bytelist) ->
 	{#mouse_button_event{type=Type, timestamp=Timestamp, windowID=WindowID, which=Which, button=Button, state=State, clicks=Clicks, x=X, y=Y}, R9}.
 
 pointer_deref_mouse_button_event(Pointer) ->
-	Code = int_to_bytelist(205),
+	Code = int_to_bytelist(233),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4052,8 +4428,20 @@ pointer_deref_mouse_button_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_mouse_button_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(234),
+	PList = pointer_to_bytelist(Pointer),
+	VList = mouse_button_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_mouse_button_event() ->
-	Code = int_to_bytelist(206),
+	Code = int_to_bytelist(235),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -4063,7 +4451,7 @@ new_mouse_button_event() ->
 	end.
 
 delete_mouse_button_event(Pointer) ->
-	Code = int_to_bytelist(207),
+	Code = int_to_bytelist(236),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4074,7 +4462,7 @@ delete_mouse_button_event(Pointer) ->
 	end.
 
 mouse_button_event_get_type(Pointer) ->
-	Code = int_to_bytelist(208),
+	Code = int_to_bytelist(237),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4085,7 +4473,7 @@ mouse_button_event_get_type(Pointer) ->
 	end.
 
 mouse_button_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(209),
+	Code = int_to_bytelist(238),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4097,7 +4485,7 @@ mouse_button_event_set_type(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(210),
+	Code = int_to_bytelist(239),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4108,7 +4496,7 @@ mouse_button_event_get_timestamp(Pointer) ->
 	end.
 
 mouse_button_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(211),
+	Code = int_to_bytelist(240),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4120,7 +4508,7 @@ mouse_button_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(212),
+	Code = int_to_bytelist(241),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4131,7 +4519,7 @@ mouse_button_event_get_windowID(Pointer) ->
 	end.
 
 mouse_button_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(213),
+	Code = int_to_bytelist(242),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4143,7 +4531,7 @@ mouse_button_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_which(Pointer) ->
-	Code = int_to_bytelist(214),
+	Code = int_to_bytelist(243),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4154,7 +4542,7 @@ mouse_button_event_get_which(Pointer) ->
 	end.
 
 mouse_button_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(215),
+	Code = int_to_bytelist(244),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4166,7 +4554,7 @@ mouse_button_event_set_which(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_button(Pointer) ->
-	Code = int_to_bytelist(216),
+	Code = int_to_bytelist(245),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4177,7 +4565,7 @@ mouse_button_event_get_button(Pointer) ->
 	end.
 
 mouse_button_event_set_button(Pointer, Attrib) ->
-	Code = int_to_bytelist(217),
+	Code = int_to_bytelist(246),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4189,7 +4577,7 @@ mouse_button_event_set_button(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_state(Pointer) ->
-	Code = int_to_bytelist(218),
+	Code = int_to_bytelist(247),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4200,7 +4588,7 @@ mouse_button_event_get_state(Pointer) ->
 	end.
 
 mouse_button_event_set_state(Pointer, Attrib) ->
-	Code = int_to_bytelist(219),
+	Code = int_to_bytelist(248),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4212,7 +4600,7 @@ mouse_button_event_set_state(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_clicks(Pointer) ->
-	Code = int_to_bytelist(220),
+	Code = int_to_bytelist(249),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4223,7 +4611,7 @@ mouse_button_event_get_clicks(Pointer) ->
 	end.
 
 mouse_button_event_set_clicks(Pointer, Attrib) ->
-	Code = int_to_bytelist(221),
+	Code = int_to_bytelist(250),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4235,7 +4623,7 @@ mouse_button_event_set_clicks(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_x(Pointer) ->
-	Code = int_to_bytelist(222),
+	Code = int_to_bytelist(251),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4246,7 +4634,7 @@ mouse_button_event_get_x(Pointer) ->
 	end.
 
 mouse_button_event_set_x(Pointer, Attrib) ->
-	Code = int_to_bytelist(223),
+	Code = int_to_bytelist(252),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4258,7 +4646,7 @@ mouse_button_event_set_x(Pointer, Attrib) ->
 	end.
 
 mouse_button_event_get_y(Pointer) ->
-	Code = int_to_bytelist(224),
+	Code = int_to_bytelist(253),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4269,7 +4657,7 @@ mouse_button_event_get_y(Pointer) ->
 	end.
 
 mouse_button_event_set_y(Pointer, Attrib) ->
-	Code = int_to_bytelist(225),
+	Code = int_to_bytelist(254),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4313,7 +4701,7 @@ parse_mouse_wheel_event(Bytelist) ->
 	{#mouse_wheel_event{type=Type, timestamp=Timestamp, windowID=WindowID, which=Which, x=X, y=Y, direction=Direction}, R7}.
 
 pointer_deref_mouse_wheel_event(Pointer) ->
-	Code = int_to_bytelist(226),
+	Code = int_to_bytelist(255),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4323,8 +4711,20 @@ pointer_deref_mouse_wheel_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_mouse_wheel_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(256),
+	PList = pointer_to_bytelist(Pointer),
+	VList = mouse_wheel_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_mouse_wheel_event() ->
-	Code = int_to_bytelist(227),
+	Code = int_to_bytelist(257),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -4334,7 +4734,7 @@ new_mouse_wheel_event() ->
 	end.
 
 delete_mouse_wheel_event(Pointer) ->
-	Code = int_to_bytelist(228),
+	Code = int_to_bytelist(258),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4345,7 +4745,7 @@ delete_mouse_wheel_event(Pointer) ->
 	end.
 
 mouse_wheel_event_get_type(Pointer) ->
-	Code = int_to_bytelist(229),
+	Code = int_to_bytelist(259),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4356,7 +4756,7 @@ mouse_wheel_event_get_type(Pointer) ->
 	end.
 
 mouse_wheel_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(230),
+	Code = int_to_bytelist(260),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4368,7 +4768,7 @@ mouse_wheel_event_set_type(Pointer, Attrib) ->
 	end.
 
 mouse_wheel_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(231),
+	Code = int_to_bytelist(261),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4379,7 +4779,7 @@ mouse_wheel_event_get_timestamp(Pointer) ->
 	end.
 
 mouse_wheel_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(232),
+	Code = int_to_bytelist(262),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4391,7 +4791,7 @@ mouse_wheel_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 mouse_wheel_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(233),
+	Code = int_to_bytelist(263),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4402,7 +4802,7 @@ mouse_wheel_event_get_windowID(Pointer) ->
 	end.
 
 mouse_wheel_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(234),
+	Code = int_to_bytelist(264),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4414,7 +4814,7 @@ mouse_wheel_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 mouse_wheel_event_get_which(Pointer) ->
-	Code = int_to_bytelist(235),
+	Code = int_to_bytelist(265),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4425,7 +4825,7 @@ mouse_wheel_event_get_which(Pointer) ->
 	end.
 
 mouse_wheel_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(236),
+	Code = int_to_bytelist(266),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4437,7 +4837,7 @@ mouse_wheel_event_set_which(Pointer, Attrib) ->
 	end.
 
 mouse_wheel_event_get_x(Pointer) ->
-	Code = int_to_bytelist(237),
+	Code = int_to_bytelist(267),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4448,7 +4848,7 @@ mouse_wheel_event_get_x(Pointer) ->
 	end.
 
 mouse_wheel_event_set_x(Pointer, Attrib) ->
-	Code = int_to_bytelist(238),
+	Code = int_to_bytelist(268),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4460,7 +4860,7 @@ mouse_wheel_event_set_x(Pointer, Attrib) ->
 	end.
 
 mouse_wheel_event_get_y(Pointer) ->
-	Code = int_to_bytelist(239),
+	Code = int_to_bytelist(269),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4471,7 +4871,7 @@ mouse_wheel_event_get_y(Pointer) ->
 	end.
 
 mouse_wheel_event_set_y(Pointer, Attrib) ->
-	Code = int_to_bytelist(240),
+	Code = int_to_bytelist(270),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4483,7 +4883,7 @@ mouse_wheel_event_set_y(Pointer, Attrib) ->
 	end.
 
 mouse_wheel_event_get_direction(Pointer) ->
-	Code = int_to_bytelist(241),
+	Code = int_to_bytelist(271),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4494,7 +4894,7 @@ mouse_wheel_event_get_direction(Pointer) ->
 	end.
 
 mouse_wheel_event_set_direction(Pointer, Attrib) ->
-	Code = int_to_bytelist(242),
+	Code = int_to_bytelist(272),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4541,7 +4941,7 @@ parse_joy_axis_event(Bytelist) ->
 	{#joy_axis_event{type=Type, timestamp=Timestamp, which=Which, axis=Axis, padding1=Padding1, padding2=Padding2, padding3=Padding3, value=Value}, R8}.
 
 pointer_deref_joy_axis_event(Pointer) ->
-	Code = int_to_bytelist(243),
+	Code = int_to_bytelist(273),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4551,8 +4951,20 @@ pointer_deref_joy_axis_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_joy_axis_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(274),
+	PList = pointer_to_bytelist(Pointer),
+	VList = joy_axis_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_joy_axis_event() ->
-	Code = int_to_bytelist(244),
+	Code = int_to_bytelist(275),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -4562,7 +4974,7 @@ new_joy_axis_event() ->
 	end.
 
 delete_joy_axis_event(Pointer) ->
-	Code = int_to_bytelist(245),
+	Code = int_to_bytelist(276),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4573,7 +4985,7 @@ delete_joy_axis_event(Pointer) ->
 	end.
 
 joy_axis_event_get_type(Pointer) ->
-	Code = int_to_bytelist(246),
+	Code = int_to_bytelist(277),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4584,7 +4996,7 @@ joy_axis_event_get_type(Pointer) ->
 	end.
 
 joy_axis_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(247),
+	Code = int_to_bytelist(278),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4596,7 +5008,7 @@ joy_axis_event_set_type(Pointer, Attrib) ->
 	end.
 
 joy_axis_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(248),
+	Code = int_to_bytelist(279),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4607,7 +5019,7 @@ joy_axis_event_get_timestamp(Pointer) ->
 	end.
 
 joy_axis_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(249),
+	Code = int_to_bytelist(280),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4619,7 +5031,7 @@ joy_axis_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 joy_axis_event_get_which(Pointer) ->
-	Code = int_to_bytelist(250),
+	Code = int_to_bytelist(281),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4630,7 +5042,7 @@ joy_axis_event_get_which(Pointer) ->
 	end.
 
 joy_axis_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(251),
+	Code = int_to_bytelist(282),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4642,7 +5054,7 @@ joy_axis_event_set_which(Pointer, Attrib) ->
 	end.
 
 joy_axis_event_get_axis(Pointer) ->
-	Code = int_to_bytelist(252),
+	Code = int_to_bytelist(283),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4653,7 +5065,7 @@ joy_axis_event_get_axis(Pointer) ->
 	end.
 
 joy_axis_event_set_axis(Pointer, Attrib) ->
-	Code = int_to_bytelist(253),
+	Code = int_to_bytelist(284),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4665,7 +5077,7 @@ joy_axis_event_set_axis(Pointer, Attrib) ->
 	end.
 
 joy_axis_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(254),
+	Code = int_to_bytelist(285),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4676,7 +5088,7 @@ joy_axis_event_get_padding1(Pointer) ->
 	end.
 
 joy_axis_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(255),
+	Code = int_to_bytelist(286),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4688,7 +5100,7 @@ joy_axis_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 joy_axis_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(256),
+	Code = int_to_bytelist(287),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4699,7 +5111,7 @@ joy_axis_event_get_padding2(Pointer) ->
 	end.
 
 joy_axis_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(257),
+	Code = int_to_bytelist(288),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4711,7 +5123,7 @@ joy_axis_event_set_padding2(Pointer, Attrib) ->
 	end.
 
 joy_axis_event_get_padding3(Pointer) ->
-	Code = int_to_bytelist(258),
+	Code = int_to_bytelist(289),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4722,7 +5134,7 @@ joy_axis_event_get_padding3(Pointer) ->
 	end.
 
 joy_axis_event_set_padding3(Pointer, Attrib) ->
-	Code = int_to_bytelist(259),
+	Code = int_to_bytelist(290),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4734,7 +5146,7 @@ joy_axis_event_set_padding3(Pointer, Attrib) ->
 	end.
 
 joy_axis_event_get_value(Pointer) ->
-	Code = int_to_bytelist(260),
+	Code = int_to_bytelist(291),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4745,7 +5157,7 @@ joy_axis_event_get_value(Pointer) ->
 	end.
 
 joy_axis_event_set_value(Pointer, Attrib) ->
-	Code = int_to_bytelist(261),
+	Code = int_to_bytelist(292),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4795,7 +5207,7 @@ parse_joy_ball_event(Bytelist) ->
 	{#joy_ball_event{type=Type, timestamp=Timestamp, which=Which, ball=Ball, padding1=Padding1, padding2=Padding2, padding3=Padding3, xrel=Xrel, yrel=Yrel}, R9}.
 
 pointer_deref_joy_ball_event(Pointer) ->
-	Code = int_to_bytelist(262),
+	Code = int_to_bytelist(293),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4805,8 +5217,20 @@ pointer_deref_joy_ball_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_joy_ball_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(294),
+	PList = pointer_to_bytelist(Pointer),
+	VList = joy_ball_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_joy_ball_event() ->
-	Code = int_to_bytelist(263),
+	Code = int_to_bytelist(295),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -4816,7 +5240,7 @@ new_joy_ball_event() ->
 	end.
 
 delete_joy_ball_event(Pointer) ->
-	Code = int_to_bytelist(264),
+	Code = int_to_bytelist(296),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4827,7 +5251,7 @@ delete_joy_ball_event(Pointer) ->
 	end.
 
 joy_ball_event_get_type(Pointer) ->
-	Code = int_to_bytelist(265),
+	Code = int_to_bytelist(297),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4838,7 +5262,7 @@ joy_ball_event_get_type(Pointer) ->
 	end.
 
 joy_ball_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(266),
+	Code = int_to_bytelist(298),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4850,7 +5274,7 @@ joy_ball_event_set_type(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(267),
+	Code = int_to_bytelist(299),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4861,7 +5285,7 @@ joy_ball_event_get_timestamp(Pointer) ->
 	end.
 
 joy_ball_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(268),
+	Code = int_to_bytelist(300),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4873,7 +5297,7 @@ joy_ball_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_which(Pointer) ->
-	Code = int_to_bytelist(269),
+	Code = int_to_bytelist(301),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4884,7 +5308,7 @@ joy_ball_event_get_which(Pointer) ->
 	end.
 
 joy_ball_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(270),
+	Code = int_to_bytelist(302),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4896,7 +5320,7 @@ joy_ball_event_set_which(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_ball(Pointer) ->
-	Code = int_to_bytelist(271),
+	Code = int_to_bytelist(303),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4907,7 +5331,7 @@ joy_ball_event_get_ball(Pointer) ->
 	end.
 
 joy_ball_event_set_ball(Pointer, Attrib) ->
-	Code = int_to_bytelist(272),
+	Code = int_to_bytelist(304),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4919,7 +5343,7 @@ joy_ball_event_set_ball(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(273),
+	Code = int_to_bytelist(305),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4930,7 +5354,7 @@ joy_ball_event_get_padding1(Pointer) ->
 	end.
 
 joy_ball_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(274),
+	Code = int_to_bytelist(306),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4942,7 +5366,7 @@ joy_ball_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(275),
+	Code = int_to_bytelist(307),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4953,7 +5377,7 @@ joy_ball_event_get_padding2(Pointer) ->
 	end.
 
 joy_ball_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(276),
+	Code = int_to_bytelist(308),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4965,7 +5389,7 @@ joy_ball_event_set_padding2(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_padding3(Pointer) ->
-	Code = int_to_bytelist(277),
+	Code = int_to_bytelist(309),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4976,7 +5400,7 @@ joy_ball_event_get_padding3(Pointer) ->
 	end.
 
 joy_ball_event_set_padding3(Pointer, Attrib) ->
-	Code = int_to_bytelist(278),
+	Code = int_to_bytelist(310),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -4988,7 +5412,7 @@ joy_ball_event_set_padding3(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_xrel(Pointer) ->
-	Code = int_to_bytelist(279),
+	Code = int_to_bytelist(311),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -4999,7 +5423,7 @@ joy_ball_event_get_xrel(Pointer) ->
 	end.
 
 joy_ball_event_set_xrel(Pointer, Attrib) ->
-	Code = int_to_bytelist(280),
+	Code = int_to_bytelist(312),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5011,7 +5435,7 @@ joy_ball_event_set_xrel(Pointer, Attrib) ->
 	end.
 
 joy_ball_event_get_yrel(Pointer) ->
-	Code = int_to_bytelist(281),
+	Code = int_to_bytelist(313),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5022,7 +5446,7 @@ joy_ball_event_get_yrel(Pointer) ->
 	end.
 
 joy_ball_event_set_yrel(Pointer, Attrib) ->
-	Code = int_to_bytelist(282),
+	Code = int_to_bytelist(314),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5066,7 +5490,7 @@ parse_joy_hat_event(Bytelist) ->
 	{#joy_hat_event{type=Type, timestamp=Timestamp, which=Which, hat=Hat, value=Value, padding1=Padding1, padding2=Padding2}, R7}.
 
 pointer_deref_joy_hat_event(Pointer) ->
-	Code = int_to_bytelist(283),
+	Code = int_to_bytelist(315),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5076,8 +5500,20 @@ pointer_deref_joy_hat_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_joy_hat_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(316),
+	PList = pointer_to_bytelist(Pointer),
+	VList = joy_hat_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_joy_hat_event() ->
-	Code = int_to_bytelist(284),
+	Code = int_to_bytelist(317),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -5087,7 +5523,7 @@ new_joy_hat_event() ->
 	end.
 
 delete_joy_hat_event(Pointer) ->
-	Code = int_to_bytelist(285),
+	Code = int_to_bytelist(318),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5098,7 +5534,7 @@ delete_joy_hat_event(Pointer) ->
 	end.
 
 joy_hat_event_get_type(Pointer) ->
-	Code = int_to_bytelist(286),
+	Code = int_to_bytelist(319),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5109,7 +5545,7 @@ joy_hat_event_get_type(Pointer) ->
 	end.
 
 joy_hat_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(287),
+	Code = int_to_bytelist(320),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5121,7 +5557,7 @@ joy_hat_event_set_type(Pointer, Attrib) ->
 	end.
 
 joy_hat_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(288),
+	Code = int_to_bytelist(321),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5132,7 +5568,7 @@ joy_hat_event_get_timestamp(Pointer) ->
 	end.
 
 joy_hat_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(289),
+	Code = int_to_bytelist(322),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5144,7 +5580,7 @@ joy_hat_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 joy_hat_event_get_which(Pointer) ->
-	Code = int_to_bytelist(290),
+	Code = int_to_bytelist(323),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5155,7 +5591,7 @@ joy_hat_event_get_which(Pointer) ->
 	end.
 
 joy_hat_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(291),
+	Code = int_to_bytelist(324),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5167,7 +5603,7 @@ joy_hat_event_set_which(Pointer, Attrib) ->
 	end.
 
 joy_hat_event_get_hat(Pointer) ->
-	Code = int_to_bytelist(292),
+	Code = int_to_bytelist(325),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5178,7 +5614,7 @@ joy_hat_event_get_hat(Pointer) ->
 	end.
 
 joy_hat_event_set_hat(Pointer, Attrib) ->
-	Code = int_to_bytelist(293),
+	Code = int_to_bytelist(326),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5190,7 +5626,7 @@ joy_hat_event_set_hat(Pointer, Attrib) ->
 	end.
 
 joy_hat_event_get_value(Pointer) ->
-	Code = int_to_bytelist(294),
+	Code = int_to_bytelist(327),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5201,7 +5637,7 @@ joy_hat_event_get_value(Pointer) ->
 	end.
 
 joy_hat_event_set_value(Pointer, Attrib) ->
-	Code = int_to_bytelist(295),
+	Code = int_to_bytelist(328),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5213,7 +5649,7 @@ joy_hat_event_set_value(Pointer, Attrib) ->
 	end.
 
 joy_hat_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(296),
+	Code = int_to_bytelist(329),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5224,7 +5660,7 @@ joy_hat_event_get_padding1(Pointer) ->
 	end.
 
 joy_hat_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(297),
+	Code = int_to_bytelist(330),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5236,7 +5672,7 @@ joy_hat_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 joy_hat_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(298),
+	Code = int_to_bytelist(331),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5247,7 +5683,7 @@ joy_hat_event_get_padding2(Pointer) ->
 	end.
 
 joy_hat_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(299),
+	Code = int_to_bytelist(332),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5291,7 +5727,7 @@ parse_joy_button_event(Bytelist) ->
 	{#joy_button_event{type=Type, timestamp=Timestamp, which=Which, button=Button, state=State, padding1=Padding1, padding2=Padding2}, R7}.
 
 pointer_deref_joy_button_event(Pointer) ->
-	Code = int_to_bytelist(300),
+	Code = int_to_bytelist(333),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5301,8 +5737,20 @@ pointer_deref_joy_button_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_joy_button_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(334),
+	PList = pointer_to_bytelist(Pointer),
+	VList = joy_button_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_joy_button_event() ->
-	Code = int_to_bytelist(301),
+	Code = int_to_bytelist(335),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -5312,7 +5760,7 @@ new_joy_button_event() ->
 	end.
 
 delete_joy_button_event(Pointer) ->
-	Code = int_to_bytelist(302),
+	Code = int_to_bytelist(336),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5323,7 +5771,7 @@ delete_joy_button_event(Pointer) ->
 	end.
 
 joy_button_event_get_type(Pointer) ->
-	Code = int_to_bytelist(303),
+	Code = int_to_bytelist(337),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5334,7 +5782,7 @@ joy_button_event_get_type(Pointer) ->
 	end.
 
 joy_button_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(304),
+	Code = int_to_bytelist(338),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5346,7 +5794,7 @@ joy_button_event_set_type(Pointer, Attrib) ->
 	end.
 
 joy_button_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(305),
+	Code = int_to_bytelist(339),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5357,7 +5805,7 @@ joy_button_event_get_timestamp(Pointer) ->
 	end.
 
 joy_button_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(306),
+	Code = int_to_bytelist(340),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5369,7 +5817,7 @@ joy_button_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 joy_button_event_get_which(Pointer) ->
-	Code = int_to_bytelist(307),
+	Code = int_to_bytelist(341),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5380,7 +5828,7 @@ joy_button_event_get_which(Pointer) ->
 	end.
 
 joy_button_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(308),
+	Code = int_to_bytelist(342),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5392,7 +5840,7 @@ joy_button_event_set_which(Pointer, Attrib) ->
 	end.
 
 joy_button_event_get_button(Pointer) ->
-	Code = int_to_bytelist(309),
+	Code = int_to_bytelist(343),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5403,7 +5851,7 @@ joy_button_event_get_button(Pointer) ->
 	end.
 
 joy_button_event_set_button(Pointer, Attrib) ->
-	Code = int_to_bytelist(310),
+	Code = int_to_bytelist(344),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5415,7 +5863,7 @@ joy_button_event_set_button(Pointer, Attrib) ->
 	end.
 
 joy_button_event_get_state(Pointer) ->
-	Code = int_to_bytelist(311),
+	Code = int_to_bytelist(345),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5426,7 +5874,7 @@ joy_button_event_get_state(Pointer) ->
 	end.
 
 joy_button_event_set_state(Pointer, Attrib) ->
-	Code = int_to_bytelist(312),
+	Code = int_to_bytelist(346),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5438,7 +5886,7 @@ joy_button_event_set_state(Pointer, Attrib) ->
 	end.
 
 joy_button_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(313),
+	Code = int_to_bytelist(347),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5449,7 +5897,7 @@ joy_button_event_get_padding1(Pointer) ->
 	end.
 
 joy_button_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(314),
+	Code = int_to_bytelist(348),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5461,7 +5909,7 @@ joy_button_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 joy_button_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(315),
+	Code = int_to_bytelist(349),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5472,7 +5920,7 @@ joy_button_event_get_padding2(Pointer) ->
 	end.
 
 joy_button_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(316),
+	Code = int_to_bytelist(350),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5504,7 +5952,7 @@ parse_joy_device_event(Bytelist) ->
 	{#joy_device_event{type=Type, timestamp=Timestamp, which=Which}, R3}.
 
 pointer_deref_joy_device_event(Pointer) ->
-	Code = int_to_bytelist(317),
+	Code = int_to_bytelist(351),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5514,8 +5962,20 @@ pointer_deref_joy_device_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_joy_device_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(352),
+	PList = pointer_to_bytelist(Pointer),
+	VList = joy_device_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_joy_device_event() ->
-	Code = int_to_bytelist(318),
+	Code = int_to_bytelist(353),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -5525,7 +5985,7 @@ new_joy_device_event() ->
 	end.
 
 delete_joy_device_event(Pointer) ->
-	Code = int_to_bytelist(319),
+	Code = int_to_bytelist(354),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5536,7 +5996,7 @@ delete_joy_device_event(Pointer) ->
 	end.
 
 joy_device_event_get_type(Pointer) ->
-	Code = int_to_bytelist(320),
+	Code = int_to_bytelist(355),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5547,7 +6007,7 @@ joy_device_event_get_type(Pointer) ->
 	end.
 
 joy_device_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(321),
+	Code = int_to_bytelist(356),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5559,7 +6019,7 @@ joy_device_event_set_type(Pointer, Attrib) ->
 	end.
 
 joy_device_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(322),
+	Code = int_to_bytelist(357),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5570,7 +6030,7 @@ joy_device_event_get_timestamp(Pointer) ->
 	end.
 
 joy_device_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(323),
+	Code = int_to_bytelist(358),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5582,7 +6042,7 @@ joy_device_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 joy_device_event_get_which(Pointer) ->
-	Code = int_to_bytelist(324),
+	Code = int_to_bytelist(359),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5593,7 +6053,7 @@ joy_device_event_get_which(Pointer) ->
 	end.
 
 joy_device_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(325),
+	Code = int_to_bytelist(360),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5643,7 +6103,7 @@ parse_controller_axis_event(Bytelist) ->
 	{#controller_axis_event{type=Type, timestamp=Timestamp, which=Which, axis=Axis, padding1=Padding1, padding2=Padding2, padding3=Padding3, value=Value, padding4=Padding4}, R9}.
 
 pointer_deref_controller_axis_event(Pointer) ->
-	Code = int_to_bytelist(326),
+	Code = int_to_bytelist(361),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5653,8 +6113,20 @@ pointer_deref_controller_axis_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_controller_axis_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(362),
+	PList = pointer_to_bytelist(Pointer),
+	VList = controller_axis_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_controller_axis_event() ->
-	Code = int_to_bytelist(327),
+	Code = int_to_bytelist(363),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -5664,7 +6136,7 @@ new_controller_axis_event() ->
 	end.
 
 delete_controller_axis_event(Pointer) ->
-	Code = int_to_bytelist(328),
+	Code = int_to_bytelist(364),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5675,7 +6147,7 @@ delete_controller_axis_event(Pointer) ->
 	end.
 
 controller_axis_event_get_type(Pointer) ->
-	Code = int_to_bytelist(329),
+	Code = int_to_bytelist(365),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5686,7 +6158,7 @@ controller_axis_event_get_type(Pointer) ->
 	end.
 
 controller_axis_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(330),
+	Code = int_to_bytelist(366),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5698,7 +6170,7 @@ controller_axis_event_set_type(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(331),
+	Code = int_to_bytelist(367),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5709,7 +6181,7 @@ controller_axis_event_get_timestamp(Pointer) ->
 	end.
 
 controller_axis_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(332),
+	Code = int_to_bytelist(368),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5721,7 +6193,7 @@ controller_axis_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_which(Pointer) ->
-	Code = int_to_bytelist(333),
+	Code = int_to_bytelist(369),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5732,7 +6204,7 @@ controller_axis_event_get_which(Pointer) ->
 	end.
 
 controller_axis_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(334),
+	Code = int_to_bytelist(370),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5744,7 +6216,7 @@ controller_axis_event_set_which(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_axis(Pointer) ->
-	Code = int_to_bytelist(335),
+	Code = int_to_bytelist(371),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5755,7 +6227,7 @@ controller_axis_event_get_axis(Pointer) ->
 	end.
 
 controller_axis_event_set_axis(Pointer, Attrib) ->
-	Code = int_to_bytelist(336),
+	Code = int_to_bytelist(372),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5767,7 +6239,7 @@ controller_axis_event_set_axis(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(337),
+	Code = int_to_bytelist(373),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5778,7 +6250,7 @@ controller_axis_event_get_padding1(Pointer) ->
 	end.
 
 controller_axis_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(338),
+	Code = int_to_bytelist(374),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5790,7 +6262,7 @@ controller_axis_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(339),
+	Code = int_to_bytelist(375),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5801,7 +6273,7 @@ controller_axis_event_get_padding2(Pointer) ->
 	end.
 
 controller_axis_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(340),
+	Code = int_to_bytelist(376),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5813,7 +6285,7 @@ controller_axis_event_set_padding2(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_padding3(Pointer) ->
-	Code = int_to_bytelist(341),
+	Code = int_to_bytelist(377),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5824,7 +6296,7 @@ controller_axis_event_get_padding3(Pointer) ->
 	end.
 
 controller_axis_event_set_padding3(Pointer, Attrib) ->
-	Code = int_to_bytelist(342),
+	Code = int_to_bytelist(378),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5836,7 +6308,7 @@ controller_axis_event_set_padding3(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_value(Pointer) ->
-	Code = int_to_bytelist(343),
+	Code = int_to_bytelist(379),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5847,7 +6319,7 @@ controller_axis_event_get_value(Pointer) ->
 	end.
 
 controller_axis_event_set_value(Pointer, Attrib) ->
-	Code = int_to_bytelist(344),
+	Code = int_to_bytelist(380),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5859,7 +6331,7 @@ controller_axis_event_set_value(Pointer, Attrib) ->
 	end.
 
 controller_axis_event_get_padding4(Pointer) ->
-	Code = int_to_bytelist(345),
+	Code = int_to_bytelist(381),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5870,7 +6342,7 @@ controller_axis_event_get_padding4(Pointer) ->
 	end.
 
 controller_axis_event_set_padding4(Pointer, Attrib) ->
-	Code = int_to_bytelist(346),
+	Code = int_to_bytelist(382),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5914,7 +6386,7 @@ parse_controller_button_event(Bytelist) ->
 	{#controller_button_event{type=Type, timestamp=Timestamp, which=Which, button=Button, state=State, padding1=Padding1, padding2=Padding2}, R7}.
 
 pointer_deref_controller_button_event(Pointer) ->
-	Code = int_to_bytelist(347),
+	Code = int_to_bytelist(383),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5924,8 +6396,20 @@ pointer_deref_controller_button_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_controller_button_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(384),
+	PList = pointer_to_bytelist(Pointer),
+	VList = controller_button_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_controller_button_event() ->
-	Code = int_to_bytelist(348),
+	Code = int_to_bytelist(385),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -5935,7 +6419,7 @@ new_controller_button_event() ->
 	end.
 
 delete_controller_button_event(Pointer) ->
-	Code = int_to_bytelist(349),
+	Code = int_to_bytelist(386),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5946,7 +6430,7 @@ delete_controller_button_event(Pointer) ->
 	end.
 
 controller_button_event_get_type(Pointer) ->
-	Code = int_to_bytelist(350),
+	Code = int_to_bytelist(387),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5957,7 +6441,7 @@ controller_button_event_get_type(Pointer) ->
 	end.
 
 controller_button_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(351),
+	Code = int_to_bytelist(388),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5969,7 +6453,7 @@ controller_button_event_set_type(Pointer, Attrib) ->
 	end.
 
 controller_button_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(352),
+	Code = int_to_bytelist(389),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -5980,7 +6464,7 @@ controller_button_event_get_timestamp(Pointer) ->
 	end.
 
 controller_button_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(353),
+	Code = int_to_bytelist(390),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -5992,7 +6476,7 @@ controller_button_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 controller_button_event_get_which(Pointer) ->
-	Code = int_to_bytelist(354),
+	Code = int_to_bytelist(391),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6003,7 +6487,7 @@ controller_button_event_get_which(Pointer) ->
 	end.
 
 controller_button_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(355),
+	Code = int_to_bytelist(392),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6015,7 +6499,7 @@ controller_button_event_set_which(Pointer, Attrib) ->
 	end.
 
 controller_button_event_get_button(Pointer) ->
-	Code = int_to_bytelist(356),
+	Code = int_to_bytelist(393),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6026,7 +6510,7 @@ controller_button_event_get_button(Pointer) ->
 	end.
 
 controller_button_event_set_button(Pointer, Attrib) ->
-	Code = int_to_bytelist(357),
+	Code = int_to_bytelist(394),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6038,7 +6522,7 @@ controller_button_event_set_button(Pointer, Attrib) ->
 	end.
 
 controller_button_event_get_state(Pointer) ->
-	Code = int_to_bytelist(358),
+	Code = int_to_bytelist(395),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6049,7 +6533,7 @@ controller_button_event_get_state(Pointer) ->
 	end.
 
 controller_button_event_set_state(Pointer, Attrib) ->
-	Code = int_to_bytelist(359),
+	Code = int_to_bytelist(396),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6061,7 +6545,7 @@ controller_button_event_set_state(Pointer, Attrib) ->
 	end.
 
 controller_button_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(360),
+	Code = int_to_bytelist(397),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6072,7 +6556,7 @@ controller_button_event_get_padding1(Pointer) ->
 	end.
 
 controller_button_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(361),
+	Code = int_to_bytelist(398),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6084,7 +6568,7 @@ controller_button_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 controller_button_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(362),
+	Code = int_to_bytelist(399),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6095,7 +6579,7 @@ controller_button_event_get_padding2(Pointer) ->
 	end.
 
 controller_button_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(363),
+	Code = int_to_bytelist(400),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6127,7 +6611,7 @@ parse_controller_device_event(Bytelist) ->
 	{#controller_device_event{type=Type, timestamp=Timestamp, which=Which}, R3}.
 
 pointer_deref_controller_device_event(Pointer) ->
-	Code = int_to_bytelist(364),
+	Code = int_to_bytelist(401),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6137,8 +6621,20 @@ pointer_deref_controller_device_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_controller_device_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(402),
+	PList = pointer_to_bytelist(Pointer),
+	VList = controller_device_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_controller_device_event() ->
-	Code = int_to_bytelist(365),
+	Code = int_to_bytelist(403),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -6148,7 +6644,7 @@ new_controller_device_event() ->
 	end.
 
 delete_controller_device_event(Pointer) ->
-	Code = int_to_bytelist(366),
+	Code = int_to_bytelist(404),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6159,7 +6655,7 @@ delete_controller_device_event(Pointer) ->
 	end.
 
 controller_device_event_get_type(Pointer) ->
-	Code = int_to_bytelist(367),
+	Code = int_to_bytelist(405),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6170,7 +6666,7 @@ controller_device_event_get_type(Pointer) ->
 	end.
 
 controller_device_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(368),
+	Code = int_to_bytelist(406),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6182,7 +6678,7 @@ controller_device_event_set_type(Pointer, Attrib) ->
 	end.
 
 controller_device_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(369),
+	Code = int_to_bytelist(407),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6193,7 +6689,7 @@ controller_device_event_get_timestamp(Pointer) ->
 	end.
 
 controller_device_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(370),
+	Code = int_to_bytelist(408),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6205,7 +6701,7 @@ controller_device_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 controller_device_event_get_which(Pointer) ->
-	Code = int_to_bytelist(371),
+	Code = int_to_bytelist(409),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6216,7 +6712,7 @@ controller_device_event_get_which(Pointer) ->
 	end.
 
 controller_device_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(372),
+	Code = int_to_bytelist(410),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6260,7 +6756,7 @@ parse_audio_device_event(Bytelist) ->
 	{#audio_device_event{type=Type, timestamp=Timestamp, which=Which, iscapture=Iscapture, padding1=Padding1, padding2=Padding2, padding3=Padding3}, R7}.
 
 pointer_deref_audio_device_event(Pointer) ->
-	Code = int_to_bytelist(373),
+	Code = int_to_bytelist(411),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6270,8 +6766,20 @@ pointer_deref_audio_device_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_audio_device_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(412),
+	PList = pointer_to_bytelist(Pointer),
+	VList = audio_device_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_audio_device_event() ->
-	Code = int_to_bytelist(374),
+	Code = int_to_bytelist(413),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -6281,7 +6789,7 @@ new_audio_device_event() ->
 	end.
 
 delete_audio_device_event(Pointer) ->
-	Code = int_to_bytelist(375),
+	Code = int_to_bytelist(414),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6292,7 +6800,7 @@ delete_audio_device_event(Pointer) ->
 	end.
 
 audio_device_event_get_type(Pointer) ->
-	Code = int_to_bytelist(376),
+	Code = int_to_bytelist(415),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6303,7 +6811,7 @@ audio_device_event_get_type(Pointer) ->
 	end.
 
 audio_device_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(377),
+	Code = int_to_bytelist(416),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6315,7 +6823,7 @@ audio_device_event_set_type(Pointer, Attrib) ->
 	end.
 
 audio_device_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(378),
+	Code = int_to_bytelist(417),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6326,7 +6834,7 @@ audio_device_event_get_timestamp(Pointer) ->
 	end.
 
 audio_device_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(379),
+	Code = int_to_bytelist(418),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6338,7 +6846,7 @@ audio_device_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 audio_device_event_get_which(Pointer) ->
-	Code = int_to_bytelist(380),
+	Code = int_to_bytelist(419),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6349,7 +6857,7 @@ audio_device_event_get_which(Pointer) ->
 	end.
 
 audio_device_event_set_which(Pointer, Attrib) ->
-	Code = int_to_bytelist(381),
+	Code = int_to_bytelist(420),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6361,7 +6869,7 @@ audio_device_event_set_which(Pointer, Attrib) ->
 	end.
 
 audio_device_event_get_iscapture(Pointer) ->
-	Code = int_to_bytelist(382),
+	Code = int_to_bytelist(421),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6372,7 +6880,7 @@ audio_device_event_get_iscapture(Pointer) ->
 	end.
 
 audio_device_event_set_iscapture(Pointer, Attrib) ->
-	Code = int_to_bytelist(383),
+	Code = int_to_bytelist(422),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6384,7 +6892,7 @@ audio_device_event_set_iscapture(Pointer, Attrib) ->
 	end.
 
 audio_device_event_get_padding1(Pointer) ->
-	Code = int_to_bytelist(384),
+	Code = int_to_bytelist(423),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6395,7 +6903,7 @@ audio_device_event_get_padding1(Pointer) ->
 	end.
 
 audio_device_event_set_padding1(Pointer, Attrib) ->
-	Code = int_to_bytelist(385),
+	Code = int_to_bytelist(424),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6407,7 +6915,7 @@ audio_device_event_set_padding1(Pointer, Attrib) ->
 	end.
 
 audio_device_event_get_padding2(Pointer) ->
-	Code = int_to_bytelist(386),
+	Code = int_to_bytelist(425),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6418,7 +6926,7 @@ audio_device_event_get_padding2(Pointer) ->
 	end.
 
 audio_device_event_set_padding2(Pointer, Attrib) ->
-	Code = int_to_bytelist(387),
+	Code = int_to_bytelist(426),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6430,7 +6938,7 @@ audio_device_event_set_padding2(Pointer, Attrib) ->
 	end.
 
 audio_device_event_get_padding3(Pointer) ->
-	Code = int_to_bytelist(388),
+	Code = int_to_bytelist(427),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6441,7 +6949,7 @@ audio_device_event_get_padding3(Pointer) ->
 	end.
 
 audio_device_event_set_padding3(Pointer, Attrib) ->
-	Code = int_to_bytelist(389),
+	Code = int_to_bytelist(428),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6470,7 +6978,7 @@ parse_quit_event(Bytelist) ->
 	{#quit_event{type=Type, timestamp=Timestamp}, R2}.
 
 pointer_deref_quit_event(Pointer) ->
-	Code = int_to_bytelist(390),
+	Code = int_to_bytelist(429),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6480,8 +6988,20 @@ pointer_deref_quit_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_quit_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(430),
+	PList = pointer_to_bytelist(Pointer),
+	VList = quit_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_quit_event() ->
-	Code = int_to_bytelist(391),
+	Code = int_to_bytelist(431),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -6491,7 +7011,7 @@ new_quit_event() ->
 	end.
 
 delete_quit_event(Pointer) ->
-	Code = int_to_bytelist(392),
+	Code = int_to_bytelist(432),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6502,7 +7022,7 @@ delete_quit_event(Pointer) ->
 	end.
 
 quit_event_get_type(Pointer) ->
-	Code = int_to_bytelist(393),
+	Code = int_to_bytelist(433),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6513,7 +7033,7 @@ quit_event_get_type(Pointer) ->
 	end.
 
 quit_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(394),
+	Code = int_to_bytelist(434),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6525,7 +7045,7 @@ quit_event_set_type(Pointer, Attrib) ->
 	end.
 
 quit_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(395),
+	Code = int_to_bytelist(435),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6536,7 +7056,7 @@ quit_event_get_timestamp(Pointer) ->
 	end.
 
 quit_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(396),
+	Code = int_to_bytelist(436),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6577,7 +7097,7 @@ parse_user_event(Bytelist) ->
 	{#user_event{type=Type, timestamp=Timestamp, windowID=WindowID, code=Code, data1=Data1, data2=Data2}, R6}.
 
 pointer_deref_user_event(Pointer) ->
-	Code = int_to_bytelist(397),
+	Code = int_to_bytelist(437),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6587,8 +7107,20 @@ pointer_deref_user_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_user_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(438),
+	PList = pointer_to_bytelist(Pointer),
+	VList = user_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_user_event() ->
-	Code = int_to_bytelist(398),
+	Code = int_to_bytelist(439),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -6598,7 +7130,7 @@ new_user_event() ->
 	end.
 
 delete_user_event(Pointer) ->
-	Code = int_to_bytelist(399),
+	Code = int_to_bytelist(440),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6609,7 +7141,7 @@ delete_user_event(Pointer) ->
 	end.
 
 user_event_get_type(Pointer) ->
-	Code = int_to_bytelist(400),
+	Code = int_to_bytelist(441),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6620,7 +7152,7 @@ user_event_get_type(Pointer) ->
 	end.
 
 user_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(401),
+	Code = int_to_bytelist(442),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6632,7 +7164,7 @@ user_event_set_type(Pointer, Attrib) ->
 	end.
 
 user_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(402),
+	Code = int_to_bytelist(443),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6643,7 +7175,7 @@ user_event_get_timestamp(Pointer) ->
 	end.
 
 user_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(403),
+	Code = int_to_bytelist(444),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6655,7 +7187,7 @@ user_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 user_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(404),
+	Code = int_to_bytelist(445),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6666,7 +7198,7 @@ user_event_get_windowID(Pointer) ->
 	end.
 
 user_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(405),
+	Code = int_to_bytelist(446),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6678,7 +7210,7 @@ user_event_set_windowID(Pointer, Attrib) ->
 	end.
 
 user_event_get_code(Pointer) ->
-	Code = int_to_bytelist(406),
+	Code = int_to_bytelist(447),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6689,7 +7221,7 @@ user_event_get_code(Pointer) ->
 	end.
 
 user_event_set_code(Pointer, Attrib) ->
-	Code = int_to_bytelist(407),
+	Code = int_to_bytelist(448),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6701,7 +7233,7 @@ user_event_set_code(Pointer, Attrib) ->
 	end.
 
 user_event_get_data1(Pointer) ->
-	Code = int_to_bytelist(408),
+	Code = int_to_bytelist(449),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6712,7 +7244,7 @@ user_event_get_data1(Pointer) ->
 	end.
 
 user_event_set_data1(Pointer, Attrib) ->
-	Code = int_to_bytelist(409),
+	Code = int_to_bytelist(450),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6724,7 +7256,7 @@ user_event_set_data1(Pointer, Attrib) ->
 	end.
 
 user_event_get_data2(Pointer) ->
-	Code = int_to_bytelist(410),
+	Code = int_to_bytelist(451),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6735,7 +7267,7 @@ user_event_get_data2(Pointer) ->
 	end.
 
 user_event_set_data2(Pointer, Attrib) ->
-	Code = int_to_bytelist(411),
+	Code = int_to_bytelist(452),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6767,7 +7299,7 @@ parse_syswm_event(Bytelist) ->
 	{#syswm_event{type=Type, timestamp=Timestamp, msg=Msg}, R3}.
 
 pointer_deref_syswm_event(Pointer) ->
-	Code = int_to_bytelist(412),
+	Code = int_to_bytelist(453),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6777,8 +7309,20 @@ pointer_deref_syswm_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_syswm_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(454),
+	PList = pointer_to_bytelist(Pointer),
+	VList = syswm_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_syswm_event() ->
-	Code = int_to_bytelist(413),
+	Code = int_to_bytelist(455),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -6788,7 +7332,7 @@ new_syswm_event() ->
 	end.
 
 delete_syswm_event(Pointer) ->
-	Code = int_to_bytelist(414),
+	Code = int_to_bytelist(456),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6799,7 +7343,7 @@ delete_syswm_event(Pointer) ->
 	end.
 
 syswm_event_get_type(Pointer) ->
-	Code = int_to_bytelist(415),
+	Code = int_to_bytelist(457),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6810,7 +7354,7 @@ syswm_event_get_type(Pointer) ->
 	end.
 
 syswm_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(416),
+	Code = int_to_bytelist(458),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6822,7 +7366,7 @@ syswm_event_set_type(Pointer, Attrib) ->
 	end.
 
 syswm_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(417),
+	Code = int_to_bytelist(459),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6833,7 +7377,7 @@ syswm_event_get_timestamp(Pointer) ->
 	end.
 
 syswm_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(418),
+	Code = int_to_bytelist(460),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6845,7 +7389,7 @@ syswm_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 syswm_event_get_msg(Pointer) ->
-	Code = int_to_bytelist(419),
+	Code = int_to_bytelist(461),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6856,7 +7400,7 @@ syswm_event_get_msg(Pointer) ->
 	end.
 
 syswm_event_set_msg(Pointer, Attrib) ->
-	Code = int_to_bytelist(420),
+	Code = int_to_bytelist(462),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6906,7 +7450,7 @@ parse_touch_finger_event(Bytelist) ->
 	{#touch_finger_event{type=Type, timestamp=Timestamp, touchId=TouchId, fingerId=FingerId, x=X, y=Y, dx=Dx, dy=Dy, pressure=Pressure}, R9}.
 
 pointer_deref_touch_finger_event(Pointer) ->
-	Code = int_to_bytelist(421),
+	Code = int_to_bytelist(463),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6916,8 +7460,20 @@ pointer_deref_touch_finger_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_touch_finger_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(464),
+	PList = pointer_to_bytelist(Pointer),
+	VList = touch_finger_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_touch_finger_event() ->
-	Code = int_to_bytelist(422),
+	Code = int_to_bytelist(465),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -6927,7 +7483,7 @@ new_touch_finger_event() ->
 	end.
 
 delete_touch_finger_event(Pointer) ->
-	Code = int_to_bytelist(423),
+	Code = int_to_bytelist(466),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6938,7 +7494,7 @@ delete_touch_finger_event(Pointer) ->
 	end.
 
 touch_finger_event_get_type(Pointer) ->
-	Code = int_to_bytelist(424),
+	Code = int_to_bytelist(467),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6949,7 +7505,7 @@ touch_finger_event_get_type(Pointer) ->
 	end.
 
 touch_finger_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(425),
+	Code = int_to_bytelist(468),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6961,7 +7517,7 @@ touch_finger_event_set_type(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(426),
+	Code = int_to_bytelist(469),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6972,7 +7528,7 @@ touch_finger_event_get_timestamp(Pointer) ->
 	end.
 
 touch_finger_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(427),
+	Code = int_to_bytelist(470),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -6984,7 +7540,7 @@ touch_finger_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_touchId(Pointer) ->
-	Code = int_to_bytelist(428),
+	Code = int_to_bytelist(471),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -6995,7 +7551,7 @@ touch_finger_event_get_touchId(Pointer) ->
 	end.
 
 touch_finger_event_set_touchId(Pointer, Attrib) ->
-	Code = int_to_bytelist(429),
+	Code = int_to_bytelist(472),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7007,7 +7563,7 @@ touch_finger_event_set_touchId(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_fingerId(Pointer) ->
-	Code = int_to_bytelist(430),
+	Code = int_to_bytelist(473),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7018,7 +7574,7 @@ touch_finger_event_get_fingerId(Pointer) ->
 	end.
 
 touch_finger_event_set_fingerId(Pointer, Attrib) ->
-	Code = int_to_bytelist(431),
+	Code = int_to_bytelist(474),
 	PList = pointer_to_bytelist(Pointer),
 	AList = finger_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7030,7 +7586,7 @@ touch_finger_event_set_fingerId(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_x(Pointer) ->
-	Code = int_to_bytelist(432),
+	Code = int_to_bytelist(475),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7041,7 +7597,7 @@ touch_finger_event_get_x(Pointer) ->
 	end.
 
 touch_finger_event_set_x(Pointer, Attrib) ->
-	Code = int_to_bytelist(433),
+	Code = int_to_bytelist(476),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7053,7 +7609,7 @@ touch_finger_event_set_x(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_y(Pointer) ->
-	Code = int_to_bytelist(434),
+	Code = int_to_bytelist(477),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7064,7 +7620,7 @@ touch_finger_event_get_y(Pointer) ->
 	end.
 
 touch_finger_event_set_y(Pointer, Attrib) ->
-	Code = int_to_bytelist(435),
+	Code = int_to_bytelist(478),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7076,7 +7632,7 @@ touch_finger_event_set_y(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_dx(Pointer) ->
-	Code = int_to_bytelist(436),
+	Code = int_to_bytelist(479),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7087,7 +7643,7 @@ touch_finger_event_get_dx(Pointer) ->
 	end.
 
 touch_finger_event_set_dx(Pointer, Attrib) ->
-	Code = int_to_bytelist(437),
+	Code = int_to_bytelist(480),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7099,7 +7655,7 @@ touch_finger_event_set_dx(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_dy(Pointer) ->
-	Code = int_to_bytelist(438),
+	Code = int_to_bytelist(481),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7110,7 +7666,7 @@ touch_finger_event_get_dy(Pointer) ->
 	end.
 
 touch_finger_event_set_dy(Pointer, Attrib) ->
-	Code = int_to_bytelist(439),
+	Code = int_to_bytelist(482),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7122,7 +7678,7 @@ touch_finger_event_set_dy(Pointer, Attrib) ->
 	end.
 
 touch_finger_event_get_pressure(Pointer) ->
-	Code = int_to_bytelist(440),
+	Code = int_to_bytelist(483),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7133,7 +7689,7 @@ touch_finger_event_get_pressure(Pointer) ->
 	end.
 
 touch_finger_event_set_pressure(Pointer, Attrib) ->
-	Code = int_to_bytelist(441),
+	Code = int_to_bytelist(484),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7183,7 +7739,7 @@ parse_multi_gesture_event(Bytelist) ->
 	{#multi_gesture_event{type=Type, timestamp=Timestamp, touchId=TouchId, dTheta=DTheta, dDist=DDist, x=X, y=Y, numFingers=NumFingers, padding=Padding}, R9}.
 
 pointer_deref_multi_gesture_event(Pointer) ->
-	Code = int_to_bytelist(442),
+	Code = int_to_bytelist(485),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7193,8 +7749,20 @@ pointer_deref_multi_gesture_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_multi_gesture_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(486),
+	PList = pointer_to_bytelist(Pointer),
+	VList = multi_gesture_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_multi_gesture_event() ->
-	Code = int_to_bytelist(443),
+	Code = int_to_bytelist(487),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -7204,7 +7772,7 @@ new_multi_gesture_event() ->
 	end.
 
 delete_multi_gesture_event(Pointer) ->
-	Code = int_to_bytelist(444),
+	Code = int_to_bytelist(488),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7215,7 +7783,7 @@ delete_multi_gesture_event(Pointer) ->
 	end.
 
 multi_gesture_event_get_type(Pointer) ->
-	Code = int_to_bytelist(445),
+	Code = int_to_bytelist(489),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7226,7 +7794,7 @@ multi_gesture_event_get_type(Pointer) ->
 	end.
 
 multi_gesture_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(446),
+	Code = int_to_bytelist(490),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7238,7 +7806,7 @@ multi_gesture_event_set_type(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(447),
+	Code = int_to_bytelist(491),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7249,7 +7817,7 @@ multi_gesture_event_get_timestamp(Pointer) ->
 	end.
 
 multi_gesture_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(448),
+	Code = int_to_bytelist(492),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7261,7 +7829,7 @@ multi_gesture_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_touchId(Pointer) ->
-	Code = int_to_bytelist(449),
+	Code = int_to_bytelist(493),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7272,7 +7840,7 @@ multi_gesture_event_get_touchId(Pointer) ->
 	end.
 
 multi_gesture_event_set_touchId(Pointer, Attrib) ->
-	Code = int_to_bytelist(450),
+	Code = int_to_bytelist(494),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7284,7 +7852,7 @@ multi_gesture_event_set_touchId(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_dTheta(Pointer) ->
-	Code = int_to_bytelist(451),
+	Code = int_to_bytelist(495),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7295,7 +7863,7 @@ multi_gesture_event_get_dTheta(Pointer) ->
 	end.
 
 multi_gesture_event_set_dTheta(Pointer, Attrib) ->
-	Code = int_to_bytelist(452),
+	Code = int_to_bytelist(496),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7307,7 +7875,7 @@ multi_gesture_event_set_dTheta(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_dDist(Pointer) ->
-	Code = int_to_bytelist(453),
+	Code = int_to_bytelist(497),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7318,7 +7886,7 @@ multi_gesture_event_get_dDist(Pointer) ->
 	end.
 
 multi_gesture_event_set_dDist(Pointer, Attrib) ->
-	Code = int_to_bytelist(454),
+	Code = int_to_bytelist(498),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7330,7 +7898,7 @@ multi_gesture_event_set_dDist(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_x(Pointer) ->
-	Code = int_to_bytelist(455),
+	Code = int_to_bytelist(499),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7341,7 +7909,7 @@ multi_gesture_event_get_x(Pointer) ->
 	end.
 
 multi_gesture_event_set_x(Pointer, Attrib) ->
-	Code = int_to_bytelist(456),
+	Code = int_to_bytelist(500),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7353,7 +7921,7 @@ multi_gesture_event_set_x(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_y(Pointer) ->
-	Code = int_to_bytelist(457),
+	Code = int_to_bytelist(501),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7364,7 +7932,7 @@ multi_gesture_event_get_y(Pointer) ->
 	end.
 
 multi_gesture_event_set_y(Pointer, Attrib) ->
-	Code = int_to_bytelist(458),
+	Code = int_to_bytelist(502),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7376,7 +7944,7 @@ multi_gesture_event_set_y(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_numFingers(Pointer) ->
-	Code = int_to_bytelist(459),
+	Code = int_to_bytelist(503),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7387,7 +7955,7 @@ multi_gesture_event_get_numFingers(Pointer) ->
 	end.
 
 multi_gesture_event_set_numFingers(Pointer, Attrib) ->
-	Code = int_to_bytelist(460),
+	Code = int_to_bytelist(504),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7399,7 +7967,7 @@ multi_gesture_event_set_numFingers(Pointer, Attrib) ->
 	end.
 
 multi_gesture_event_get_padding(Pointer) ->
-	Code = int_to_bytelist(461),
+	Code = int_to_bytelist(505),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7410,7 +7978,7 @@ multi_gesture_event_get_padding(Pointer) ->
 	end.
 
 multi_gesture_event_set_padding(Pointer, Attrib) ->
-	Code = int_to_bytelist(462),
+	Code = int_to_bytelist(506),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7457,7 +8025,7 @@ parse_dollar_gesture_event(Bytelist) ->
 	{#dollar_gesture_event{type=Type, timestamp=Timestamp, touchId=TouchId, gestureId=GestureId, numFingers=NumFingers, error=Error, x=X, y=Y}, R8}.
 
 pointer_deref_dollar_gesture_event(Pointer) ->
-	Code = int_to_bytelist(463),
+	Code = int_to_bytelist(507),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7467,8 +8035,20 @@ pointer_deref_dollar_gesture_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_dollar_gesture_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(508),
+	PList = pointer_to_bytelist(Pointer),
+	VList = dollar_gesture_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_dollar_gesture_event() ->
-	Code = int_to_bytelist(464),
+	Code = int_to_bytelist(509),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -7478,7 +8058,7 @@ new_dollar_gesture_event() ->
 	end.
 
 delete_dollar_gesture_event(Pointer) ->
-	Code = int_to_bytelist(465),
+	Code = int_to_bytelist(510),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7489,7 +8069,7 @@ delete_dollar_gesture_event(Pointer) ->
 	end.
 
 dollar_gesture_event_get_type(Pointer) ->
-	Code = int_to_bytelist(466),
+	Code = int_to_bytelist(511),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7500,7 +8080,7 @@ dollar_gesture_event_get_type(Pointer) ->
 	end.
 
 dollar_gesture_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(467),
+	Code = int_to_bytelist(512),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7512,7 +8092,7 @@ dollar_gesture_event_set_type(Pointer, Attrib) ->
 	end.
 
 dollar_gesture_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(468),
+	Code = int_to_bytelist(513),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7523,7 +8103,7 @@ dollar_gesture_event_get_timestamp(Pointer) ->
 	end.
 
 dollar_gesture_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(469),
+	Code = int_to_bytelist(514),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7535,7 +8115,7 @@ dollar_gesture_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 dollar_gesture_event_get_touchId(Pointer) ->
-	Code = int_to_bytelist(470),
+	Code = int_to_bytelist(515),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7546,7 +8126,7 @@ dollar_gesture_event_get_touchId(Pointer) ->
 	end.
 
 dollar_gesture_event_set_touchId(Pointer, Attrib) ->
-	Code = int_to_bytelist(471),
+	Code = int_to_bytelist(516),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7558,7 +8138,7 @@ dollar_gesture_event_set_touchId(Pointer, Attrib) ->
 	end.
 
 dollar_gesture_event_get_gestureId(Pointer) ->
-	Code = int_to_bytelist(472),
+	Code = int_to_bytelist(517),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7569,7 +8149,7 @@ dollar_gesture_event_get_gestureId(Pointer) ->
 	end.
 
 dollar_gesture_event_set_gestureId(Pointer, Attrib) ->
-	Code = int_to_bytelist(473),
+	Code = int_to_bytelist(518),
 	PList = pointer_to_bytelist(Pointer),
 	AList = gesture_id_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7581,7 +8161,7 @@ dollar_gesture_event_set_gestureId(Pointer, Attrib) ->
 	end.
 
 dollar_gesture_event_get_numFingers(Pointer) ->
-	Code = int_to_bytelist(474),
+	Code = int_to_bytelist(519),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7592,7 +8172,7 @@ dollar_gesture_event_get_numFingers(Pointer) ->
 	end.
 
 dollar_gesture_event_set_numFingers(Pointer, Attrib) ->
-	Code = int_to_bytelist(475),
+	Code = int_to_bytelist(520),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7604,7 +8184,7 @@ dollar_gesture_event_set_numFingers(Pointer, Attrib) ->
 	end.
 
 dollar_gesture_event_get_error(Pointer) ->
-	Code = int_to_bytelist(476),
+	Code = int_to_bytelist(521),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7615,7 +8195,7 @@ dollar_gesture_event_get_error(Pointer) ->
 	end.
 
 dollar_gesture_event_set_error(Pointer, Attrib) ->
-	Code = int_to_bytelist(477),
+	Code = int_to_bytelist(522),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7627,7 +8207,7 @@ dollar_gesture_event_set_error(Pointer, Attrib) ->
 	end.
 
 dollar_gesture_event_get_x(Pointer) ->
-	Code = int_to_bytelist(478),
+	Code = int_to_bytelist(523),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7638,7 +8218,7 @@ dollar_gesture_event_get_x(Pointer) ->
 	end.
 
 dollar_gesture_event_set_x(Pointer, Attrib) ->
-	Code = int_to_bytelist(479),
+	Code = int_to_bytelist(524),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7650,7 +8230,7 @@ dollar_gesture_event_set_x(Pointer, Attrib) ->
 	end.
 
 dollar_gesture_event_get_y(Pointer) ->
-	Code = int_to_bytelist(480),
+	Code = int_to_bytelist(525),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7661,7 +8241,7 @@ dollar_gesture_event_get_y(Pointer) ->
 	end.
 
 dollar_gesture_event_set_y(Pointer, Attrib) ->
-	Code = int_to_bytelist(481),
+	Code = int_to_bytelist(526),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7696,7 +8276,7 @@ parse_drop_event(Bytelist) ->
 	{#drop_event{type=Type, timestamp=Timestamp, file=File, windowID=WindowID}, R4}.
 
 pointer_deref_drop_event(Pointer) ->
-	Code = int_to_bytelist(482),
+	Code = int_to_bytelist(527),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7706,8 +8286,20 @@ pointer_deref_drop_event(Pointer) ->
 			{error, Msg}
 	end.
 
+pointer_deref_drop_event_assign(Pointer, Value) ->
+	Code = int_to_bytelist(528),
+	PList = pointer_to_bytelist(Pointer),
+	VList = drop_event_to_bytelist(Pointer),
+	sdl_port ! {self(), {command, [Code, PList, VList]}},
+	receive
+		{_, { data, _DataList}} ->
+			ok;
+		Msg ->
+			{error, Msg}
+	end.
+
 new_drop_event() ->
-	Code = int_to_bytelist(483),
+	Code = int_to_bytelist(529),
 	sdl_port ! {self(), {command, [Code]}},
 	receive
 		{_, { data, DataList}} ->
@@ -7717,7 +8309,7 @@ new_drop_event() ->
 	end.
 
 delete_drop_event(Pointer) ->
-	Code = int_to_bytelist(484),
+	Code = int_to_bytelist(530),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7728,7 +8320,7 @@ delete_drop_event(Pointer) ->
 	end.
 
 drop_event_get_type(Pointer) ->
-	Code = int_to_bytelist(485),
+	Code = int_to_bytelist(531),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7739,7 +8331,7 @@ drop_event_get_type(Pointer) ->
 	end.
 
 drop_event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(486),
+	Code = int_to_bytelist(532),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7751,7 +8343,7 @@ drop_event_set_type(Pointer, Attrib) ->
 	end.
 
 drop_event_get_timestamp(Pointer) ->
-	Code = int_to_bytelist(487),
+	Code = int_to_bytelist(533),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7762,7 +8354,7 @@ drop_event_get_timestamp(Pointer) ->
 	end.
 
 drop_event_set_timestamp(Pointer, Attrib) ->
-	Code = int_to_bytelist(488),
+	Code = int_to_bytelist(534),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7774,7 +8366,7 @@ drop_event_set_timestamp(Pointer, Attrib) ->
 	end.
 
 drop_event_get_file(Pointer) ->
-	Code = int_to_bytelist(489),
+	Code = int_to_bytelist(535),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7785,7 +8377,7 @@ drop_event_get_file(Pointer) ->
 	end.
 
 drop_event_set_file(Pointer, Attrib) ->
-	Code = int_to_bytelist(490),
+	Code = int_to_bytelist(536),
 	PList = pointer_to_bytelist(Pointer),
 	AList = string_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7797,7 +8389,7 @@ drop_event_set_file(Pointer, Attrib) ->
 	end.
 
 drop_event_get_windowID(Pointer) ->
-	Code = int_to_bytelist(491),
+	Code = int_to_bytelist(537),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7808,7 +8400,7 @@ drop_event_get_windowID(Pointer) ->
 	end.
 
 drop_event_set_windowID(Pointer, Attrib) ->
-	Code = int_to_bytelist(492),
+	Code = int_to_bytelist(538),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7829,7 +8421,7 @@ parse_event(Bytelist) ->
 	parse_pointer(Bytelist).
 
 event_get_type(Pointer) ->
-	Code = int_to_bytelist(493),
+	Code = int_to_bytelist(539),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7840,7 +8432,7 @@ event_get_type(Pointer) ->
 	end.
 
 event_set_type(Pointer, Attrib) ->
-	Code = int_to_bytelist(494),
+	Code = int_to_bytelist(540),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7852,7 +8444,7 @@ event_set_type(Pointer, Attrib) ->
 	end.
 
 event_get_common(Pointer) ->
-	Code = int_to_bytelist(495),
+	Code = int_to_bytelist(541),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7863,7 +8455,7 @@ event_get_common(Pointer) ->
 	end.
 
 event_set_common(Pointer, Attrib) ->
-	Code = int_to_bytelist(496),
+	Code = int_to_bytelist(542),
 	PList = pointer_to_bytelist(Pointer),
 	AList = common_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7875,7 +8467,7 @@ event_set_common(Pointer, Attrib) ->
 	end.
 
 event_get_window(Pointer) ->
-	Code = int_to_bytelist(497),
+	Code = int_to_bytelist(543),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7886,7 +8478,7 @@ event_get_window(Pointer) ->
 	end.
 
 event_set_window(Pointer, Attrib) ->
-	Code = int_to_bytelist(498),
+	Code = int_to_bytelist(544),
 	PList = pointer_to_bytelist(Pointer),
 	AList = window_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7898,7 +8490,7 @@ event_set_window(Pointer, Attrib) ->
 	end.
 
 event_get_key(Pointer) ->
-	Code = int_to_bytelist(499),
+	Code = int_to_bytelist(545),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7909,7 +8501,7 @@ event_get_key(Pointer) ->
 	end.
 
 event_set_key(Pointer, Attrib) ->
-	Code = int_to_bytelist(500),
+	Code = int_to_bytelist(546),
 	PList = pointer_to_bytelist(Pointer),
 	AList = keyboard_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7921,7 +8513,7 @@ event_set_key(Pointer, Attrib) ->
 	end.
 
 event_get_edit(Pointer) ->
-	Code = int_to_bytelist(501),
+	Code = int_to_bytelist(547),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7932,7 +8524,7 @@ event_get_edit(Pointer) ->
 	end.
 
 event_set_edit(Pointer, Attrib) ->
-	Code = int_to_bytelist(502),
+	Code = int_to_bytelist(548),
 	PList = pointer_to_bytelist(Pointer),
 	AList = text_editing_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7944,7 +8536,7 @@ event_set_edit(Pointer, Attrib) ->
 	end.
 
 event_get_text(Pointer) ->
-	Code = int_to_bytelist(503),
+	Code = int_to_bytelist(549),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7955,7 +8547,7 @@ event_get_text(Pointer) ->
 	end.
 
 event_set_text(Pointer, Attrib) ->
-	Code = int_to_bytelist(504),
+	Code = int_to_bytelist(550),
 	PList = pointer_to_bytelist(Pointer),
 	AList = text_input_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7967,7 +8559,7 @@ event_set_text(Pointer, Attrib) ->
 	end.
 
 event_get_motion(Pointer) ->
-	Code = int_to_bytelist(505),
+	Code = int_to_bytelist(551),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -7978,7 +8570,7 @@ event_get_motion(Pointer) ->
 	end.
 
 event_set_motion(Pointer, Attrib) ->
-	Code = int_to_bytelist(506),
+	Code = int_to_bytelist(552),
 	PList = pointer_to_bytelist(Pointer),
 	AList = mouse_motion_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -7990,7 +8582,7 @@ event_set_motion(Pointer, Attrib) ->
 	end.
 
 event_get_button(Pointer) ->
-	Code = int_to_bytelist(507),
+	Code = int_to_bytelist(553),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8001,7 +8593,7 @@ event_get_button(Pointer) ->
 	end.
 
 event_set_button(Pointer, Attrib) ->
-	Code = int_to_bytelist(508),
+	Code = int_to_bytelist(554),
 	PList = pointer_to_bytelist(Pointer),
 	AList = mouse_button_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8013,7 +8605,7 @@ event_set_button(Pointer, Attrib) ->
 	end.
 
 event_get_wheel(Pointer) ->
-	Code = int_to_bytelist(509),
+	Code = int_to_bytelist(555),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8024,7 +8616,7 @@ event_get_wheel(Pointer) ->
 	end.
 
 event_set_wheel(Pointer, Attrib) ->
-	Code = int_to_bytelist(510),
+	Code = int_to_bytelist(556),
 	PList = pointer_to_bytelist(Pointer),
 	AList = mouse_wheel_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8036,7 +8628,7 @@ event_set_wheel(Pointer, Attrib) ->
 	end.
 
 event_get_jaxis(Pointer) ->
-	Code = int_to_bytelist(511),
+	Code = int_to_bytelist(557),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8047,7 +8639,7 @@ event_get_jaxis(Pointer) ->
 	end.
 
 event_set_jaxis(Pointer, Attrib) ->
-	Code = int_to_bytelist(512),
+	Code = int_to_bytelist(558),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_axis_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8059,7 +8651,7 @@ event_set_jaxis(Pointer, Attrib) ->
 	end.
 
 event_get_jball(Pointer) ->
-	Code = int_to_bytelist(513),
+	Code = int_to_bytelist(559),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8070,7 +8662,7 @@ event_get_jball(Pointer) ->
 	end.
 
 event_set_jball(Pointer, Attrib) ->
-	Code = int_to_bytelist(514),
+	Code = int_to_bytelist(560),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_ball_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8082,7 +8674,7 @@ event_set_jball(Pointer, Attrib) ->
 	end.
 
 event_get_jhat(Pointer) ->
-	Code = int_to_bytelist(515),
+	Code = int_to_bytelist(561),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8093,7 +8685,7 @@ event_get_jhat(Pointer) ->
 	end.
 
 event_set_jhat(Pointer, Attrib) ->
-	Code = int_to_bytelist(516),
+	Code = int_to_bytelist(562),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_hat_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8105,7 +8697,7 @@ event_set_jhat(Pointer, Attrib) ->
 	end.
 
 event_get_jbutton(Pointer) ->
-	Code = int_to_bytelist(517),
+	Code = int_to_bytelist(563),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8116,7 +8708,7 @@ event_get_jbutton(Pointer) ->
 	end.
 
 event_set_jbutton(Pointer, Attrib) ->
-	Code = int_to_bytelist(518),
+	Code = int_to_bytelist(564),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_button_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8128,7 +8720,7 @@ event_set_jbutton(Pointer, Attrib) ->
 	end.
 
 event_get_jdevice(Pointer) ->
-	Code = int_to_bytelist(519),
+	Code = int_to_bytelist(565),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8139,7 +8731,7 @@ event_get_jdevice(Pointer) ->
 	end.
 
 event_set_jdevice(Pointer, Attrib) ->
-	Code = int_to_bytelist(520),
+	Code = int_to_bytelist(566),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_device_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8151,7 +8743,7 @@ event_set_jdevice(Pointer, Attrib) ->
 	end.
 
 event_get_caxis(Pointer) ->
-	Code = int_to_bytelist(521),
+	Code = int_to_bytelist(567),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8162,7 +8754,7 @@ event_get_caxis(Pointer) ->
 	end.
 
 event_set_caxis(Pointer, Attrib) ->
-	Code = int_to_bytelist(522),
+	Code = int_to_bytelist(568),
 	PList = pointer_to_bytelist(Pointer),
 	AList = controller_axis_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8174,7 +8766,7 @@ event_set_caxis(Pointer, Attrib) ->
 	end.
 
 event_get_cbutton(Pointer) ->
-	Code = int_to_bytelist(523),
+	Code = int_to_bytelist(569),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8185,7 +8777,7 @@ event_get_cbutton(Pointer) ->
 	end.
 
 event_set_cbutton(Pointer, Attrib) ->
-	Code = int_to_bytelist(524),
+	Code = int_to_bytelist(570),
 	PList = pointer_to_bytelist(Pointer),
 	AList = controller_button_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8197,7 +8789,7 @@ event_set_cbutton(Pointer, Attrib) ->
 	end.
 
 event_get_cdevice(Pointer) ->
-	Code = int_to_bytelist(525),
+	Code = int_to_bytelist(571),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8208,7 +8800,7 @@ event_get_cdevice(Pointer) ->
 	end.
 
 event_set_cdevice(Pointer, Attrib) ->
-	Code = int_to_bytelist(526),
+	Code = int_to_bytelist(572),
 	PList = pointer_to_bytelist(Pointer),
 	AList = controller_device_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8220,7 +8812,7 @@ event_set_cdevice(Pointer, Attrib) ->
 	end.
 
 event_get_adevice(Pointer) ->
-	Code = int_to_bytelist(527),
+	Code = int_to_bytelist(573),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8231,7 +8823,7 @@ event_get_adevice(Pointer) ->
 	end.
 
 event_set_adevice(Pointer, Attrib) ->
-	Code = int_to_bytelist(528),
+	Code = int_to_bytelist(574),
 	PList = pointer_to_bytelist(Pointer),
 	AList = audio_device_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8243,7 +8835,7 @@ event_set_adevice(Pointer, Attrib) ->
 	end.
 
 event_get_quit(Pointer) ->
-	Code = int_to_bytelist(529),
+	Code = int_to_bytelist(575),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8254,7 +8846,7 @@ event_get_quit(Pointer) ->
 	end.
 
 event_set_quit(Pointer, Attrib) ->
-	Code = int_to_bytelist(530),
+	Code = int_to_bytelist(576),
 	PList = pointer_to_bytelist(Pointer),
 	AList = quit_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8266,7 +8858,7 @@ event_set_quit(Pointer, Attrib) ->
 	end.
 
 event_get_user(Pointer) ->
-	Code = int_to_bytelist(531),
+	Code = int_to_bytelist(577),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8277,7 +8869,7 @@ event_get_user(Pointer) ->
 	end.
 
 event_set_user(Pointer, Attrib) ->
-	Code = int_to_bytelist(532),
+	Code = int_to_bytelist(578),
 	PList = pointer_to_bytelist(Pointer),
 	AList = user_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8289,7 +8881,7 @@ event_set_user(Pointer, Attrib) ->
 	end.
 
 event_get_syswm(Pointer) ->
-	Code = int_to_bytelist(533),
+	Code = int_to_bytelist(579),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8300,7 +8892,7 @@ event_get_syswm(Pointer) ->
 	end.
 
 event_set_syswm(Pointer, Attrib) ->
-	Code = int_to_bytelist(534),
+	Code = int_to_bytelist(580),
 	PList = pointer_to_bytelist(Pointer),
 	AList = syswm_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8312,7 +8904,7 @@ event_set_syswm(Pointer, Attrib) ->
 	end.
 
 event_get_tfinger(Pointer) ->
-	Code = int_to_bytelist(535),
+	Code = int_to_bytelist(581),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8323,7 +8915,7 @@ event_get_tfinger(Pointer) ->
 	end.
 
 event_set_tfinger(Pointer, Attrib) ->
-	Code = int_to_bytelist(536),
+	Code = int_to_bytelist(582),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_finger_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8335,7 +8927,7 @@ event_set_tfinger(Pointer, Attrib) ->
 	end.
 
 event_get_mgesture(Pointer) ->
-	Code = int_to_bytelist(537),
+	Code = int_to_bytelist(583),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8346,7 +8938,7 @@ event_get_mgesture(Pointer) ->
 	end.
 
 event_set_mgesture(Pointer, Attrib) ->
-	Code = int_to_bytelist(538),
+	Code = int_to_bytelist(584),
 	PList = pointer_to_bytelist(Pointer),
 	AList = multi_gesture_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8358,7 +8950,7 @@ event_set_mgesture(Pointer, Attrib) ->
 	end.
 
 event_get_dgesture(Pointer) ->
-	Code = int_to_bytelist(539),
+	Code = int_to_bytelist(585),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8369,7 +8961,7 @@ event_get_dgesture(Pointer) ->
 	end.
 
 event_set_dgesture(Pointer, Attrib) ->
-	Code = int_to_bytelist(540),
+	Code = int_to_bytelist(586),
 	PList = pointer_to_bytelist(Pointer),
 	AList = dollar_gesture_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8381,7 +8973,7 @@ event_set_dgesture(Pointer, Attrib) ->
 	end.
 
 event_get_drop(Pointer) ->
-	Code = int_to_bytelist(541),
+	Code = int_to_bytelist(587),
 	PList = pointer_to_bytelist(Pointer),
 	sdl_port ! {self(), {command, [Code, PList]}},
 	receive
@@ -8392,7 +8984,7 @@ event_get_drop(Pointer) ->
 	end.
 
 event_set_drop(Pointer, Attrib) ->
-	Code = int_to_bytelist(542),
+	Code = int_to_bytelist(588),
 	PList = pointer_to_bytelist(Pointer),
 	AList = drop_event_to_bytelist(Attrib),
 	sdl_port ! {self(), {command, [Code, PList, AList]}},
@@ -8406,7 +8998,7 @@ event_set_drop(Pointer, Attrib) ->
 %--------------------------------------------------------
 
 init(Uint32_1) ->
-	Code = int_to_bytelist(543),
+	Code = int_to_bytelist(589),
 	Param1 = uint32_to_bytelist(Uint32_1),
 	sdl_port ! {self(), {command, [Code, Param1]}},
 	receive
@@ -8418,7 +9010,7 @@ init(Uint32_1) ->
 	end.
 
 quit() ->
-	Code = int_to_bytelist(544),
+	Code = int_to_bytelist(590),
 	sdl_port ! {self(), {command, [Code, []]}},
 	receive
 		{_, {data, _DataList}} ->
@@ -8428,7 +9020,7 @@ quit() ->
 	end.
 
 create_window(String_1, Int_2, Int_3, Int_4, Int_5, Uint32_6) ->
-	Code = int_to_bytelist(545),
+	Code = int_to_bytelist(591),
 	Param1 = string_to_bytelist(String_1),
 	Param2 = int_to_bytelist(Int_2),
 	Param3 = int_to_bytelist(Int_3),
@@ -8445,7 +9037,7 @@ create_window(String_1, Int_2, Int_3, Int_4, Int_5, Uint32_6) ->
 	end.
 
 get_window_surface(P_Window_1) ->
-	Code = int_to_bytelist(546),
+	Code = int_to_bytelist(592),
 	Param1 = pointer_to_bytelist(P_Window_1),
 	sdl_port ! {self(), {command, [Code, Param1]}},
 	receive
@@ -8457,7 +9049,7 @@ get_window_surface(P_Window_1) ->
 	end.
 
 load_bmp(String_1) ->
-	Code = int_to_bytelist(547),
+	Code = int_to_bytelist(593),
 	Param1 = string_to_bytelist(String_1),
 	sdl_port ! {self(), {command, [Code, Param1]}},
 	receive
@@ -8469,7 +9061,7 @@ load_bmp(String_1) ->
 	end.
 
 free_surface(P_Surface_1) ->
-	Code = int_to_bytelist(548),
+	Code = int_to_bytelist(594),
 	Param1 = pointer_to_bytelist(P_Surface_1),
 	sdl_port ! {self(), {command, [Code, Param1]}},
 	receive
@@ -8480,7 +9072,7 @@ free_surface(P_Surface_1) ->
 	end.
 
 blit_surface(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
-	Code = int_to_bytelist(549),
+	Code = int_to_bytelist(595),
 	Param1 = pointer_to_bytelist(P_Surface_1),
 	Param2 = pointer_to_bytelist(P_Rect_2),
 	Param3 = pointer_to_bytelist(P_Surface_3),
@@ -8495,7 +9087,7 @@ blit_surface(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	end.
 
 blit_scaled(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
-	Code = int_to_bytelist(550),
+	Code = int_to_bytelist(596),
 	Param1 = pointer_to_bytelist(P_Surface_1),
 	Param2 = pointer_to_bytelist(P_Rect_2),
 	Param3 = pointer_to_bytelist(P_Surface_3),
@@ -8510,7 +9102,7 @@ blit_scaled(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	end.
 
 update_window_surface(P_Window_1) ->
-	Code = int_to_bytelist(551),
+	Code = int_to_bytelist(597),
 	Param1 = pointer_to_bytelist(P_Window_1),
 	sdl_port ! {self(), {command, [Code, Param1]}},
 	receive
@@ -8522,7 +9114,7 @@ update_window_surface(P_Window_1) ->
 	end.
 
 destroy_window(P_Window_1) ->
-	Code = int_to_bytelist(552),
+	Code = int_to_bytelist(598),
 	Param1 = pointer_to_bytelist(P_Window_1),
 	sdl_port ! {self(), {command, [Code, Param1]}},
 	receive
@@ -8533,7 +9125,7 @@ destroy_window(P_Window_1) ->
 	end.
 
 get_window_size(P_Window_1) ->
-	Code = int_to_bytelist(553),
+	Code = int_to_bytelist(599),
 	Param1 = pointer_to_bytelist(P_Window_1),
 	sdl_port ! {self(), {command, [Code, Param1]}},
 	receive
@@ -8547,7 +9139,7 @@ get_window_size(P_Window_1) ->
 	end.
 
 get_error() ->
-	Code = int_to_bytelist(554),
+	Code = int_to_bytelist(600),
 	sdl_port ! {self(), {command, [Code, []]}},
 	receive
 		{_, {data, DataList}} ->
@@ -8558,7 +9150,7 @@ get_error() ->
 	end.
 
 poll_event() ->
-	Code = int_to_bytelist(555),
+	Code = int_to_bytelist(601),
 	sdl_port ! {self(), {command, [Code, []]}},
 	receive
 		{_, {data, DataList}} ->

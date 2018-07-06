@@ -1,0 +1,18 @@
+[
+	"pointer_deref_int_Handler",
+	"pointer_deref_int_assign_Handler",
+	"new_int_Handler",
+	"delete_int_Handler",
+	"pointer_deref_float_Handler",
+	"pointer_deref_float_assign_Handler",
+	"new_float_Handler",
+	"delete_float_Handler",
+	"pointer_deref_double_Handler",
+	"pointer_deref_double_assign_Handler",
+	"new_double_Handler",
+	"delete_double_Handler",
+	"pointer_deref_string_Handler",
+	"pointer_deref_string_assign_Handler",
+	"new_string_Handler",
+	"delete_string_Handler"
+].

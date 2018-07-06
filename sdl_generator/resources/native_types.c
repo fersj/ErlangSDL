@@ -1,3 +1,8 @@
+byte * read_pointer(byte *in, void **result);
+byte * write_pointer(void **pointer, byte *out, size_t *len);
+
+// ---- Int ----
+
 byte * read_int8(byte *in, int8_t *result) {
 	byte *current_in = in;
 
@@ -85,6 +90,45 @@ byte * write_int(int *number, byte *current_out, size_t *len) {
 	return write_int32(number, current_out, len);
 }
 
+void pointer_deref_int_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_int(ptr, current_out, len_out);
+}
+
+void pointer_deref_int_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	int value;
+	current_in = read_int(current_in, &value);
+	*ptr = value;
+}
+
+void new_int_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr = malloc(sizeof(int));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_int_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	int *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- Float ----
+
 byte * read_float(byte *in, float *result) {
 	byte *current_in = in;
 	union {
@@ -115,6 +159,45 @@ byte * write_float(float *number, byte *out, size_t *len) {
 	return current_out;
 }
 
+void pointer_deref_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_float(ptr, current_out, len_out);
+}
+
+void pointer_deref_float_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	float value;
+	current_in = read_float(current_in, &value);
+	*ptr = value;
+}
+
+void new_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr = malloc(sizeof(float));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	float *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- Double ----
+
 byte * read_double(byte *in, double *result) {
 	byte *current_in = in;
 	union {
@@ -144,6 +227,45 @@ byte * write_double(double *number, byte *out, size_t *len) {
 
 	return current_out;
 }
+
+void pointer_deref_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_double(ptr, current_out, len_out);
+}
+
+void pointer_deref_double_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	double value;
+	current_in = read_double(current_in, &value);
+	*ptr = value;
+}
+
+void new_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr = malloc(sizeof(double));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	double *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- String ----
 
 byte * read_string(byte *in, string *result) {
 	byte *current_in = in;
@@ -177,6 +299,45 @@ byte * write_string(string *str, byte *out, size_t *len) {
 	return current_out;
 }
 
+void pointer_deref_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	current_out = write_string(ptr, current_out, len_out);
+}
+
+void pointer_deref_string_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	string value;
+	current_in = read_string(current_in, &value);
+	strcpy(*ptr, value);
+}
+
+void new_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr = malloc(sizeof(string));
+	current_out = write_pointer(&ptr, current_out, len_out);
+}
+
+void delete_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
+	byte *current_in = in, *current_out = out;
+	*len_out = 0; current_in+=4;
+
+	string *ptr;
+	current_in = read_pointer(current_in, (void **) &ptr);
+	free(ptr);
+}
+
+// ---- Pointer ----
+
 byte * read_pointer(byte *in, void **result) {
 	byte *current_in = in;
 	uintptr_t p;
@@ -195,3 +356,4 @@ byte * write_pointer(void **pointer, byte *out, size_t *len) {
 
 	return current_out;
 }
+

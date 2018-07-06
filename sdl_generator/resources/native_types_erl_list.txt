@@ -1,0 +1,18 @@
+[
+	"pointer_deref_int/1",
+	"pointer_deref_int_assign/2",
+	"new_int/0",
+	"delete_int/1",
+	"pointer_deref_float/1",
+	"pointer_deref_float_assign/2",
+	"new_float/0",
+	"delete_float/1",
+	"pointer_deref_double/1",
+	"pointer_deref_double_assign/2",
+	"new_double/0",
+	"delete_double/1",
+	"pointer_deref_string/1",
+	"pointer_deref_string_assign/2",
+	"new_string/0",
+	"delete_string/1"
+].

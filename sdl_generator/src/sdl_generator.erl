@@ -1,6 +1,6 @@
 -module(sdl_generator).
 
--export([main/1, generate_code/0, generate_code/1, sdl_helper/0]).
+-export([main/1, generate_code/0, generate_code/1, sdl_helper/1]).
 
 -import(bbmustache, [render/2]).
 
@@ -28,11 +28,19 @@ main(_Args) ->
 generate_code() ->
   generate_code("resources/sdl_spec_test.txt").
 generate_code(Filename) ->
-  register(sdl_helper, spawn(?MODULE, sdl_helper, [])),
+  case file:open("resources/native_types_erl_list.txt", [read]) of
+    {ok, InputDeviceNF} ->
+      {ok, NativeFucsList} = io:read(InputDeviceNF, ""),
+      file:close(InputDeviceNF);
+    {error, ErrorNF} ->
+      NativeFucsList = [],
+      io:format("Error reading file: ~p~n", [ErrorNF])
+  end,
+  register(sdl_helper, spawn(?MODULE, sdl_helper, [length(NativeFucsList)+1])),
   case file:open(Filename, [read]) of
-    {ok, InputDevice} ->
-      {ok, {spec, MacroList, TypeList, FunList}} = io:read(InputDevice, ""),
-      file:close(InputDevice),
+    {ok, InputDeviceS} ->
+      {ok, {spec, MacroList, TypeList, FunList}} = io:read(InputDeviceS, ""),
+      file:close(InputDeviceS),
       file:delete(?ERL_FILENAME),
       file:delete(?HRL_FILENAME),
       file:delete(?C_FILENAME),
@@ -42,15 +50,15 @@ generate_code(Filename) ->
                   "-include(\"sdl_ports_gen.hrl\").\n"
                   "-compile(export_all).\n\n",
       write_file(?ERL_FILENAME, InitLines, [append]),
-      generate_export(TypeList, FunList),
+      generate_export(NativeFucsList, TypeList, FunList),
       generate_macros(MacroList),
       generate_init_port(),
       generate_native_types_parser_erl(),
       generate_types_parser_erl(TypeList),
       generate_functions_erl(FunList),
-      reset_fun_code(),
 
       % C code
+      reset_fun_code(1),
       generate_init_c(?C_LIB_IMPORT),
       generate_native_types_parser_c(),
       generate_types_parser_c(TypeList),
@@ -59,41 +67,43 @@ generate_code(Filename) ->
       %io:format("Macros: ~p~n", [MacroList]),
       %io:format("Types: ~p~n", [TypeList]),
       %io:format("Funs: ~p~n", [FunList]);
-    {error, Error} ->
-      io:format("Error reading file: ~p~n", [Error])
+    {error, ErrorS} ->
+      io:format("Error reading file: ~p~n", [ErrorS])
   end,
   end_helper(),
   ok.
 
-% TODO añadir los los new, delete y deref para tipos básicos
-generate_export(TypeList, FunList) ->
-  generate_export(TypeList, FunList, ["init_port/0"]).
-generate_export([], [], Result) ->
+% TODO Añadir los bytelist_to_XXX, XXX_to_bytelist y parse_XXX ???
+generate_export(NativeFucsList, TypeList, FunList) ->
+  generate_export(NativeFucsList, TypeList, FunList, lists:reverse(NativeFucsList)++["init_port/0"]).
+generate_export(_NativeFucsList, [], [], Result) ->
   Line = "-export([\n\t"++string:join(lists:reverse(Result), ",\n\t")++"]).\n\n",
   write_file(?ERL_FILENAME, Line, [append]);
-generate_export([], [{_,Name,_,Params,_,_}|FunList], Result) ->
+generate_export(NativeFucsList, [], [{_,Name,_,Params,_,_}|FunList], Result) ->
   P = [ T || {_,T,O} <- Params, not lists:member(return, O) ],
   Elem = atom_to_list(Name)++"/"++integer_to_list(length(P)),
-  generate_export([], FunList, [Elem|Result]);
-generate_export([T|TypeList], FunList, Result) ->
+  generate_export(NativeFucsList, [], FunList, [Elem|Result]);
+generate_export(NativeFucsList, [T|TypeList], FunList, Result) ->
   #type_spec{erlang_name=ErlName, type_descr=TypeDescr} = T,
   case is_tuple(TypeDescr) of
     true when (element(1,TypeDescr)==pointer) ->
-      Elem = "pointer_deref_"++atom_to_list(ErlName)++"/1",
-      generate_export(TypeList, FunList, [Elem|Result]);
+      Deref = "pointer_deref_"++atom_to_list(ErlName)++"/1",
+      DerefAssign = "pointer_deref_"++atom_to_list(ErlName)++"_assign/2",
+      generate_export(TypeList, FunList, [DerefAssign|[Deref|Result]]);
     true when (element(1,TypeDescr)==struct) and (element(2,TypeDescr)/=opaque) ->
       Deref = "pointer_deref_"++atom_to_list(ErlName)++"/1",
+      DerefAssign = "pointer_deref_"++atom_to_list(ErlName)++"_assign/2",
       New = "new_"++atom_to_list(ErlName)++"/0",
       Delete = "delete_"++atom_to_list(ErlName)++"/1",
-      NewResult = generate_export_setters_getters(element(2,TypeDescr), atom_to_list(ErlName), [Delete|[New|[Deref|Result]]]),
-      generate_export(TypeList, FunList, NewResult);
+      NewResult = generate_export_setters_getters(element(2,TypeDescr), atom_to_list(ErlName), [Delete|[New|[DerefAssign|[Deref|Result]]]]),
+      generate_export(NativeFucsList, TypeList, FunList, NewResult);
     true when (element(1,TypeDescr)==union) and (element(2,TypeDescr)/=opaque) ->
       NewResult = generate_export_setters_getters(element(2,TypeDescr), atom_to_list(ErlName), Result),
-      generate_export(TypeList, FunList, NewResult);
+      generate_export(NativeFucsList, TypeList, FunList, NewResult);
     true ->
-      generate_export(TypeList, FunList, Result);
+      generate_export(NativeFucsList, TypeList, FunList, Result);
     false ->
-      generate_export(TypeList, FunList, Result)
+      generate_export(NativeFucsList, TypeList, FunList, Result)
   end.
 
 generate_export_setters_getters([], _StructName, Result) -> Result;
@@ -122,75 +132,10 @@ generate_init_port() ->
     {error, Reason} -> io:format("Write macro error: ~p~n",[Reason])
   end.
 
-% TODO pasar todo esto a plantillas
-% TODO funciones new y delete para tipos básicos (int, float) y funciones deref_XXX para cada tipo.
-% TODO hay que añadir al export todas estas funciones
 generate_native_types_parser_erl() ->
-  % int
-  IntType = "int_to_bytelist(Value) ->\n"
-              "\tint_to_bytelist(Value, 32).\n\n"
-              "int_to_bytelist(Value, NBits) ->\n"
-              "\tbinary:bin_to_list(<< Value:NBits >>).\n\n"
-              "bytelist_to_int(Bytelist) ->\n"
-              "\tbytelist_to_int(Bytelist, 32).\n\n"
-              "bytelist_to_int(Bytelist, NBits) ->\n"
-              "\t<< Value : NBits >> = binary:list_to_bin(Bytelist), Value.\n\n"
-              "parse_int(Bytelist) ->\n"
-              "\tparse_int(Bytelist, 32).\n\n"
-              "parse_int(Bytelist, NBytes) ->\n"
-              "\tparse_int(Bytelist, NBytes, NBytes, []).\n"
-              "parse_int([B|Rest], NBytes, Cnt, Result) when Cnt>0 ->\n"
-              "\tparse_int(Rest, NBytes, Cnt-8, [B|Result]);\n"
-              "parse_int(Bytelist, NBytes, _Cnt, Result) ->\n"
-              "\t{bytelist_to_int(lists:reverse(Result), NBytes), Bytelist}.\n\n",
-  % float
-  FloatType = "float_to_bytelist(Value) ->\n"
-              "\tfloat_to_bytelist(Value, 32).\n\n"
-              "float_to_bytelist(Value, NBits) ->\n"
-              "\tbinary:bin_to_list(<< Value:NBits/float >>).\n\n"
-              "bytelist_to_float(Bytelist) ->\n"
-              "\tbytelist_to_float(Bytelist, 32).\n\n"
-              "bytelist_to_float(Bytelist, NBits) ->\n"
-              "\t<< Value : NBits/float >> = binary:list_to_bin(Bytelist), Value.\n\n"
-              "parse_float(Bytelist) ->\n"
-              "\tparse_float(Bytelist, 32).\n\n"
-              "parse_float(Bytelist, NBytes) ->\n"
-              "\tparse_float(Bytelist, NBytes, NBytes, []).\n"
-              "parse_float([B|Rest], NBytes, Cnt, Result) when Cnt>0 ->\n"
-              "\tparse_float(Rest, NBytes, Cnt-8, [B|Result]);\n"
-              "parse_float(Bytelist, NBytes, _Cnt, Result) ->\n"
-              "\t{bytelist_to_float(lists:reverse(Result), NBytes), Bytelist}.\n\n",
-  % double
-  DoubleType = "double_to_bytelist(Value) ->\n"
-              "\tfloat_to_bytelist(Value, 64).\n\n"
-              "bytelist_to_double(Bytelist) ->\n"
-              "\tbytelist_to_float(Bytelist, 64).\n\n"
-              "parse_double(Bytelist) ->\n"
-              "\tparse_float(Bytelist, 64).\n\n",
-  % string
-  StringType = "string_to_bytelist(Value, Encoding) ->\n"
-              "\tbinary:bin_to_list(unicode:characters_to_binary(Value, Encoding))++[$\\0].\n\n"
-              "bytelist_to_string(Bytelist, Encoding) ->\n"
-              "\tunicode:characters_to_list(binary:list_to_bin(Bytelist), Encoding).\n\n"
-              "string_to_bytelist(Value) ->\n"
-              "\tstring_to_bytelist(Value, utf8).\n\n"
-              "bytelist_to_string(Bytelist) ->\n"
-              "\tbytelist_to_string(Bytelist, utf8).\n\n"
-              "parse_string(Bytelist) ->\n"
-              "\tparse_string(Bytelist, []).\n"
-              "parse_string([$\\0|Rest], Result) ->\n"
-              "\t{bytelist_to_string(lists:reverse(Result)), Rest};\n"
-              "parse_string([B|Rest], Result) ->\n"
-              "\tparse_string(Rest, [B|Result]).\n\n",
-  % pointer
-  PointerType = "pointer_to_bytelist(Value) ->\n"
-              "\tint_to_bytelist(Value, 64).\n\n"
-              "bytelist_to_pointer(Bytelist) ->\n"
-              "\tbytelist_to_int(Bytelist, 64).\n\n"
-              "parse_pointer(Bytelist) ->\n"
-              "\tparse_int(Bytelist, 64).\n\n",
-
-  write_file(?ERL_FILENAME, IntType++FloatType++DoubleType++StringType++PointerType++?SEPARATOR_ERL, [append]).
+  {ok, File} = file:read_file("resources/native_types.erl"),
+  Content = unicode:characters_to_list(File),
+  write_file(?ERL_FILENAME, Content++?SEPARATOR_ERL, [append]).
 
 generate_types_parser_erl([]) ->
   write_file("sdl_ports_gen.erl", ?SEPARATOR_ERL, [append]);
@@ -215,10 +160,12 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
     {struct, MemberList} ->
       Args = string:join([atom_to_list(A) || {_,A,_,_,_} <- MemberList], ", "),
       DerefName = "pointer_deref_"++atom_to_list(ErlName),
+      DerefAssignName = "pointer_deref_"++atom_to_list(ErlName)++"_assign",
       NewName = "new_"++atom_to_list(ErlName),
       DeleteName = "delete_"++atom_to_list(ErlName),
       NewContentMap = #{"Args" => Args,
                         "Code" => integer_to_list(get_fun_code(DerefName)),
+                        "CodeAssign" => integer_to_list(get_fun_code(DerefAssignName)),
                         "CodeNew" => integer_to_list(get_fun_code(NewName)),
                         "CodeDelete" => integer_to_list(get_fun_code(DeleteName))},
       FinalMap = maps:merge(ContentMap, NewContentMap),
@@ -228,34 +175,45 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
       ContentPart2 = generate_bytelist_to_struct(MemberList, ErlName),
       ContentPart3 = generate_parse_struct(MemberList, ErlName),
       ContentPart4 = <<"pointer_deref_{{ErlName}}(Pointer) ->\n"
-                    "\tCode = int_to_bytelist({{Code}}),\n"
-                    "\tPList = pointer_to_bytelist(Pointer),\n"
-                    "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
-                    "\treceive\n"
-                    "\t\t{_, { data, DataList}} ->\n"
-                    "\t\t\tbytelist_to_{{ErlName}}(DataList);\n"
-                    "\t\tMsg ->\n"
-                    "\t\t\t{error, Msg}\n"
-                    "\tend.\n\n"
+                      "\tCode = int_to_bytelist({{Code}}),\n"
+                      "\tPList = pointer_to_bytelist(Pointer),\n"
+                      "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
+                      "\treceive\n"
+                      "\t\t{_, { data, DataList}} ->\n"
+                      "\t\t\tbytelist_to_{{ErlName}}(DataList);\n"
+                      "\t\tMsg ->\n"
+                      "\t\t\t{error, Msg}\n"
+                      "\tend.\n\n"
+                    "pointer_deref_{{ErlName}}_assign(Pointer, Value) ->\n"
+                      "\tCode = int_to_bytelist({{CodeAssign}}),\n"
+                      "\tPList = pointer_to_bytelist(Pointer),\n"
+                      "\tVList = {{ErlName}}_to_bytelist(Pointer),\n"
+                      "\t{{Port}} ! {self(), {command, [Code, PList, VList]}},\n"
+                      "\treceive\n"
+                      "\t\t{_, { data, _DataList}} ->\n"
+                      "\t\t\tok;\n"
+                      "\t\tMsg ->\n"
+                      "\t\t\t{error, Msg}\n"
+                      "\tend.\n\n"
                     "new_{{ErlName}}() ->\n"
-                    "\tCode = int_to_bytelist({{CodeNew}}),\n"
-                    "\t{{Port}} ! {self(), {command, [Code]}},\n"
-                    "\treceive\n"
-                    "\t\t{_, { data, DataList}} ->\n"
-                    "\t\t\tbytelist_to_pointer(DataList);\n"
-                    "\t\tMsg ->\n"
-                    "\t\t\t{error, Msg}\n"
-                    "\tend.\n\n"
+                      "\tCode = int_to_bytelist({{CodeNew}}),\n"
+                      "\t{{Port}} ! {self(), {command, [Code]}},\n"
+                      "\treceive\n"
+                      "\t\t{_, { data, DataList}} ->\n"
+                      "\t\t\tbytelist_to_pointer(DataList);\n"
+                      "\t\tMsg ->\n"
+                      "\t\t\t{error, Msg}\n"
+                      "\tend.\n\n"
                     "delete_{{ErlName}}(Pointer) ->\n"
-                    "\tCode = int_to_bytelist({{CodeDelete}}),\n"
-                    "\tPList = pointer_to_bytelist(Pointer),\n"
-                    "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
-                    "\treceive\n"
-                    "\t\t{_, { data, _DataList}} ->\n"
-                    "\t\t\tok;\n"
-                    "\t\tMsg ->\n"
-                    "\t\t\t{error, Msg}\n"
-                    "\tend.\n\n">>,
+                      "\tCode = int_to_bytelist({{CodeDelete}}),\n"
+                      "\tPList = pointer_to_bytelist(Pointer),\n"
+                      "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
+                      "\treceive\n"
+                      "\t\t{_, { data, _DataList}} ->\n"
+                      "\t\t\tok;\n"
+                      "\t\tMsg ->\n"
+                      "\t\t\t{error, Msg}\n"
+                      "\tend.\n\n">>,
       ContentPart5 = generate_getters_setters_erl(MemberList, ErlName),
       Content = <<ContentPart1/binary, ContentPart2/binary, ContentPart3/binary,
                   ContentPart4/binary, ContentPart5/binary>>;
@@ -296,23 +254,37 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
                 "\tparse_string(Bytelist).\n\n">>;
     {pointer, _TD} ->
       DerefName = "pointer_deref_"++atom_to_list(ErlName),
-      FinalMap = maps:put("Code", integer_to_list(get_fun_code(DerefName)), ContentMap),
+      DerefAssignName = "pointer_deref_"++atom_to_list(ErlName)++"_assign",
+      NewContentMap = #{"Code" => integer_to_list(get_fun_code(DerefName)),
+                        "CodeAssign" => integer_to_list(get_fun_code(DerefAssignName))},
+      FinalMap = maps:merge(ContentMap, NewContentMap),
       Content = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                "\tpointer_to_bytelist(Value).\n\n"
+                  "\tpointer_to_bytelist(Value).\n\n"
                 "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                "\tbytelist_to_pointer(Bytelist).\n\n"
+                  "\tbytelist_to_pointer(Bytelist).\n\n"
                 "parse_{{ErlName}}(Bytelist) ->\n"
-                "\tparse_pointer(Bytelist).\n\n"
+                  "\tparse_pointer(Bytelist).\n\n"
                 "pointer_deref_{{ErlName}}(Pointer) ->\n"
-                "\tPList = pointer_to_bytelist(Pointer)\n"
-                "\tCode = int_to_bytelist({{Code}}),\n"
-                "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
-                "\treceive\n"
-                "\t\t{ _, { data, DataList }} ->\n"
-                "\t\t\tbytelist_to_{{Desc}}(DataList);\n"
-                "\t\tMsg ->\n"
-                "\t\t\t{error, Msg}\n"
-                "\tend.\n\n">>;
+                  "\tPList = pointer_to_bytelist(Pointer)\n"
+                  "\tCode = int_to_bytelist({{Code}}),\n"
+                  "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
+                  "\treceive\n"
+                  "\t\t{ _, { data, DataList }} ->\n"
+                  "\t\t\tbytelist_to_{{Desc}}(DataList);\n"
+                  "\t\tMsg ->\n"
+                  "\t\t\t{error, Msg}\n"
+                  "\tend.\n\n"
+                "pointer_deref_{{ErlName}}_assign(Pointer, Value) ->\n"
+                  "\tCode = int_to_bytelist({{CodeAssign}}),\n"
+                  "\tPList = pointer_to_bytelist(Pointer),\n"
+                  "\tVList = {{Desc}}_to_bytelist(Pointer),\n"
+                  "\t{{Port}} ! {self(), {command, [Code, PList, VList]}},\n"
+                  "\treceive\n"
+                  "\t\t{_, { data, _DataList}} ->\n"
+                  "\t\t\tok;\n"
+                  "\t\tMsg ->\n"
+                  "\t\t\t{error, Msg}\n"
+                  "\tend.\n\n">>;
     {T, _NBits} when (T==int) or (T==float) ->
       FinalMap = ContentMap,
       Content = <<"{{ErlName}}_to_bytelist(Value) ->\n"
@@ -599,7 +571,17 @@ generate_native_types_parser_c() ->
   add_type_name(float, "float"),
   add_type_name(double, "double"),
   add_type_name(string, "string"),
-  add_type_name(pointer, "void*").
+  add_type_name(pointer, "void*"),
+  case file:open("resources/native_types_c_handlers_list.txt", [read]) of
+    {ok, InputDevice} ->
+      {ok, L} = io:read(InputDevice, ""),
+      file:close(InputDevice);
+    {error, Error} ->
+      L = [],
+      io:format("Error reading file: ~p~n", [Error])
+  end,
+  [add_fun_code(F) || F<-L],
+  ok.
 
 generate_types_parser_c([]) ->
   write_file("sdl_ports_gen.c", ?SEPARATOR_C, [append]);
@@ -616,95 +598,109 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
   case TypeDescr of
     {T, opaque} when (T==struct) or (T==union) ->
       Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                  "\tbyte *current_in = in;\n\n"
-                  "\tcurrent_in = read_pointer(current_in, (void **) &result);\n\n"
-                  "\treturn current_in;\n}\n\n"
+                    "\tbyte *current_in = in;\n\n"
+                    "\tcurrent_in = read_pointer(current_in, (void **) &result);\n\n"
+                    "\treturn current_in;\n}\n\n"
                   "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                  "\tbyte *current_out = out;\n\n"
-                  "\tcurrent_out = write_pointer(&value, current_out, len);\n\n"
-                  "\treturn current_out;\n}\n\n">>;
+                    "\tbyte *current_out = out;\n\n"
+                    "\tcurrent_out = write_pointer(&value, current_out, len);\n\n"
+                    "\treturn current_out;\n}\n\n">>;
     {struct, MemberList} ->
       ErlNameStr = atom_to_list(ErlName),
       ReadStruct = generate_read_struct_c(MemberList),
       WriteStruct = generate_write_struct_c(MemberList),
       DerefStruct = <<"void pointer_deref_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                      "\tbyte *current_in = in, *current_out = out;\n"
-                      "\t*len_out = 0; current_in+=4;\n\n"
-                      "\t{{CName}} *pointer;\n"
-                      "\tcurrent_in = read_pointer(current_in, (void **) &pointer);\n"
-                      "\tcurrent_out = write_{{ErlName}}(pointer, current_out, len_out);\n}\n\n">>,
+                        "\tbyte *current_in = in, *current_out = out;\n"
+                        "\t*len_out = 0; current_in+=4;\n\n"
+                        "\t{{CName}} *pointer;\n"
+                        "\tcurrent_in = read_pointer(current_in, (void **) &pointer);\n"
+                        "\tcurrent_out = write_{{ErlName}}(pointer, current_out, len_out);\n}\n\n"
+                      "void pointer_deref_{{ErlName}}_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
+                        "\tbyte *current_in = in, *current_out = out;\n"
+                        "\t*len_out = 0; current_in+=4;\n\n"
+                        "\t{{CName}} *pointer;\n"
+                        "\tcurrent_in = read_pointer(current_in, (void **) &pointer);\n"
+                        "\tcurrent_in = read_{{ErlName}}(current_in, pointer);\n}\n\n">>,
       NewDeleteStruct = <<"void new_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                          "\tbyte *current_in = in, *current_out = out;\n"
-                          "\t*len_out = 0; current_in+=4;\n\n"
-                          "\t{{CName}} *ptr = malloc(sizeof({{CName}}));\n"
-                          "\tcurrent_out = write_pointer(&ptr, current_out, len_out);\n}\n\n"
+                            "\tbyte *current_in = in, *current_out = out;\n"
+                            "\t*len_out = 0; current_in+=4;\n\n"
+                            "\t{{CName}} *ptr = malloc(sizeof({{CName}}));\n"
+                            "\tcurrent_out = write_pointer(&ptr, current_out, len_out);\n}\n\n"
                           "void delete_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                          "\tbyte *current_in = in, *current_out = out;\n"
-                          "\t*len_out = 0; current_in+=4;\n\n"
-                          "\t{{CName}} *ptr;\n"
-                          "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-                          "\tfree(ptr);\n}\n\n">>,
+                            "\tbyte *current_in = in, *current_out = out;\n"
+                            "\t*len_out = 0; current_in+=4;\n\n"
+                            "\t{{CName}} *ptr;\n"
+                            "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+                            "\tfree(ptr);\n}\n\n">>,
       add_fun_code("pointer_deref_"++ErlNameStr++"_Handler"),
+      add_fun_code("pointer_deref_"++ErlNameStr++"_assign_Handler"),
       add_fun_code("new_"++ErlNameStr++"_Handler"),
       add_fun_code("delete_"++ErlNameStr++"_Handler"),
       GettersSetters = generate_getters_setters_c(MemberList, ErlNameStr, CName),
       Content = <<ReadStruct/binary, WriteStruct/binary, DerefStruct/binary, NewDeleteStruct/binary, GettersSetters/binary>>;
     {union, MemberList} ->
       ReadWrite = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                  "\tbyte *current_in = in;\n\n"
-                  "\tcurrent_in = read_pointer(current_in, (void **) &result);\n\n"
-                  "\treturn current_in;\n}\n\n"
-                  "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                  "\tbyte *current_out = out;\n\n"
-                  "\tcurrent_out = write_pointer(&value, current_out, len);\n\n"
-                  "\treturn current_out;\n}\n\n">>,
+                      "\tbyte *current_in = in;\n\n"
+                      "\tcurrent_in = read_pointer(current_in, (void **) &result);\n\n"
+                      "\treturn current_in;\n}\n\n"
+                    "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
+                      "\tbyte *current_out = out;\n\n"
+                      "\tcurrent_out = write_pointer(&value, current_out, len);\n\n"
+                      "\treturn current_out;\n}\n\n">>,
       GettersSetters = generate_getters_setters_c(MemberList, atom_to_list(ErlName), CName),
       Content = <<ReadWrite/binary, GettersSetters/binary>>;
     {enum, _ElemList} ->
       Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                  "\tbyte *current_in = in;\n\n"
-                  "\tcurrent_in = read_int(current_in, result);\n\n"
-                  "\treturn current_in;\n}\n\n"
+                    "\tbyte *current_in = in;\n\n"
+                    "\tcurrent_in = read_int(current_in, result);\n\n"
+                    "\treturn current_in;\n}\n\n"
                   "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                  "\tbyte *current_out = out;\n\n"
-                  "\tcurrent_out = write_int(value, current_out, len);\n\n"
-                  "\treturn current_out;\n}\n\n">>;
+                    "\tbyte *current_out = out;\n\n"
+                    "\tcurrent_out = write_int(value, current_out, len);\n\n"
+                    "\treturn current_out;\n}\n\n">>;
     {array, _TD} ->
       Content = <<"">>; % De momento no
     {pointer, _TD} ->
       add_fun_code("pointer_deref_"++atom_to_list(ErlName)++"_Handler"),
+      add_fun_code("pointer_deref_"++atom_to_list(ErlName)++"assign_Handler"),
       Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                  "\tbyte *current_in = in;\n\n"
-                  "\tcurrent_in = read_pointer(current_in, result);\n\n"
-                  "\treturn current_in;\n}\n\n"
+                    "\tbyte *current_in = in;\n\n"
+                    "\tcurrent_in = read_pointer(current_in, result);\n\n"
+                    "\treturn current_in;\n}\n\n"
                   "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                  "\tbyte *current_out = out;\n\n"
-                  "\tcurrent_out = write_pointer(value, current_out, len);\n\n"
-                  "\treturn current_out;\n}\n\n"
+                    "\tbyte *current_out = out;\n\n"
+                    "\tcurrent_out = write_pointer(value, current_out, len);\n\n"
+                    "\treturn current_out;\n}\n\n"
                   "void pointer_deref_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                  "\tbyte *current_in = in, *current_out = out;\n"
-                  "\t*len_out = 0; current_in+=4;\n\n"
-                  "\t{{CName}} *pointer;\n"
-                  "\tcurrent_in = read_{{ErlName}}(current_in, pointer);\n"
-                  "\tcurrent_out = write_{{Desc}}(pointer, current_out, len_out);\n}\n\n">>;
+                    "\tbyte *current_in = in, *current_out = out;\n"
+                    "\t*len_out = 0; current_in+=4;\n\n"
+                    "\t{{CName}} *pointer;\n"
+                    "\tcurrent_in = read_{{ErlName}}(current_in, (void **) pointer);\n"
+                    "\tcurrent_out = write_{{Desc}}(*pointer, current_out, len_out);\n}\n\n"
+                  "void pointer_deref_{{ErlName}}_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
+                    "\tbyte *current_in = in, *current_out = out;\n"
+                    "\t*len_out = 0; current_in+=4;\n\n"
+                    "\t{{CName}} *pointer;\n"
+                    "\tcurrent_in = read_pointer(current_in, (void **) pointer);\n"
+                    "\tcurrent_in = read_{{Desc}}(current_in, *pointer);\n}\n\n">>;
     {T, _NBits} when (T==int) or (T==float) ->
       Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                  "\tbyte *current_in = in;\n\n"
-                  "\tcurrent_in = read_{{Type}}{{Desc}}(current_in, result);\n\n"
-                  "\treturn current_in;\n}\n\n"
+                    "\tbyte *current_in = in;\n\n"
+                    "\tcurrent_in = read_{{Type}}{{Desc}}(current_in, result);\n\n"
+                    "\treturn current_in;\n}\n\n"
                   "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                  "\tbyte *current_out = out;\n\n"
-                  "\tcurrent_out = write_{{Type}}{{Desc}}(value, current_out, len);\n\n"
-                  "\treturn current_out;\n}\n\n">>;
+                    "\tbyte *current_out = out;\n\n"
+                    "\tcurrent_out = write_{{Type}}{{Desc}}(value, current_out, len);\n\n"
+                    "\treturn current_out;\n}\n\n">>;
     _ ->
       Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                  "\tbyte *current_in = in;\n\n"
-                  "\tcurrent_in = read_{{Type}}(current_in, result);\n\n"
-                  "\treturn current_in;\n}\n\n"
+                    "\tbyte *current_in = in;\n\n"
+                    "\tcurrent_in = read_{{Type}}(current_in, result);\n\n"
+                    "\treturn current_in;\n}\n\n"
                   "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                  "\tbyte *current_out = out;\n\n"
-                  "\tcurrent_out = write_{{Type}}(value, current_out, len);\n\n"
-                  "\treturn current_out;\n}\n\n">>
+                    "\tbyte *current_out = out;\n\n"
+                    "\tcurrent_out = write_{{Type}}(value, current_out, len);\n\n"
+                    "\treturn current_out;\n}\n\n">>
   end,
   write_file("sdl_ports_gen.c", binary_to_list(bbmustache:render(Content,ContentMap)), [append]),
   generate_types_parser_c(TypeList).
@@ -937,8 +933,8 @@ write_file(File, Content, Modes) ->
     {error, Reason} -> io:format("Write error: ~p~n",[Reason])
   end.
 
-sdl_helper() ->
-  sdl_helper(1, [], maps:new()).
+sdl_helper(InitCode) ->
+  sdl_helper(InitCode, [], maps:new()).
 sdl_helper(Code, FunList, TypeMap) ->
   receive
     {Pid, {fun_code, NameFun}} ->
@@ -949,8 +945,8 @@ sdl_helper(Code, FunList, TypeMap) ->
     {Pid, fun_list} ->
       Pid ! {fun_list, FunList},
       sdl_helper(Code, FunList, TypeMap);
-    {_Pid, reset} ->
-      sdl_helper(1, [], maps:new());
+    {_Pid, {reset, InitCode}} ->
+      sdl_helper(InitCode, [], maps:new());
     {_Pid, {new_type, ErlName, CName}} ->
       sdl_helper(Code, FunList, maps:put(ErlName, CName, TypeMap));
     {Pid, {get_type, ErlName}} ->
@@ -977,8 +973,8 @@ get_fun_list() ->
     {fun_list, FunList} -> FunList
   end.
 
-reset_fun_code() ->
-  sdl_helper ! {self(), reset}.
+reset_fun_code(InitCode) ->
+  sdl_helper ! {self(), {reset, InitCode}}.
 
 add_type_name(ErlName, CName) ->
   sdl_helper ! {self(), {new_type, ErlName, CName}}.
