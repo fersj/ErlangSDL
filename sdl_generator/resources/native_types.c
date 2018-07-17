@@ -90,7 +90,6 @@ byte * write_int(int *number, byte *current_out, size_t *len) {
 	return write_int32(number, current_out, len);
 }
 
-void pointer_deref_int_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 byte * read_int8_array(byte *in, int8_t *array, int n) {
 	byte *current_in = in;
 
