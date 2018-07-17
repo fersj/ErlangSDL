@@ -141,13 +141,23 @@ generate_macros([Macro|MacroList]) ->
   generate_macros(MacroList).
 
 generate_init_port() ->
-  Init = bbmustache:render(<<"init_port() ->\n"
-          "\tPort = open_port({spawn, \"{{H}}\"}, [{packet, 2}]),\n"
-          "\tregister({{P}}, Port), Port.\n\n">>, #{"H" => ?C_HANDLER, "P" => atom_to_list(?PORT_NAME)}),
-  case file:write_file(?ERL_FILENAME, binary_to_list(Init)++?SEPARATOR_ERL, [append]) of
-    ok -> ok;
-    {error, Reason} -> io:format("Write macro error: ~p~n",[Reason])
-  end.
+  % Init = bbmustache:render(<<"init_port() ->\n"
+  %         "\tPort = open_port({spawn, \"{{H}}\"}, [{packet, 2}]),\n"
+  %         "\tregister({{P}}, Port), Port.\n\n">>, #{"H" => ?C_HANDLER, "P" => atom_to_list(?PORT_NAME)}),
+  % case file:write_file(?ERL_FILENAME, binary_to_list(Init)++?SEPARATOR_ERL, [append]) of
+  %   ok -> ok;
+  %   {error, Reason} -> io:format("Write macro error: ~p~n",[Reason])
+  % end
+  case file:read_file("resources/port_code.erl") of
+    {ok, Content} -> ok;
+    {error, Error} ->
+      io:format("Error reading file: ~p~n", [Error]),
+      Content = <<"">>
+  end,
+  Map = #{"PortName" => ?PORT_NAME,
+          "CHandlerPath" => ?C_HANDLER},
+  InitPort = bbmustache:render(Content, Map),
+  write_file(?ERL_FILENAME, InitPort, [append]).
 
 generate_native_types_parser_erl() ->
   {ok, File} = file:read_file("resources/native_types.erl"),
@@ -417,9 +427,9 @@ generate_getters_setters_erl(MemberList, [M|MemberListIt], StructName, Result) -
   Get = <<"{{StructName}}_get_{{Attrib}}(Pointer) ->\n"
           "\tCode = int_to_bytelist({{CodeGet}}),\n"
           "\tPList = pointer_to_bytelist(Pointer),\n"
-          "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
-          "\treceive\n"
-          "\t\t{ _, { data, DataList }} ->\n"
+          "\tResultCall = call_port_owner(?PORT_NAME, [Code, PList]),\n"
+          "\tcase ResultCall of\n"
+          "\t\t{datalist, DataList} ->\n"
           "\t\t\t{{LineGet}};\n"
           "\t\tMsg ->\n"
           "\t\t\t{error, Msg}\n"
@@ -428,9 +438,9 @@ generate_getters_setters_erl(MemberList, [M|MemberListIt], StructName, Result) -
           "\tCode = int_to_bytelist({{CodeSet}}),\n"
           "\tPList = pointer_to_bytelist(Pointer),\n"
           "\t{{LineSet}},\n"
-          "\t{{Port}} ! {self(), {command, [Code, PList, AList]}},\n"
-          "\treceive\n"
-          "\t\t{ _, { data, _DataList }} ->\n"
+          "\tResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),\n"
+          "\tcase ResultCall of\n"
+          "\t\t{datalist, _DataList} ->\n"
           "\t\t\tok;\n"
           "\t\tMsg ->\n"
           "\t\t\t{error, Msg}\n"
@@ -518,7 +528,7 @@ generate_functions_erl([Fun|FunList]) ->
   Header = <<"{{ErlName}}({{HParams}}) ->\n">>,
   Body1 = <<"\tCode = int_to_bytelist({{Code}}),\n"
             "{{BodyParams}}"
-            "\t{{Port}} ! {self(), {command, [Code, {{Vars}}]}},\n">>,
+            "\tResultCall = call_port_owner(?PORT_NAME, [Code, {{Vars}}]),\n">>,
   case Descr of
     {pointer, _Type} ->
       RetType = pointer;
@@ -532,15 +542,15 @@ generate_functions_erl([Fun|FunList]) ->
   end,
   if
     (RetType==void) and (length(RPTypes)==0) ->
-      Body2 = <<"\treceive\n"
-                "\t\t{_, {data, _DataList}} ->\n"
+      Body2 = <<"\tcase ResultCall of\n"
+                "\t\t{datalist, _DataList} ->\n"
                 "\t\t\tok;\n"
                 "\t\tMsg ->\n"
                 "\t\t\t{error, Msg}\n"
                 "\tend.\n\n">>;
     (RetType==void) and (length(RPTypes)>0) ->
-      Body2 = <<"\treceive\n"
-                "\t\t{_, {data, DataList}} ->\n"
+      Body2 = <<"\tcase ResultCall of\n"
+                "\t\t{datalist, DataList} ->\n"
                 "\t\t\tR0 = DataList,\n"
                 "{{RetParams}}"
                 "\t\tMsg ->\n"
@@ -549,16 +559,16 @@ generate_functions_erl([Fun|FunList]) ->
     true ->
       case length(RPTypes) of
         0 ->
-          Body2 = <<"\treceive\n"
-                    "\t\t{_, {data, DataList}} ->\n"
+          Body2 = <<"\tcase ResultCall of\n"
+                    "\t\t{datalist, DataList} ->\n"
                     "\t\t\t{RetParam1, _R1} = parse_{{RetType}}(DataList),\n"
                     "{{RetParams}}"
                     "\t\tMsg ->\n"
                     "\t\t\t{error, Msg}\n"
                     "\tend.\n\n">>;
         _ ->
-          Body2 = <<"\treceive\n"
-                    "\t\t{_, {data, DataList}} ->\n"
+          Body2 = <<"\tcase ResultCall of\n"
+                    "\t\t{datalist, DataList} ->\n"
                     "\t\t\t{RetParam1, R1} = parse_{{RetType}}(DataList),\n"
                     "{{RetParams}}"
                     "\t\tMsg ->\n"
@@ -1098,6 +1108,7 @@ generate_main_c() ->
 %     false -> find_type_spec_by_cname(Type, TypeSpecList)
 %   end.
 
+% TODO hacer tambien un read_file para simplificar el codigo
 write_file(File, Content, Modes) ->
   case file:write_file(File, Content, Modes) of
     ok -> ok;

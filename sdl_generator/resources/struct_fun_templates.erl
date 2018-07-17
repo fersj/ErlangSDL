@@ -20,9 +20,9 @@ parse_{{ErlName}}_array(Bytelist, Size, Result) ->
 pointer_deref_{{ErlName}}(Pointer) ->
 	Code = int_to_bytelist({{Code}}),
 	PList = pointer_to_bytelist(Pointer),
-	{{Port}} ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_{{ErlName}}(DataList);
 		Msg ->
 			{error, Msg}
@@ -32,9 +32,9 @@ pointer_deref_{{ErlName}}_array(Pointer, Index) ->
 	Code = int_to_bytelist({{CodeArray}}),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_{{ErlName}}(DataList);
 		Msg ->
 			{error, Msg}
@@ -44,9 +44,9 @@ pointer_deref_{{ErlName}}_assign(Pointer, Value) ->
 	Code = int_to_bytelist({{CodeAssign}}),
 	PList = pointer_to_bytelist(Pointer),
 	VList = {{ErlName}}_to_bytelist(Value),
-	{{Port}} ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -57,9 +57,9 @@ pointer_deref_{{ErlName}}_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = {{ErlName}}_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -67,9 +67,9 @@ pointer_deref_{{ErlName}}_array_assign(Pointer, Index, Value) ->
 
 new_{{ErlName}}() ->
 	Code = int_to_bytelist({{CodeNew}}),
-	{{Port}} ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -78,9 +78,9 @@ new_{{ErlName}}() ->
 new_{{ErlName}}_array(Size) ->
 	Code = int_to_bytelist({{CodeNewArray}}),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -89,9 +89,9 @@ new_{{ErlName}}_array(Size) ->
 delete_{{ErlName}}(Pointer) ->
 	Code = int_to_bytelist({{CodeDelete}}),
 	PList = pointer_to_bytelist(Pointer),
-	{{Port}} ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}

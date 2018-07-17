@@ -787,11 +787,57 @@
 	poll_event/0,
 	maxint/2]).
 
-init_port() ->
-	Port = open_port({spawn, "_checkouts/sdl_generator/sdl_ports_gen"}, [{packet, 2}]),
-	register(sdl_port, Port), Port.
+-ifdef(debug).
+-define(DEBUG(X, Y), io:format(X, Y)).
+-else.
+-define(DEBUG(X, Y), ok).
+-endif.
+
+-define(PORT_NAME, sdl_port).
 
 %--------------------------------------------------------
+
+start_port_owner(Name) ->
+	Port = open_port({spawn, Name}, [{packet, 2}]),
+	loop_port_owner(Port).
+
+loop_port_owner(Port) ->
+	receive
+		{Pid, {call, List}} ->
+			Port ! { self(), { command, List }},
+			receive 
+				{ _, { data, Msg }} -> 
+					?DEBUG("Received binary: ~w~n", [Msg]),
+					Pid ! {self(), {datalist, Msg}};
+				Other ->
+					?DEBUG("Unknown response from port: ~w~n", [Other]),
+					Pid ! {self(), Other}
+			end,
+			loop_port_owner(Port)
+%    {_, {cast, List}} ->
+%      Port ! { self(), { command, List }},
+%      loop_port_owner(Port)
+	end.
+
+call_port_owner(undefined, _) ->
+	io:format("Undefined port owner.~n");
+	
+call_port_owner(PortOwner, List) when is_atom(PortOwner) ->
+	call_port_owner(whereis(PortOwner), List);
+	
+call_port_owner(PortOwner, List) ->
+	PortOwner ! { self(), { call , List }},
+	receive
+		{PortOwner, X} -> X
+	end.
+
+init_port() ->
+	Pid = spawn(fun() -> start_port_owner("_checkouts/sdl_generator/sdl_ports_gen") end),
+	%io:format("PID Owner: ~w~n", [Pid]),
+	register(?PORT_NAME, Pid),
+	%code:ensure_loaded(erlang_gc),
+	io:format("sdl_port initialized.~n"),
+	ok.
 
 % ---- Int ----
 
@@ -848,9 +894,9 @@ parse_int_array(Bytelist, Size, NBits, Result) ->
 pointer_deref_int8(Pointer) ->
 	Code = int_to_bytelist(1),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 8);
 		Msg ->
 			{error, Msg}
@@ -860,9 +906,9 @@ pointer_deref_int8_array(Pointer, Index) ->
 	Code = int_to_bytelist(2),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 8);
 		Msg ->
 			{error, Msg}
@@ -872,9 +918,9 @@ pointer_deref_int8_assign(Pointer, Value) ->
 	Code = int_to_bytelist(3),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 8),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -885,9 +931,9 @@ pointer_deref_int8_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 8),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -895,9 +941,9 @@ pointer_deref_int8_array_assign(Pointer, Index, Value) ->
 
 new_int8() ->
 	Code = int_to_bytelist(5),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -906,9 +952,9 @@ new_int8() ->
 new_int8_array(Size) ->
 	Code = int_to_bytelist(6),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -917,9 +963,9 @@ new_int8_array(Size) ->
 delete_int8(Pointer) ->
 	Code = int_to_bytelist(7),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -944,9 +990,9 @@ int8_array_to_list(Pointer, Size, Result) ->
 pointer_deref_int16(Pointer) ->
 	Code = int_to_bytelist(8),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 16);
 		Msg ->
 			{error, Msg}
@@ -956,9 +1002,9 @@ pointer_deref_int16_array(Pointer, Index) ->
 	Code = int_to_bytelist(9),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 16);
 		Msg ->
 			{error, Msg}
@@ -968,9 +1014,9 @@ pointer_deref_int16_assign(Pointer, Value) ->
 	Code = int_to_bytelist(10),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 16),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -981,9 +1027,9 @@ pointer_deref_int16_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 16),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -991,9 +1037,9 @@ pointer_deref_int16_array_assign(Pointer, Index, Value) ->
 
 new_int16() ->
 	Code = int_to_bytelist(12),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1002,9 +1048,9 @@ new_int16() ->
 new_int16_array(Size) ->
 	Code = int_to_bytelist(13),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1013,9 +1059,9 @@ new_int16_array(Size) ->
 delete_int16(Pointer) ->
 	Code = int_to_bytelist(14),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1040,9 +1086,9 @@ int16_array_to_list(Pointer, Size, Result) ->
 pointer_deref_int32(Pointer) ->
 	Code = int_to_bytelist(15),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 32);
 		Msg ->
 			{error, Msg}
@@ -1052,9 +1098,9 @@ pointer_deref_int32_array(Pointer, Index) ->
 	Code = int_to_bytelist(16),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 32);
 		Msg ->
 			{error, Msg}
@@ -1064,9 +1110,9 @@ pointer_deref_int32_assign(Pointer, Value) ->
 	Code = int_to_bytelist(17),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 32),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1077,9 +1123,9 @@ pointer_deref_int32_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 32),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1087,9 +1133,9 @@ pointer_deref_int32_array_assign(Pointer, Index, Value) ->
 
 new_int32() ->
 	Code = int_to_bytelist(19),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1098,9 +1144,9 @@ new_int32() ->
 new_int32_array(Size) ->
 	Code = int_to_bytelist(20),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1109,9 +1155,9 @@ new_int32_array(Size) ->
 delete_int32(Pointer) ->
 	Code = int_to_bytelist(21),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1136,9 +1182,9 @@ int32_array_to_list(Pointer, Size, Result) ->
 pointer_deref_int64(Pointer) ->
 	Code = int_to_bytelist(22),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 64);
 		Msg ->
 			{error, Msg}
@@ -1148,9 +1194,9 @@ pointer_deref_int64_array(Pointer, Index) ->
 	Code = int_to_bytelist(23),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 64);
 		Msg ->
 			{error, Msg}
@@ -1160,9 +1206,9 @@ pointer_deref_int64_assign(Pointer, Value) ->
 	Code = int_to_bytelist(24),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 64),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1173,9 +1219,9 @@ pointer_deref_int64_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 64),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1183,9 +1229,9 @@ pointer_deref_int64_array_assign(Pointer, Index, Value) ->
 
 new_int64() ->
 	Code = int_to_bytelist(26),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1194,9 +1240,9 @@ new_int64() ->
 new_int64_array(Size) ->
 	Code = int_to_bytelist(27),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1205,9 +1251,9 @@ new_int64_array(Size) ->
 delete_int64(Pointer) ->
 	Code = int_to_bytelist(28),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1302,9 +1348,9 @@ parse_float_array(Bytelist, Size, Result) ->
 pointer_deref_float(Pointer) ->
 	Code = int_to_bytelist(29),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -1314,9 +1360,9 @@ pointer_deref_float_array(Pointer, Index) ->
 	Code = int_to_bytelist(30),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -1326,9 +1372,9 @@ pointer_deref_float_assign(Pointer, Value) ->
 	Code = int_to_bytelist(31),
 	PList = pointer_to_bytelist(Pointer),
 	VList = float_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1339,9 +1385,9 @@ pointer_deref_float_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = float_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1349,9 +1395,9 @@ pointer_deref_float_array_assign(Pointer, Index, Value) ->
 
 new_float() ->
 	Code = int_to_bytelist(33),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1360,9 +1406,9 @@ new_float() ->
 new_float_array(Size) ->
 	Code = int_to_bytelist(34),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1371,9 +1417,9 @@ new_float_array(Size) ->
 delete_float(Pointer) ->
 	Code = int_to_bytelist(35),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1428,9 +1474,9 @@ parse_double_array(Bytelist, Size, Result) ->
 pointer_deref_double(Pointer) ->
 	Code = int_to_bytelist(36),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_double(DataList);
 		Msg ->
 			{error, Msg}
@@ -1440,9 +1486,9 @@ pointer_deref_double_array(Pointer, Index) ->
 	Code = int_to_bytelist(37),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_double(DataList);
 		Msg ->
 			{error, Msg}
@@ -1452,9 +1498,9 @@ pointer_deref_double_assign(Pointer, Value) ->
 	Code = int_to_bytelist(38),
 	PList = pointer_to_bytelist(Pointer),
 	VList = double_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1465,9 +1511,9 @@ pointer_deref_double_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = double_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1475,9 +1521,9 @@ pointer_deref_double_array_assign(Pointer, Index, Value) ->
 
 new_double() ->
 	Code = int_to_bytelist(40),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1486,9 +1532,9 @@ new_double() ->
 new_double_array(Size) ->
 	Code = int_to_bytelist(41),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1497,9 +1543,9 @@ new_double_array(Size) ->
 delete_double(Pointer) ->
 	Code = int_to_bytelist(42),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1576,9 +1622,9 @@ parse_string_array(Bytelist, Size) ->
 pointer_deref_string(Pointer, Enconding) ->
 	Code = int_to_bytelist(43),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_string(DataList, Enconding);
 		Msg ->
 			{error, Msg}
@@ -1588,9 +1634,9 @@ pointer_deref_string_array(Pointer, Index, Enconding) ->
 	Code = int_to_bytelist(44),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_string(DataList, Enconding);
 		Msg ->
 			{error, Msg}
@@ -1600,9 +1646,9 @@ pointer_deref_string_assign(Pointer, Value, Enconding) ->
 	Code = int_to_bytelist(45),
 	PList = pointer_to_bytelist(Pointer),
 	VList = string_to_bytelist(Value, Enconding),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1613,9 +1659,9 @@ pointer_deref_string_array_assign(Pointer, Index, Value, Enconding) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = string_to_bytelist(Value, Enconding),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1623,9 +1669,9 @@ pointer_deref_string_array_assign(Pointer, Index, Value, Enconding) ->
 
 new_string() ->
 	Code = int_to_bytelist(47),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1634,9 +1680,9 @@ new_string() ->
 new_string_array(Size) ->
 	Code = int_to_bytelist(48),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1645,9 +1691,9 @@ new_string_array(Size) ->
 delete_string(Pointer) ->
 	Code = int_to_bytelist(49),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1720,9 +1766,9 @@ parse_pointer_array(Bytelist, Size, Result) ->
 pointer_deref_pointer(Pointer) ->
 	Code = int_to_bytelist(50),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1732,9 +1778,9 @@ pointer_deref_pointer_array(Pointer, Index) ->
 	Code = int_to_bytelist(51),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1744,9 +1790,9 @@ pointer_deref_pointer_assign(Pointer, Value) ->
 	Code = int_to_bytelist(52),
 	PList = pointer_to_bytelist(Pointer),
 	VList = pointer_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1757,9 +1803,9 @@ pointer_deref_pointer_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = pointer_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1767,9 +1813,9 @@ pointer_deref_pointer_array_assign(Pointer, Index, Value) ->
 
 new_pointer() ->
 	Code = int_to_bytelist(54),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1778,9 +1824,9 @@ new_pointer() ->
 new_pointer_array(Size) ->
 	Code = int_to_bytelist(55),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1789,9 +1835,9 @@ new_pointer_array(Size) ->
 delete_pointer(Pointer) ->
 	Code = int_to_bytelist(56),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1854,9 +1900,9 @@ parse_arrayA_array(Bytelist, Size, Result) ->
 pointer_deref_arrayA(Pointer) ->
 	Code = int_to_bytelist(57),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_arrayA(DataList);
 		Msg ->
 			{error, Msg}
@@ -1866,9 +1912,9 @@ pointer_deref_arrayA_array(Pointer, Index) ->
 	Code = int_to_bytelist(58),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_arrayA(DataList);
 		Msg ->
 			{error, Msg}
@@ -1878,9 +1924,9 @@ pointer_deref_arrayA_assign(Pointer, Value) ->
 	Code = int_to_bytelist(59),
 	PList = pointer_to_bytelist(Pointer),
 	VList = arrayA_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1891,9 +1937,9 @@ pointer_deref_arrayA_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = arrayA_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1901,9 +1947,9 @@ pointer_deref_arrayA_array_assign(Pointer, Index, Value) ->
 
 new_arrayA() ->
 	Code = int_to_bytelist(61),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1912,9 +1958,9 @@ new_arrayA() ->
 new_arrayA_array(Size) ->
 	Code = int_to_bytelist(62),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -1923,9 +1969,9 @@ new_arrayA_array(Size) ->
 delete_arrayA(Pointer) ->
 	Code = int_to_bytelist(63),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1950,9 +1996,9 @@ arrayA_array_to_list(Pointer, Size, Result) ->
 arrayA_get_id(Pointer) ->
 	Code = int_to_bytelist(64),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -1962,9 +2008,9 @@ arrayA_set_id(Pointer, Attrib) ->
 	Code = int_to_bytelist(65),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -1973,9 +2019,9 @@ arrayA_set_id(Pointer, Attrib) ->
 arrayA_get_values(Pointer) ->
 	Code = int_to_bytelist(66),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int_array(DataList, 10);
 		Msg ->
 			{error, Msg}
@@ -1985,9 +2031,9 @@ arrayA_set_values(Pointer, Attrib) ->
 	Code = int_to_bytelist(67),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_array_to_bytelist(Attrib, 10),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2032,9 +2078,9 @@ parse_arrayB_array(Bytelist, Size, Result) ->
 pointer_deref_arrayB(Pointer) ->
 	Code = int_to_bytelist(68),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_arrayB(DataList);
 		Msg ->
 			{error, Msg}
@@ -2044,9 +2090,9 @@ pointer_deref_arrayB_array(Pointer, Index) ->
 	Code = int_to_bytelist(69),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_arrayB(DataList);
 		Msg ->
 			{error, Msg}
@@ -2056,9 +2102,9 @@ pointer_deref_arrayB_assign(Pointer, Value) ->
 	Code = int_to_bytelist(70),
 	PList = pointer_to_bytelist(Pointer),
 	VList = arrayB_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2069,9 +2115,9 @@ pointer_deref_arrayB_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = arrayB_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2079,9 +2125,9 @@ pointer_deref_arrayB_array_assign(Pointer, Index, Value) ->
 
 new_arrayB() ->
 	Code = int_to_bytelist(72),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2090,9 +2136,9 @@ new_arrayB() ->
 new_arrayB_array(Size) ->
 	Code = int_to_bytelist(73),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2101,9 +2147,9 @@ new_arrayB_array(Size) ->
 delete_arrayB(Pointer) ->
 	Code = int_to_bytelist(74),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2128,9 +2174,9 @@ arrayB_array_to_list(Pointer, Size, Result) ->
 arrayB_get_id(Pointer) ->
 	Code = int_to_bytelist(75),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -2140,9 +2186,9 @@ arrayB_set_id(Pointer, Attrib) ->
 	Code = int_to_bytelist(76),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2151,9 +2197,9 @@ arrayB_set_id(Pointer, Attrib) ->
 arrayB_get_values(Pointer) ->
 	Code = int_to_bytelist(77),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2163,9 +2209,9 @@ arrayB_set_values(Pointer, Attrib) ->
 	Code = int_to_bytelist(78),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2213,9 +2259,9 @@ parse_arrayC_array(Bytelist, Size, Result) ->
 pointer_deref_arrayC(Pointer) ->
 	Code = int_to_bytelist(79),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_arrayC(DataList);
 		Msg ->
 			{error, Msg}
@@ -2225,9 +2271,9 @@ pointer_deref_arrayC_array(Pointer, Index) ->
 	Code = int_to_bytelist(80),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_arrayC(DataList);
 		Msg ->
 			{error, Msg}
@@ -2237,9 +2283,9 @@ pointer_deref_arrayC_assign(Pointer, Value) ->
 	Code = int_to_bytelist(81),
 	PList = pointer_to_bytelist(Pointer),
 	VList = arrayC_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2250,9 +2296,9 @@ pointer_deref_arrayC_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = arrayC_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2260,9 +2306,9 @@ pointer_deref_arrayC_array_assign(Pointer, Index, Value) ->
 
 new_arrayC() ->
 	Code = int_to_bytelist(83),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2271,9 +2317,9 @@ new_arrayC() ->
 new_arrayC_array(Size) ->
 	Code = int_to_bytelist(84),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2282,9 +2328,9 @@ new_arrayC_array(Size) ->
 delete_arrayC(Pointer) ->
 	Code = int_to_bytelist(85),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2309,9 +2355,9 @@ arrayC_array_to_list(Pointer, Size, Result) ->
 arrayC_get_id(Pointer) ->
 	Code = int_to_bytelist(86),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -2321,9 +2367,9 @@ arrayC_set_id(Pointer, Attrib) ->
 	Code = int_to_bytelist(87),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2332,9 +2378,9 @@ arrayC_set_id(Pointer, Attrib) ->
 arrayC_get_values(Pointer) ->
 	Code = int_to_bytelist(88),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2344,9 +2390,9 @@ arrayC_set_values(Pointer, Attrib) ->
 	Code = int_to_bytelist(89),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2355,9 +2401,9 @@ arrayC_set_values(Pointer, Attrib) ->
 arrayC_get_size(Pointer) ->
 	Code = int_to_bytelist(90),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -2367,9 +2413,9 @@ arrayC_set_size(Pointer, Attrib) ->
 	Code = int_to_bytelist(91),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2830,9 +2876,9 @@ parse_color_array(Bytelist, Size, Result) ->
 pointer_deref_color(Pointer) ->
 	Code = int_to_bytelist(92),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_color(DataList);
 		Msg ->
 			{error, Msg}
@@ -2842,9 +2888,9 @@ pointer_deref_color_array(Pointer, Index) ->
 	Code = int_to_bytelist(93),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_color(DataList);
 		Msg ->
 			{error, Msg}
@@ -2854,9 +2900,9 @@ pointer_deref_color_assign(Pointer, Value) ->
 	Code = int_to_bytelist(94),
 	PList = pointer_to_bytelist(Pointer),
 	VList = color_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2867,9 +2913,9 @@ pointer_deref_color_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = color_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2877,9 +2923,9 @@ pointer_deref_color_array_assign(Pointer, Index, Value) ->
 
 new_color() ->
 	Code = int_to_bytelist(96),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2888,9 +2934,9 @@ new_color() ->
 new_color_array(Size) ->
 	Code = int_to_bytelist(97),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -2899,9 +2945,9 @@ new_color_array(Size) ->
 delete_color(Pointer) ->
 	Code = int_to_bytelist(98),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2926,9 +2972,9 @@ color_array_to_list(Pointer, Size, Result) ->
 color_get_r(Pointer) ->
 	Code = int_to_bytelist(99),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -2938,9 +2984,9 @@ color_set_r(Pointer, Attrib) ->
 	Code = int_to_bytelist(100),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2949,9 +2995,9 @@ color_set_r(Pointer, Attrib) ->
 color_get_g(Pointer) ->
 	Code = int_to_bytelist(101),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -2961,9 +3007,9 @@ color_set_g(Pointer, Attrib) ->
 	Code = int_to_bytelist(102),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2972,9 +3018,9 @@ color_set_g(Pointer, Attrib) ->
 color_get_b(Pointer) ->
 	Code = int_to_bytelist(103),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -2984,9 +3030,9 @@ color_set_b(Pointer, Attrib) ->
 	Code = int_to_bytelist(104),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -2995,9 +3041,9 @@ color_set_b(Pointer, Attrib) ->
 color_get_a(Pointer) ->
 	Code = int_to_bytelist(105),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3007,9 +3053,9 @@ color_set_a(Pointer, Attrib) ->
 	Code = int_to_bytelist(106),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3060,9 +3106,9 @@ parse_palette_array(Bytelist, Size, Result) ->
 pointer_deref_palette(Pointer) ->
 	Code = int_to_bytelist(107),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_palette(DataList);
 		Msg ->
 			{error, Msg}
@@ -3072,9 +3118,9 @@ pointer_deref_palette_array(Pointer, Index) ->
 	Code = int_to_bytelist(108),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_palette(DataList);
 		Msg ->
 			{error, Msg}
@@ -3084,9 +3130,9 @@ pointer_deref_palette_assign(Pointer, Value) ->
 	Code = int_to_bytelist(109),
 	PList = pointer_to_bytelist(Pointer),
 	VList = palette_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3097,9 +3143,9 @@ pointer_deref_palette_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = palette_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3107,9 +3153,9 @@ pointer_deref_palette_array_assign(Pointer, Index, Value) ->
 
 new_palette() ->
 	Code = int_to_bytelist(111),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3118,9 +3164,9 @@ new_palette() ->
 new_palette_array(Size) ->
 	Code = int_to_bytelist(112),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3129,9 +3175,9 @@ new_palette_array(Size) ->
 delete_palette(Pointer) ->
 	Code = int_to_bytelist(113),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3156,9 +3202,9 @@ palette_array_to_list(Pointer, Size, Result) ->
 palette_get_ncolors(Pointer) ->
 	Code = int_to_bytelist(114),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -3168,9 +3214,9 @@ palette_set_ncolors(Pointer, Attrib) ->
 	Code = int_to_bytelist(115),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3179,9 +3225,9 @@ palette_set_ncolors(Pointer, Attrib) ->
 palette_get_colors(Pointer) ->
 	Code = int_to_bytelist(116),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3191,9 +3237,9 @@ palette_set_colors(Pointer, Attrib) ->
 	Code = int_to_bytelist(117),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3202,9 +3248,9 @@ palette_set_colors(Pointer, Attrib) ->
 palette_get_version(Pointer) ->
 	Code = int_to_bytelist(118),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -3214,9 +3260,9 @@ palette_set_version(Pointer, Attrib) ->
 	Code = int_to_bytelist(119),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3225,9 +3271,9 @@ palette_set_version(Pointer, Attrib) ->
 palette_get_refcount(Pointer) ->
 	Code = int_to_bytelist(120),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -3237,9 +3283,9 @@ palette_set_refcount(Pointer, Attrib) ->
 	Code = int_to_bytelist(121),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3332,9 +3378,9 @@ parse_pixel_format_array(Bytelist, Size, Result) ->
 pointer_deref_pixel_format(Pointer) ->
 	Code = int_to_bytelist(122),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pixel_format(DataList);
 		Msg ->
 			{error, Msg}
@@ -3344,9 +3390,9 @@ pointer_deref_pixel_format_array(Pointer, Index) ->
 	Code = int_to_bytelist(123),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pixel_format(DataList);
 		Msg ->
 			{error, Msg}
@@ -3356,9 +3402,9 @@ pointer_deref_pixel_format_assign(Pointer, Value) ->
 	Code = int_to_bytelist(124),
 	PList = pointer_to_bytelist(Pointer),
 	VList = pixel_format_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3369,9 +3415,9 @@ pointer_deref_pixel_format_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = pixel_format_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3379,9 +3425,9 @@ pointer_deref_pixel_format_array_assign(Pointer, Index, Value) ->
 
 new_pixel_format() ->
 	Code = int_to_bytelist(126),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3390,9 +3436,9 @@ new_pixel_format() ->
 new_pixel_format_array(Size) ->
 	Code = int_to_bytelist(127),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3401,9 +3447,9 @@ new_pixel_format_array(Size) ->
 delete_pixel_format(Pointer) ->
 	Code = int_to_bytelist(128),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3428,9 +3474,9 @@ pixel_format_array_to_list(Pointer, Size, Result) ->
 pixel_format_get_format(Pointer) ->
 	Code = int_to_bytelist(129),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -3440,9 +3486,9 @@ pixel_format_set_format(Pointer, Attrib) ->
 	Code = int_to_bytelist(130),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3451,9 +3497,9 @@ pixel_format_set_format(Pointer, Attrib) ->
 pixel_format_get_palette(Pointer) ->
 	Code = int_to_bytelist(131),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3463,9 +3509,9 @@ pixel_format_set_palette(Pointer, Attrib) ->
 	Code = int_to_bytelist(132),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3474,9 +3520,9 @@ pixel_format_set_palette(Pointer, Attrib) ->
 pixel_format_get_bits_per_pixel(Pointer) ->
 	Code = int_to_bytelist(133),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3486,9 +3532,9 @@ pixel_format_set_bits_per_pixel(Pointer, Attrib) ->
 	Code = int_to_bytelist(134),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3497,9 +3543,9 @@ pixel_format_set_bits_per_pixel(Pointer, Attrib) ->
 pixel_format_get_bytes_per_pixel(Pointer) ->
 	Code = int_to_bytelist(135),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3509,9 +3555,9 @@ pixel_format_set_bytes_per_pixel(Pointer, Attrib) ->
 	Code = int_to_bytelist(136),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3520,9 +3566,9 @@ pixel_format_set_bytes_per_pixel(Pointer, Attrib) ->
 pixel_format_get_r_mask(Pointer) ->
 	Code = int_to_bytelist(137),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -3532,9 +3578,9 @@ pixel_format_set_r_mask(Pointer, Attrib) ->
 	Code = int_to_bytelist(138),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3543,9 +3589,9 @@ pixel_format_set_r_mask(Pointer, Attrib) ->
 pixel_format_get_g_mask(Pointer) ->
 	Code = int_to_bytelist(139),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -3555,9 +3601,9 @@ pixel_format_set_g_mask(Pointer, Attrib) ->
 	Code = int_to_bytelist(140),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3566,9 +3612,9 @@ pixel_format_set_g_mask(Pointer, Attrib) ->
 pixel_format_get_b_mask(Pointer) ->
 	Code = int_to_bytelist(141),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -3578,9 +3624,9 @@ pixel_format_set_b_mask(Pointer, Attrib) ->
 	Code = int_to_bytelist(142),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3589,9 +3635,9 @@ pixel_format_set_b_mask(Pointer, Attrib) ->
 pixel_format_get_a_mask(Pointer) ->
 	Code = int_to_bytelist(143),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -3601,9 +3647,9 @@ pixel_format_set_a_mask(Pointer, Attrib) ->
 	Code = int_to_bytelist(144),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3612,9 +3658,9 @@ pixel_format_set_a_mask(Pointer, Attrib) ->
 pixel_format_get_r_loss(Pointer) ->
 	Code = int_to_bytelist(145),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3624,9 +3670,9 @@ pixel_format_set_r_loss(Pointer, Attrib) ->
 	Code = int_to_bytelist(146),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3635,9 +3681,9 @@ pixel_format_set_r_loss(Pointer, Attrib) ->
 pixel_format_get_g_loss(Pointer) ->
 	Code = int_to_bytelist(147),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3647,9 +3693,9 @@ pixel_format_set_g_loss(Pointer, Attrib) ->
 	Code = int_to_bytelist(148),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3658,9 +3704,9 @@ pixel_format_set_g_loss(Pointer, Attrib) ->
 pixel_format_get_b_loss(Pointer) ->
 	Code = int_to_bytelist(149),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3670,9 +3716,9 @@ pixel_format_set_b_loss(Pointer, Attrib) ->
 	Code = int_to_bytelist(150),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3681,9 +3727,9 @@ pixel_format_set_b_loss(Pointer, Attrib) ->
 pixel_format_get_a_loss(Pointer) ->
 	Code = int_to_bytelist(151),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3693,9 +3739,9 @@ pixel_format_set_a_loss(Pointer, Attrib) ->
 	Code = int_to_bytelist(152),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3704,9 +3750,9 @@ pixel_format_set_a_loss(Pointer, Attrib) ->
 pixel_format_get_r_shift(Pointer) ->
 	Code = int_to_bytelist(153),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3716,9 +3762,9 @@ pixel_format_set_r_shift(Pointer, Attrib) ->
 	Code = int_to_bytelist(154),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3727,9 +3773,9 @@ pixel_format_set_r_shift(Pointer, Attrib) ->
 pixel_format_get_g_shift(Pointer) ->
 	Code = int_to_bytelist(155),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3739,9 +3785,9 @@ pixel_format_set_g_shift(Pointer, Attrib) ->
 	Code = int_to_bytelist(156),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3750,9 +3796,9 @@ pixel_format_set_g_shift(Pointer, Attrib) ->
 pixel_format_get_b_shift(Pointer) ->
 	Code = int_to_bytelist(157),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3762,9 +3808,9 @@ pixel_format_set_b_shift(Pointer, Attrib) ->
 	Code = int_to_bytelist(158),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3773,9 +3819,9 @@ pixel_format_set_b_shift(Pointer, Attrib) ->
 pixel_format_get_a_shift(Pointer) ->
 	Code = int_to_bytelist(159),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -3785,9 +3831,9 @@ pixel_format_set_a_shift(Pointer, Attrib) ->
 	Code = int_to_bytelist(160),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3796,9 +3842,9 @@ pixel_format_set_a_shift(Pointer, Attrib) ->
 pixel_format_get_refcount(Pointer) ->
 	Code = int_to_bytelist(161),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -3808,9 +3854,9 @@ pixel_format_set_refcount(Pointer, Attrib) ->
 	Code = int_to_bytelist(162),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3819,9 +3865,9 @@ pixel_format_set_refcount(Pointer, Attrib) ->
 pixel_format_get_next(Pointer) ->
 	Code = int_to_bytelist(163),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3831,9 +3877,9 @@ pixel_format_set_next(Pointer, Attrib) ->
 	Code = int_to_bytelist(164),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3884,9 +3930,9 @@ parse_rect_array(Bytelist, Size, Result) ->
 pointer_deref_rect(Pointer) ->
 	Code = int_to_bytelist(165),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_rect(DataList);
 		Msg ->
 			{error, Msg}
@@ -3896,9 +3942,9 @@ pointer_deref_rect_array(Pointer, Index) ->
 	Code = int_to_bytelist(166),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_rect(DataList);
 		Msg ->
 			{error, Msg}
@@ -3908,9 +3954,9 @@ pointer_deref_rect_assign(Pointer, Value) ->
 	Code = int_to_bytelist(167),
 	PList = pointer_to_bytelist(Pointer),
 	VList = rect_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3921,9 +3967,9 @@ pointer_deref_rect_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = rect_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3931,9 +3977,9 @@ pointer_deref_rect_array_assign(Pointer, Index, Value) ->
 
 new_rect() ->
 	Code = int_to_bytelist(169),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3942,9 +3988,9 @@ new_rect() ->
 new_rect_array(Size) ->
 	Code = int_to_bytelist(170),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -3953,9 +3999,9 @@ new_rect_array(Size) ->
 delete_rect(Pointer) ->
 	Code = int_to_bytelist(171),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -3980,9 +4026,9 @@ rect_array_to_list(Pointer, Size, Result) ->
 rect_get_x(Pointer) ->
 	Code = int_to_bytelist(172),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -3992,9 +4038,9 @@ rect_set_x(Pointer, Attrib) ->
 	Code = int_to_bytelist(173),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4003,9 +4049,9 @@ rect_set_x(Pointer, Attrib) ->
 rect_get_y(Pointer) ->
 	Code = int_to_bytelist(174),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4015,9 +4061,9 @@ rect_set_y(Pointer, Attrib) ->
 	Code = int_to_bytelist(175),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4026,9 +4072,9 @@ rect_set_y(Pointer, Attrib) ->
 rect_get_w(Pointer) ->
 	Code = int_to_bytelist(176),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4038,9 +4084,9 @@ rect_set_w(Pointer, Attrib) ->
 	Code = int_to_bytelist(177),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4049,9 +4095,9 @@ rect_set_w(Pointer, Attrib) ->
 rect_get_h(Pointer) ->
 	Code = int_to_bytelist(178),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4061,9 +4107,9 @@ rect_set_h(Pointer, Attrib) ->
 	Code = int_to_bytelist(179),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4174,9 +4220,9 @@ parse_surface_array(Bytelist, Size, Result) ->
 pointer_deref_surface(Pointer) ->
 	Code = int_to_bytelist(180),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_surface(DataList);
 		Msg ->
 			{error, Msg}
@@ -4186,9 +4232,9 @@ pointer_deref_surface_array(Pointer, Index) ->
 	Code = int_to_bytelist(181),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_surface(DataList);
 		Msg ->
 			{error, Msg}
@@ -4198,9 +4244,9 @@ pointer_deref_surface_assign(Pointer, Value) ->
 	Code = int_to_bytelist(182),
 	PList = pointer_to_bytelist(Pointer),
 	VList = surface_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4211,9 +4257,9 @@ pointer_deref_surface_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = surface_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4221,9 +4267,9 @@ pointer_deref_surface_array_assign(Pointer, Index, Value) ->
 
 new_surface() ->
 	Code = int_to_bytelist(184),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -4232,9 +4278,9 @@ new_surface() ->
 new_surface_array(Size) ->
 	Code = int_to_bytelist(185),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -4243,9 +4289,9 @@ new_surface_array(Size) ->
 delete_surface(Pointer) ->
 	Code = int_to_bytelist(186),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4270,9 +4316,9 @@ surface_array_to_list(Pointer, Size, Result) ->
 surface_get_flags(Pointer) ->
 	Code = int_to_bytelist(187),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -4282,9 +4328,9 @@ surface_set_flags(Pointer, Attrib) ->
 	Code = int_to_bytelist(188),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4293,9 +4339,9 @@ surface_set_flags(Pointer, Attrib) ->
 surface_get_format(Pointer) ->
 	Code = int_to_bytelist(189),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -4305,9 +4351,9 @@ surface_set_format(Pointer, Attrib) ->
 	Code = int_to_bytelist(190),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4316,9 +4362,9 @@ surface_set_format(Pointer, Attrib) ->
 surface_get_w(Pointer) ->
 	Code = int_to_bytelist(191),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4328,9 +4374,9 @@ surface_set_w(Pointer, Attrib) ->
 	Code = int_to_bytelist(192),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4339,9 +4385,9 @@ surface_set_w(Pointer, Attrib) ->
 surface_get_h(Pointer) ->
 	Code = int_to_bytelist(193),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4351,9 +4397,9 @@ surface_set_h(Pointer, Attrib) ->
 	Code = int_to_bytelist(194),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4362,9 +4408,9 @@ surface_set_h(Pointer, Attrib) ->
 surface_get_pitch(Pointer) ->
 	Code = int_to_bytelist(195),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4374,9 +4420,9 @@ surface_set_pitch(Pointer, Attrib) ->
 	Code = int_to_bytelist(196),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4385,9 +4431,9 @@ surface_set_pitch(Pointer, Attrib) ->
 surface_get_pixels(Pointer) ->
 	Code = int_to_bytelist(197),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -4397,9 +4443,9 @@ surface_set_pixels(Pointer, Attrib) ->
 	Code = int_to_bytelist(198),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4408,9 +4454,9 @@ surface_set_pixels(Pointer, Attrib) ->
 surface_get_userdata(Pointer) ->
 	Code = int_to_bytelist(199),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -4420,9 +4466,9 @@ surface_set_userdata(Pointer, Attrib) ->
 	Code = int_to_bytelist(200),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4431,9 +4477,9 @@ surface_set_userdata(Pointer, Attrib) ->
 surface_get_locked(Pointer) ->
 	Code = int_to_bytelist(201),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4443,9 +4489,9 @@ surface_set_locked(Pointer, Attrib) ->
 	Code = int_to_bytelist(202),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4454,9 +4500,9 @@ surface_set_locked(Pointer, Attrib) ->
 surface_get_lock_data(Pointer) ->
 	Code = int_to_bytelist(203),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -4466,9 +4512,9 @@ surface_set_lock_data(Pointer, Attrib) ->
 	Code = int_to_bytelist(204),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4477,9 +4523,9 @@ surface_set_lock_data(Pointer, Attrib) ->
 surface_get_clip_rect(Pointer) ->
 	Code = int_to_bytelist(205),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_rect(DataList);
 		Msg ->
 			{error, Msg}
@@ -4489,9 +4535,9 @@ surface_set_clip_rect(Pointer, Attrib) ->
 	Code = int_to_bytelist(206),
 	PList = pointer_to_bytelist(Pointer),
 	AList = rect_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4500,9 +4546,9 @@ surface_set_clip_rect(Pointer, Attrib) ->
 surface_get_map(Pointer) ->
 	Code = int_to_bytelist(207),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -4512,9 +4558,9 @@ surface_set_map(Pointer, Attrib) ->
 	Code = int_to_bytelist(208),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -4523,9 +4569,9 @@ surface_set_map(Pointer, Attrib) ->
 surface_get_refcount(Pointer) ->
 	Code = int_to_bytelist(209),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList);
 		Msg ->
 			{error, Msg}
@@ -4535,9 +4581,9 @@ surface_set_refcount(Pointer, Attrib) ->
 	Code = int_to_bytelist(210),
 	PList = pointer_to_bytelist(Pointer),
 	AList = int_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5199,9 +5245,9 @@ parse_keysym_array(Bytelist, Size, Result) ->
 pointer_deref_keysym(Pointer) ->
 	Code = int_to_bytelist(211),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_keysym(DataList);
 		Msg ->
 			{error, Msg}
@@ -5211,9 +5257,9 @@ pointer_deref_keysym_array(Pointer, Index) ->
 	Code = int_to_bytelist(212),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_keysym(DataList);
 		Msg ->
 			{error, Msg}
@@ -5223,9 +5269,9 @@ pointer_deref_keysym_assign(Pointer, Value) ->
 	Code = int_to_bytelist(213),
 	PList = pointer_to_bytelist(Pointer),
 	VList = keysym_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5236,9 +5282,9 @@ pointer_deref_keysym_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = keysym_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5246,9 +5292,9 @@ pointer_deref_keysym_array_assign(Pointer, Index, Value) ->
 
 new_keysym() ->
 	Code = int_to_bytelist(215),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -5257,9 +5303,9 @@ new_keysym() ->
 new_keysym_array(Size) ->
 	Code = int_to_bytelist(216),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -5268,9 +5314,9 @@ new_keysym_array(Size) ->
 delete_keysym(Pointer) ->
 	Code = int_to_bytelist(217),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5295,9 +5341,9 @@ keysym_array_to_list(Pointer, Size, Result) ->
 keysym_get_scancode(Pointer) ->
 	Code = int_to_bytelist(218),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_scancode(DataList);
 		Msg ->
 			{error, Msg}
@@ -5307,9 +5353,9 @@ keysym_set_scancode(Pointer, Attrib) ->
 	Code = int_to_bytelist(219),
 	PList = pointer_to_bytelist(Pointer),
 	AList = scancode_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5318,9 +5364,9 @@ keysym_set_scancode(Pointer, Attrib) ->
 keysym_get_sym(Pointer) ->
 	Code = int_to_bytelist(220),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_keycode(DataList);
 		Msg ->
 			{error, Msg}
@@ -5330,9 +5376,9 @@ keysym_set_sym(Pointer, Attrib) ->
 	Code = int_to_bytelist(221),
 	PList = pointer_to_bytelist(Pointer),
 	AList = keycode_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5341,9 +5387,9 @@ keysym_set_sym(Pointer, Attrib) ->
 keysym_get_mod(Pointer) ->
 	Code = int_to_bytelist(222),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -5353,9 +5399,9 @@ keysym_set_mod(Pointer, Attrib) ->
 	Code = int_to_bytelist(223),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5364,9 +5410,9 @@ keysym_set_mod(Pointer, Attrib) ->
 keysym_get_unused(Pointer) ->
 	Code = int_to_bytelist(224),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -5376,9 +5422,9 @@ keysym_set_unused(Pointer, Attrib) ->
 	Code = int_to_bytelist(225),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5639,9 +5685,9 @@ parse_common_event_array(Bytelist, Size, Result) ->
 pointer_deref_common_event(Pointer) ->
 	Code = int_to_bytelist(226),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_common_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -5651,9 +5697,9 @@ pointer_deref_common_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(227),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_common_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -5663,9 +5709,9 @@ pointer_deref_common_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(228),
 	PList = pointer_to_bytelist(Pointer),
 	VList = common_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5676,9 +5722,9 @@ pointer_deref_common_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = common_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5686,9 +5732,9 @@ pointer_deref_common_event_array_assign(Pointer, Index, Value) ->
 
 new_common_event() ->
 	Code = int_to_bytelist(230),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -5697,9 +5743,9 @@ new_common_event() ->
 new_common_event_array(Size) ->
 	Code = int_to_bytelist(231),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -5708,9 +5754,9 @@ new_common_event_array(Size) ->
 delete_common_event(Pointer) ->
 	Code = int_to_bytelist(232),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5735,9 +5781,9 @@ common_event_array_to_list(Pointer, Size, Result) ->
 common_event_get_type(Pointer) ->
 	Code = int_to_bytelist(233),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -5747,9 +5793,9 @@ common_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(234),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5758,9 +5804,9 @@ common_event_set_type(Pointer, Attrib) ->
 common_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(235),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -5770,9 +5816,9 @@ common_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(236),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5838,9 +5884,9 @@ parse_window_event_array(Bytelist, Size, Result) ->
 pointer_deref_window_event(Pointer) ->
 	Code = int_to_bytelist(237),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_window_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -5850,9 +5896,9 @@ pointer_deref_window_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(238),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_window_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -5862,9 +5908,9 @@ pointer_deref_window_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(239),
 	PList = pointer_to_bytelist(Pointer),
 	VList = window_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5875,9 +5921,9 @@ pointer_deref_window_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = window_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5885,9 +5931,9 @@ pointer_deref_window_event_array_assign(Pointer, Index, Value) ->
 
 new_window_event() ->
 	Code = int_to_bytelist(241),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -5896,9 +5942,9 @@ new_window_event() ->
 new_window_event_array(Size) ->
 	Code = int_to_bytelist(242),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -5907,9 +5953,9 @@ new_window_event_array(Size) ->
 delete_window_event(Pointer) ->
 	Code = int_to_bytelist(243),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5934,9 +5980,9 @@ window_event_array_to_list(Pointer, Size, Result) ->
 window_event_get_type(Pointer) ->
 	Code = int_to_bytelist(244),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -5946,9 +5992,9 @@ window_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(245),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5957,9 +6003,9 @@ window_event_set_type(Pointer, Attrib) ->
 window_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(246),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -5969,9 +6015,9 @@ window_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(247),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -5980,9 +6026,9 @@ window_event_set_timestamp(Pointer, Attrib) ->
 window_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(248),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -5992,9 +6038,9 @@ window_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(249),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6003,9 +6049,9 @@ window_event_set_windowID(Pointer, Attrib) ->
 window_event_get_event(Pointer) ->
 	Code = int_to_bytelist(250),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6015,9 +6061,9 @@ window_event_set_event(Pointer, Attrib) ->
 	Code = int_to_bytelist(251),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6026,9 +6072,9 @@ window_event_set_event(Pointer, Attrib) ->
 window_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(252),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6038,9 +6084,9 @@ window_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(253),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6049,9 +6095,9 @@ window_event_set_padding1(Pointer, Attrib) ->
 window_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(254),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6061,9 +6107,9 @@ window_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(255),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6072,9 +6118,9 @@ window_event_set_padding2(Pointer, Attrib) ->
 window_event_get_padding3(Pointer) ->
 	Code = int_to_bytelist(256),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6084,9 +6130,9 @@ window_event_set_padding3(Pointer, Attrib) ->
 	Code = int_to_bytelist(257),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6095,9 +6141,9 @@ window_event_set_padding3(Pointer, Attrib) ->
 window_event_get_data1(Pointer) ->
 	Code = int_to_bytelist(258),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6107,9 +6153,9 @@ window_event_set_data1(Pointer, Attrib) ->
 	Code = int_to_bytelist(259),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6118,9 +6164,9 @@ window_event_set_data1(Pointer, Attrib) ->
 window_event_get_data2(Pointer) ->
 	Code = int_to_bytelist(260),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6130,9 +6176,9 @@ window_event_set_data2(Pointer, Attrib) ->
 	Code = int_to_bytelist(261),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6195,9 +6241,9 @@ parse_keyboard_event_array(Bytelist, Size, Result) ->
 pointer_deref_keyboard_event(Pointer) ->
 	Code = int_to_bytelist(262),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_keyboard_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -6207,9 +6253,9 @@ pointer_deref_keyboard_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(263),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_keyboard_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -6219,9 +6265,9 @@ pointer_deref_keyboard_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(264),
 	PList = pointer_to_bytelist(Pointer),
 	VList = keyboard_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6232,9 +6278,9 @@ pointer_deref_keyboard_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = keyboard_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6242,9 +6288,9 @@ pointer_deref_keyboard_event_array_assign(Pointer, Index, Value) ->
 
 new_keyboard_event() ->
 	Code = int_to_bytelist(266),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -6253,9 +6299,9 @@ new_keyboard_event() ->
 new_keyboard_event_array(Size) ->
 	Code = int_to_bytelist(267),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -6264,9 +6310,9 @@ new_keyboard_event_array(Size) ->
 delete_keyboard_event(Pointer) ->
 	Code = int_to_bytelist(268),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6291,9 +6337,9 @@ keyboard_event_array_to_list(Pointer, Size, Result) ->
 keyboard_event_get_type(Pointer) ->
 	Code = int_to_bytelist(269),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6303,9 +6349,9 @@ keyboard_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(270),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6314,9 +6360,9 @@ keyboard_event_set_type(Pointer, Attrib) ->
 keyboard_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(271),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6326,9 +6372,9 @@ keyboard_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(272),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6337,9 +6383,9 @@ keyboard_event_set_timestamp(Pointer, Attrib) ->
 keyboard_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(273),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6349,9 +6395,9 @@ keyboard_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(274),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6360,9 +6406,9 @@ keyboard_event_set_windowID(Pointer, Attrib) ->
 keyboard_event_get_state(Pointer) ->
 	Code = int_to_bytelist(275),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6372,9 +6418,9 @@ keyboard_event_set_state(Pointer, Attrib) ->
 	Code = int_to_bytelist(276),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6383,9 +6429,9 @@ keyboard_event_set_state(Pointer, Attrib) ->
 keyboard_event_get_repeat(Pointer) ->
 	Code = int_to_bytelist(277),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6395,9 +6441,9 @@ keyboard_event_set_repeat(Pointer, Attrib) ->
 	Code = int_to_bytelist(278),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6406,9 +6452,9 @@ keyboard_event_set_repeat(Pointer, Attrib) ->
 keyboard_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(279),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6418,9 +6464,9 @@ keyboard_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(280),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6429,9 +6475,9 @@ keyboard_event_set_padding2(Pointer, Attrib) ->
 keyboard_event_get_padding3(Pointer) ->
 	Code = int_to_bytelist(281),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -6441,9 +6487,9 @@ keyboard_event_set_padding3(Pointer, Attrib) ->
 	Code = int_to_bytelist(282),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6452,9 +6498,9 @@ keyboard_event_set_padding3(Pointer, Attrib) ->
 keyboard_event_get_keysym(Pointer) ->
 	Code = int_to_bytelist(283),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_keysym(DataList);
 		Msg ->
 			{error, Msg}
@@ -6464,9 +6510,9 @@ keyboard_event_set_keysym(Pointer, Attrib) ->
 	Code = int_to_bytelist(284),
 	PList = pointer_to_bytelist(Pointer),
 	AList = keysym_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6523,9 +6569,9 @@ parse_text_editing_event_array(Bytelist, Size, Result) ->
 pointer_deref_text_editing_event(Pointer) ->
 	Code = int_to_bytelist(285),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_text_editing_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -6535,9 +6581,9 @@ pointer_deref_text_editing_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(286),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_text_editing_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -6547,9 +6593,9 @@ pointer_deref_text_editing_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(287),
 	PList = pointer_to_bytelist(Pointer),
 	VList = text_editing_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6560,9 +6606,9 @@ pointer_deref_text_editing_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = text_editing_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6570,9 +6616,9 @@ pointer_deref_text_editing_event_array_assign(Pointer, Index, Value) ->
 
 new_text_editing_event() ->
 	Code = int_to_bytelist(289),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -6581,9 +6627,9 @@ new_text_editing_event() ->
 new_text_editing_event_array(Size) ->
 	Code = int_to_bytelist(290),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -6592,9 +6638,9 @@ new_text_editing_event_array(Size) ->
 delete_text_editing_event(Pointer) ->
 	Code = int_to_bytelist(291),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6619,9 +6665,9 @@ text_editing_event_array_to_list(Pointer, Size, Result) ->
 text_editing_event_get_type(Pointer) ->
 	Code = int_to_bytelist(292),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6631,9 +6677,9 @@ text_editing_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(293),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6642,9 +6688,9 @@ text_editing_event_set_type(Pointer, Attrib) ->
 text_editing_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(294),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6654,9 +6700,9 @@ text_editing_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(295),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6665,9 +6711,9 @@ text_editing_event_set_timestamp(Pointer, Attrib) ->
 text_editing_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(296),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6677,9 +6723,9 @@ text_editing_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(297),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6688,9 +6734,9 @@ text_editing_event_set_windowID(Pointer, Attrib) ->
 text_editing_event_get_text(Pointer) ->
 	Code = int_to_bytelist(298),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_string(DataList);
 		Msg ->
 			{error, Msg}
@@ -6700,9 +6746,9 @@ text_editing_event_set_text(Pointer, Attrib) ->
 	Code = int_to_bytelist(299),
 	PList = pointer_to_bytelist(Pointer),
 	AList = string_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6711,9 +6757,9 @@ text_editing_event_set_text(Pointer, Attrib) ->
 text_editing_event_get_start(Pointer) ->
 	Code = int_to_bytelist(300),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6723,9 +6769,9 @@ text_editing_event_set_start(Pointer, Attrib) ->
 	Code = int_to_bytelist(301),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6734,9 +6780,9 @@ text_editing_event_set_start(Pointer, Attrib) ->
 text_editing_event_get_length(Pointer) ->
 	Code = int_to_bytelist(302),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6746,9 +6792,9 @@ text_editing_event_set_length(Pointer, Attrib) ->
 	Code = int_to_bytelist(303),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6799,9 +6845,9 @@ parse_text_input_event_array(Bytelist, Size, Result) ->
 pointer_deref_text_input_event(Pointer) ->
 	Code = int_to_bytelist(304),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_text_input_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -6811,9 +6857,9 @@ pointer_deref_text_input_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(305),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_text_input_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -6823,9 +6869,9 @@ pointer_deref_text_input_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(306),
 	PList = pointer_to_bytelist(Pointer),
 	VList = text_input_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6836,9 +6882,9 @@ pointer_deref_text_input_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = text_input_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6846,9 +6892,9 @@ pointer_deref_text_input_event_array_assign(Pointer, Index, Value) ->
 
 new_text_input_event() ->
 	Code = int_to_bytelist(308),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -6857,9 +6903,9 @@ new_text_input_event() ->
 new_text_input_event_array(Size) ->
 	Code = int_to_bytelist(309),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -6868,9 +6914,9 @@ new_text_input_event_array(Size) ->
 delete_text_input_event(Pointer) ->
 	Code = int_to_bytelist(310),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6895,9 +6941,9 @@ text_input_event_array_to_list(Pointer, Size, Result) ->
 text_input_event_get_type(Pointer) ->
 	Code = int_to_bytelist(311),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6907,9 +6953,9 @@ text_input_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(312),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6918,9 +6964,9 @@ text_input_event_set_type(Pointer, Attrib) ->
 text_input_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(313),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6930,9 +6976,9 @@ text_input_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(314),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6941,9 +6987,9 @@ text_input_event_set_timestamp(Pointer, Attrib) ->
 text_input_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(315),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -6953,9 +6999,9 @@ text_input_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(316),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -6964,9 +7010,9 @@ text_input_event_set_windowID(Pointer, Attrib) ->
 text_input_event_get_text(Pointer) ->
 	Code = int_to_bytelist(317),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_string(DataList);
 		Msg ->
 			{error, Msg}
@@ -6976,9 +7022,9 @@ text_input_event_set_text(Pointer, Attrib) ->
 	Code = int_to_bytelist(318),
 	PList = pointer_to_bytelist(Pointer),
 	AList = string_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7044,9 +7090,9 @@ parse_mouse_motion_event_array(Bytelist, Size, Result) ->
 pointer_deref_mouse_motion_event(Pointer) ->
 	Code = int_to_bytelist(319),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_motion_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -7056,9 +7102,9 @@ pointer_deref_mouse_motion_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(320),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_motion_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -7068,9 +7114,9 @@ pointer_deref_mouse_motion_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(321),
 	PList = pointer_to_bytelist(Pointer),
 	VList = mouse_motion_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7081,9 +7127,9 @@ pointer_deref_mouse_motion_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = mouse_motion_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7091,9 +7137,9 @@ pointer_deref_mouse_motion_event_array_assign(Pointer, Index, Value) ->
 
 new_mouse_motion_event() ->
 	Code = int_to_bytelist(323),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -7102,9 +7148,9 @@ new_mouse_motion_event() ->
 new_mouse_motion_event_array(Size) ->
 	Code = int_to_bytelist(324),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -7113,9 +7159,9 @@ new_mouse_motion_event_array(Size) ->
 delete_mouse_motion_event(Pointer) ->
 	Code = int_to_bytelist(325),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7140,9 +7186,9 @@ mouse_motion_event_array_to_list(Pointer, Size, Result) ->
 mouse_motion_event_get_type(Pointer) ->
 	Code = int_to_bytelist(326),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7152,9 +7198,9 @@ mouse_motion_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(327),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7163,9 +7209,9 @@ mouse_motion_event_set_type(Pointer, Attrib) ->
 mouse_motion_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(328),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7175,9 +7221,9 @@ mouse_motion_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(329),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7186,9 +7232,9 @@ mouse_motion_event_set_timestamp(Pointer, Attrib) ->
 mouse_motion_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(330),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7198,9 +7244,9 @@ mouse_motion_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(331),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7209,9 +7255,9 @@ mouse_motion_event_set_windowID(Pointer, Attrib) ->
 mouse_motion_event_get_which(Pointer) ->
 	Code = int_to_bytelist(332),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7221,9 +7267,9 @@ mouse_motion_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(333),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7232,9 +7278,9 @@ mouse_motion_event_set_which(Pointer, Attrib) ->
 mouse_motion_event_get_state(Pointer) ->
 	Code = int_to_bytelist(334),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7244,9 +7290,9 @@ mouse_motion_event_set_state(Pointer, Attrib) ->
 	Code = int_to_bytelist(335),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7255,9 +7301,9 @@ mouse_motion_event_set_state(Pointer, Attrib) ->
 mouse_motion_event_get_x(Pointer) ->
 	Code = int_to_bytelist(336),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7267,9 +7313,9 @@ mouse_motion_event_set_x(Pointer, Attrib) ->
 	Code = int_to_bytelist(337),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7278,9 +7324,9 @@ mouse_motion_event_set_x(Pointer, Attrib) ->
 mouse_motion_event_get_y(Pointer) ->
 	Code = int_to_bytelist(338),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7290,9 +7336,9 @@ mouse_motion_event_set_y(Pointer, Attrib) ->
 	Code = int_to_bytelist(339),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7301,9 +7347,9 @@ mouse_motion_event_set_y(Pointer, Attrib) ->
 mouse_motion_event_get_xrel(Pointer) ->
 	Code = int_to_bytelist(340),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7313,9 +7359,9 @@ mouse_motion_event_set_xrel(Pointer, Attrib) ->
 	Code = int_to_bytelist(341),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7324,9 +7370,9 @@ mouse_motion_event_set_xrel(Pointer, Attrib) ->
 mouse_motion_event_get_yrel(Pointer) ->
 	Code = int_to_bytelist(342),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7336,9 +7382,9 @@ mouse_motion_event_set_yrel(Pointer, Attrib) ->
 	Code = int_to_bytelist(343),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7404,9 +7450,9 @@ parse_mouse_button_event_array(Bytelist, Size, Result) ->
 pointer_deref_mouse_button_event(Pointer) ->
 	Code = int_to_bytelist(344),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -7416,9 +7462,9 @@ pointer_deref_mouse_button_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(345),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -7428,9 +7474,9 @@ pointer_deref_mouse_button_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(346),
 	PList = pointer_to_bytelist(Pointer),
 	VList = mouse_button_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7441,9 +7487,9 @@ pointer_deref_mouse_button_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = mouse_button_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7451,9 +7497,9 @@ pointer_deref_mouse_button_event_array_assign(Pointer, Index, Value) ->
 
 new_mouse_button_event() ->
 	Code = int_to_bytelist(348),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -7462,9 +7508,9 @@ new_mouse_button_event() ->
 new_mouse_button_event_array(Size) ->
 	Code = int_to_bytelist(349),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -7473,9 +7519,9 @@ new_mouse_button_event_array(Size) ->
 delete_mouse_button_event(Pointer) ->
 	Code = int_to_bytelist(350),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7500,9 +7546,9 @@ mouse_button_event_array_to_list(Pointer, Size, Result) ->
 mouse_button_event_get_type(Pointer) ->
 	Code = int_to_bytelist(351),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7512,9 +7558,9 @@ mouse_button_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(352),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7523,9 +7569,9 @@ mouse_button_event_set_type(Pointer, Attrib) ->
 mouse_button_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(353),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7535,9 +7581,9 @@ mouse_button_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(354),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7546,9 +7592,9 @@ mouse_button_event_set_timestamp(Pointer, Attrib) ->
 mouse_button_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(355),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7558,9 +7604,9 @@ mouse_button_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(356),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7569,9 +7615,9 @@ mouse_button_event_set_windowID(Pointer, Attrib) ->
 mouse_button_event_get_which(Pointer) ->
 	Code = int_to_bytelist(357),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7581,9 +7627,9 @@ mouse_button_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(358),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7592,9 +7638,9 @@ mouse_button_event_set_which(Pointer, Attrib) ->
 mouse_button_event_get_button(Pointer) ->
 	Code = int_to_bytelist(359),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -7604,9 +7650,9 @@ mouse_button_event_set_button(Pointer, Attrib) ->
 	Code = int_to_bytelist(360),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7615,9 +7661,9 @@ mouse_button_event_set_button(Pointer, Attrib) ->
 mouse_button_event_get_state(Pointer) ->
 	Code = int_to_bytelist(361),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -7627,9 +7673,9 @@ mouse_button_event_set_state(Pointer, Attrib) ->
 	Code = int_to_bytelist(362),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7638,9 +7684,9 @@ mouse_button_event_set_state(Pointer, Attrib) ->
 mouse_button_event_get_clicks(Pointer) ->
 	Code = int_to_bytelist(363),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -7650,9 +7696,9 @@ mouse_button_event_set_clicks(Pointer, Attrib) ->
 	Code = int_to_bytelist(364),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7661,9 +7707,9 @@ mouse_button_event_set_clicks(Pointer, Attrib) ->
 mouse_button_event_get_x(Pointer) ->
 	Code = int_to_bytelist(365),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7673,9 +7719,9 @@ mouse_button_event_set_x(Pointer, Attrib) ->
 	Code = int_to_bytelist(366),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7684,9 +7730,9 @@ mouse_button_event_set_x(Pointer, Attrib) ->
 mouse_button_event_get_y(Pointer) ->
 	Code = int_to_bytelist(367),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7696,9 +7742,9 @@ mouse_button_event_set_y(Pointer, Attrib) ->
 	Code = int_to_bytelist(368),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7758,9 +7804,9 @@ parse_mouse_wheel_event_array(Bytelist, Size, Result) ->
 pointer_deref_mouse_wheel_event(Pointer) ->
 	Code = int_to_bytelist(369),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_wheel_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -7770,9 +7816,9 @@ pointer_deref_mouse_wheel_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(370),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_wheel_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -7782,9 +7828,9 @@ pointer_deref_mouse_wheel_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(371),
 	PList = pointer_to_bytelist(Pointer),
 	VList = mouse_wheel_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7795,9 +7841,9 @@ pointer_deref_mouse_wheel_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = mouse_wheel_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7805,9 +7851,9 @@ pointer_deref_mouse_wheel_event_array_assign(Pointer, Index, Value) ->
 
 new_mouse_wheel_event() ->
 	Code = int_to_bytelist(373),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -7816,9 +7862,9 @@ new_mouse_wheel_event() ->
 new_mouse_wheel_event_array(Size) ->
 	Code = int_to_bytelist(374),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -7827,9 +7873,9 @@ new_mouse_wheel_event_array(Size) ->
 delete_mouse_wheel_event(Pointer) ->
 	Code = int_to_bytelist(375),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7854,9 +7900,9 @@ mouse_wheel_event_array_to_list(Pointer, Size, Result) ->
 mouse_wheel_event_get_type(Pointer) ->
 	Code = int_to_bytelist(376),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7866,9 +7912,9 @@ mouse_wheel_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(377),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7877,9 +7923,9 @@ mouse_wheel_event_set_type(Pointer, Attrib) ->
 mouse_wheel_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(378),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7889,9 +7935,9 @@ mouse_wheel_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(379),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7900,9 +7946,9 @@ mouse_wheel_event_set_timestamp(Pointer, Attrib) ->
 mouse_wheel_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(380),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7912,9 +7958,9 @@ mouse_wheel_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(381),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7923,9 +7969,9 @@ mouse_wheel_event_set_windowID(Pointer, Attrib) ->
 mouse_wheel_event_get_which(Pointer) ->
 	Code = int_to_bytelist(382),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7935,9 +7981,9 @@ mouse_wheel_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(383),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7946,9 +7992,9 @@ mouse_wheel_event_set_which(Pointer, Attrib) ->
 mouse_wheel_event_get_x(Pointer) ->
 	Code = int_to_bytelist(384),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7958,9 +8004,9 @@ mouse_wheel_event_set_x(Pointer, Attrib) ->
 	Code = int_to_bytelist(385),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7969,9 +8015,9 @@ mouse_wheel_event_set_x(Pointer, Attrib) ->
 mouse_wheel_event_get_y(Pointer) ->
 	Code = int_to_bytelist(386),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -7981,9 +8027,9 @@ mouse_wheel_event_set_y(Pointer, Attrib) ->
 	Code = int_to_bytelist(387),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -7992,9 +8038,9 @@ mouse_wheel_event_set_y(Pointer, Attrib) ->
 mouse_wheel_event_get_direction(Pointer) ->
 	Code = int_to_bytelist(388),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -8004,9 +8050,9 @@ mouse_wheel_event_set_direction(Pointer, Attrib) ->
 	Code = int_to_bytelist(389),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8069,9 +8115,9 @@ parse_joy_axis_event_array(Bytelist, Size, Result) ->
 pointer_deref_joy_axis_event(Pointer) ->
 	Code = int_to_bytelist(390),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_axis_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -8081,9 +8127,9 @@ pointer_deref_joy_axis_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(391),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_axis_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -8093,9 +8139,9 @@ pointer_deref_joy_axis_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(392),
 	PList = pointer_to_bytelist(Pointer),
 	VList = joy_axis_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8106,9 +8152,9 @@ pointer_deref_joy_axis_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = joy_axis_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8116,9 +8162,9 @@ pointer_deref_joy_axis_event_array_assign(Pointer, Index, Value) ->
 
 new_joy_axis_event() ->
 	Code = int_to_bytelist(394),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -8127,9 +8173,9 @@ new_joy_axis_event() ->
 new_joy_axis_event_array(Size) ->
 	Code = int_to_bytelist(395),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -8138,9 +8184,9 @@ new_joy_axis_event_array(Size) ->
 delete_joy_axis_event(Pointer) ->
 	Code = int_to_bytelist(396),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8165,9 +8211,9 @@ joy_axis_event_array_to_list(Pointer, Size, Result) ->
 joy_axis_event_get_type(Pointer) ->
 	Code = int_to_bytelist(397),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -8177,9 +8223,9 @@ joy_axis_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(398),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8188,9 +8234,9 @@ joy_axis_event_set_type(Pointer, Attrib) ->
 joy_axis_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(399),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -8200,9 +8246,9 @@ joy_axis_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(400),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8211,9 +8257,9 @@ joy_axis_event_set_timestamp(Pointer, Attrib) ->
 joy_axis_event_get_which(Pointer) ->
 	Code = int_to_bytelist(401),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joystick_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -8223,9 +8269,9 @@ joy_axis_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(402),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8234,9 +8280,9 @@ joy_axis_event_set_which(Pointer, Attrib) ->
 joy_axis_event_get_axis(Pointer) ->
 	Code = int_to_bytelist(403),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8246,9 +8292,9 @@ joy_axis_event_set_axis(Pointer, Attrib) ->
 	Code = int_to_bytelist(404),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8257,9 +8303,9 @@ joy_axis_event_set_axis(Pointer, Attrib) ->
 joy_axis_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(405),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8269,9 +8315,9 @@ joy_axis_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(406),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8280,9 +8326,9 @@ joy_axis_event_set_padding1(Pointer, Attrib) ->
 joy_axis_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(407),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8292,9 +8338,9 @@ joy_axis_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(408),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8303,9 +8349,9 @@ joy_axis_event_set_padding2(Pointer, Attrib) ->
 joy_axis_event_get_padding3(Pointer) ->
 	Code = int_to_bytelist(409),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8315,9 +8361,9 @@ joy_axis_event_set_padding3(Pointer, Attrib) ->
 	Code = int_to_bytelist(410),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8326,9 +8372,9 @@ joy_axis_event_set_padding3(Pointer, Attrib) ->
 joy_axis_event_get_value(Pointer) ->
 	Code = int_to_bytelist(411),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -8338,9 +8384,9 @@ joy_axis_event_set_value(Pointer, Attrib) ->
 	Code = int_to_bytelist(412),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8406,9 +8452,9 @@ parse_joy_ball_event_array(Bytelist, Size, Result) ->
 pointer_deref_joy_ball_event(Pointer) ->
 	Code = int_to_bytelist(413),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_ball_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -8418,9 +8464,9 @@ pointer_deref_joy_ball_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(414),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_ball_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -8430,9 +8476,9 @@ pointer_deref_joy_ball_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(415),
 	PList = pointer_to_bytelist(Pointer),
 	VList = joy_ball_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8443,9 +8489,9 @@ pointer_deref_joy_ball_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = joy_ball_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8453,9 +8499,9 @@ pointer_deref_joy_ball_event_array_assign(Pointer, Index, Value) ->
 
 new_joy_ball_event() ->
 	Code = int_to_bytelist(417),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -8464,9 +8510,9 @@ new_joy_ball_event() ->
 new_joy_ball_event_array(Size) ->
 	Code = int_to_bytelist(418),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -8475,9 +8521,9 @@ new_joy_ball_event_array(Size) ->
 delete_joy_ball_event(Pointer) ->
 	Code = int_to_bytelist(419),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8502,9 +8548,9 @@ joy_ball_event_array_to_list(Pointer, Size, Result) ->
 joy_ball_event_get_type(Pointer) ->
 	Code = int_to_bytelist(420),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -8514,9 +8560,9 @@ joy_ball_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(421),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8525,9 +8571,9 @@ joy_ball_event_set_type(Pointer, Attrib) ->
 joy_ball_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(422),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -8537,9 +8583,9 @@ joy_ball_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(423),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8548,9 +8594,9 @@ joy_ball_event_set_timestamp(Pointer, Attrib) ->
 joy_ball_event_get_which(Pointer) ->
 	Code = int_to_bytelist(424),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joystick_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -8560,9 +8606,9 @@ joy_ball_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(425),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8571,9 +8617,9 @@ joy_ball_event_set_which(Pointer, Attrib) ->
 joy_ball_event_get_ball(Pointer) ->
 	Code = int_to_bytelist(426),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8583,9 +8629,9 @@ joy_ball_event_set_ball(Pointer, Attrib) ->
 	Code = int_to_bytelist(427),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8594,9 +8640,9 @@ joy_ball_event_set_ball(Pointer, Attrib) ->
 joy_ball_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(428),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8606,9 +8652,9 @@ joy_ball_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(429),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8617,9 +8663,9 @@ joy_ball_event_set_padding1(Pointer, Attrib) ->
 joy_ball_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(430),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8629,9 +8675,9 @@ joy_ball_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(431),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8640,9 +8686,9 @@ joy_ball_event_set_padding2(Pointer, Attrib) ->
 joy_ball_event_get_padding3(Pointer) ->
 	Code = int_to_bytelist(432),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8652,9 +8698,9 @@ joy_ball_event_set_padding3(Pointer, Attrib) ->
 	Code = int_to_bytelist(433),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8663,9 +8709,9 @@ joy_ball_event_set_padding3(Pointer, Attrib) ->
 joy_ball_event_get_xrel(Pointer) ->
 	Code = int_to_bytelist(434),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -8675,9 +8721,9 @@ joy_ball_event_set_xrel(Pointer, Attrib) ->
 	Code = int_to_bytelist(435),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8686,9 +8732,9 @@ joy_ball_event_set_xrel(Pointer, Attrib) ->
 joy_ball_event_get_yrel(Pointer) ->
 	Code = int_to_bytelist(436),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -8698,9 +8744,9 @@ joy_ball_event_set_yrel(Pointer, Attrib) ->
 	Code = int_to_bytelist(437),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8760,9 +8806,9 @@ parse_joy_hat_event_array(Bytelist, Size, Result) ->
 pointer_deref_joy_hat_event(Pointer) ->
 	Code = int_to_bytelist(438),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_hat_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -8772,9 +8818,9 @@ pointer_deref_joy_hat_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(439),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_hat_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -8784,9 +8830,9 @@ pointer_deref_joy_hat_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(440),
 	PList = pointer_to_bytelist(Pointer),
 	VList = joy_hat_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8797,9 +8843,9 @@ pointer_deref_joy_hat_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = joy_hat_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8807,9 +8853,9 @@ pointer_deref_joy_hat_event_array_assign(Pointer, Index, Value) ->
 
 new_joy_hat_event() ->
 	Code = int_to_bytelist(442),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -8818,9 +8864,9 @@ new_joy_hat_event() ->
 new_joy_hat_event_array(Size) ->
 	Code = int_to_bytelist(443),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -8829,9 +8875,9 @@ new_joy_hat_event_array(Size) ->
 delete_joy_hat_event(Pointer) ->
 	Code = int_to_bytelist(444),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8856,9 +8902,9 @@ joy_hat_event_array_to_list(Pointer, Size, Result) ->
 joy_hat_event_get_type(Pointer) ->
 	Code = int_to_bytelist(445),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -8868,9 +8914,9 @@ joy_hat_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(446),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8879,9 +8925,9 @@ joy_hat_event_set_type(Pointer, Attrib) ->
 joy_hat_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(447),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -8891,9 +8937,9 @@ joy_hat_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(448),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8902,9 +8948,9 @@ joy_hat_event_set_timestamp(Pointer, Attrib) ->
 joy_hat_event_get_which(Pointer) ->
 	Code = int_to_bytelist(449),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joystick_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -8914,9 +8960,9 @@ joy_hat_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(450),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8925,9 +8971,9 @@ joy_hat_event_set_which(Pointer, Attrib) ->
 joy_hat_event_get_hat(Pointer) ->
 	Code = int_to_bytelist(451),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8937,9 +8983,9 @@ joy_hat_event_set_hat(Pointer, Attrib) ->
 	Code = int_to_bytelist(452),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8948,9 +8994,9 @@ joy_hat_event_set_hat(Pointer, Attrib) ->
 joy_hat_event_get_value(Pointer) ->
 	Code = int_to_bytelist(453),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8960,9 +9006,9 @@ joy_hat_event_set_value(Pointer, Attrib) ->
 	Code = int_to_bytelist(454),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8971,9 +9017,9 @@ joy_hat_event_set_value(Pointer, Attrib) ->
 joy_hat_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(455),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -8983,9 +9029,9 @@ joy_hat_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(456),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -8994,9 +9040,9 @@ joy_hat_event_set_padding1(Pointer, Attrib) ->
 joy_hat_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(457),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9006,9 +9052,9 @@ joy_hat_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(458),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9068,9 +9114,9 @@ parse_joy_button_event_array(Bytelist, Size, Result) ->
 pointer_deref_joy_button_event(Pointer) ->
 	Code = int_to_bytelist(459),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9080,9 +9126,9 @@ pointer_deref_joy_button_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(460),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9092,9 +9138,9 @@ pointer_deref_joy_button_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(461),
 	PList = pointer_to_bytelist(Pointer),
 	VList = joy_button_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9105,9 +9151,9 @@ pointer_deref_joy_button_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = joy_button_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9115,9 +9161,9 @@ pointer_deref_joy_button_event_array_assign(Pointer, Index, Value) ->
 
 new_joy_button_event() ->
 	Code = int_to_bytelist(463),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -9126,9 +9172,9 @@ new_joy_button_event() ->
 new_joy_button_event_array(Size) ->
 	Code = int_to_bytelist(464),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -9137,9 +9183,9 @@ new_joy_button_event_array(Size) ->
 delete_joy_button_event(Pointer) ->
 	Code = int_to_bytelist(465),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9164,9 +9210,9 @@ joy_button_event_array_to_list(Pointer, Size, Result) ->
 joy_button_event_get_type(Pointer) ->
 	Code = int_to_bytelist(466),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -9176,9 +9222,9 @@ joy_button_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(467),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9187,9 +9233,9 @@ joy_button_event_set_type(Pointer, Attrib) ->
 joy_button_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(468),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -9199,9 +9245,9 @@ joy_button_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(469),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9210,9 +9256,9 @@ joy_button_event_set_timestamp(Pointer, Attrib) ->
 joy_button_event_get_which(Pointer) ->
 	Code = int_to_bytelist(470),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joystick_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -9222,9 +9268,9 @@ joy_button_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(471),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9233,9 +9279,9 @@ joy_button_event_set_which(Pointer, Attrib) ->
 joy_button_event_get_button(Pointer) ->
 	Code = int_to_bytelist(472),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9245,9 +9291,9 @@ joy_button_event_set_button(Pointer, Attrib) ->
 	Code = int_to_bytelist(473),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9256,9 +9302,9 @@ joy_button_event_set_button(Pointer, Attrib) ->
 joy_button_event_get_state(Pointer) ->
 	Code = int_to_bytelist(474),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9268,9 +9314,9 @@ joy_button_event_set_state(Pointer, Attrib) ->
 	Code = int_to_bytelist(475),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9279,9 +9325,9 @@ joy_button_event_set_state(Pointer, Attrib) ->
 joy_button_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(476),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9291,9 +9337,9 @@ joy_button_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(477),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9302,9 +9348,9 @@ joy_button_event_set_padding1(Pointer, Attrib) ->
 joy_button_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(478),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9314,9 +9360,9 @@ joy_button_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(479),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9364,9 +9410,9 @@ parse_joy_device_event_array(Bytelist, Size, Result) ->
 pointer_deref_joy_device_event(Pointer) ->
 	Code = int_to_bytelist(480),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9376,9 +9422,9 @@ pointer_deref_joy_device_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(481),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9388,9 +9434,9 @@ pointer_deref_joy_device_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(482),
 	PList = pointer_to_bytelist(Pointer),
 	VList = joy_device_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9401,9 +9447,9 @@ pointer_deref_joy_device_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = joy_device_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9411,9 +9457,9 @@ pointer_deref_joy_device_event_array_assign(Pointer, Index, Value) ->
 
 new_joy_device_event() ->
 	Code = int_to_bytelist(484),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -9422,9 +9468,9 @@ new_joy_device_event() ->
 new_joy_device_event_array(Size) ->
 	Code = int_to_bytelist(485),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -9433,9 +9479,9 @@ new_joy_device_event_array(Size) ->
 delete_joy_device_event(Pointer) ->
 	Code = int_to_bytelist(486),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9460,9 +9506,9 @@ joy_device_event_array_to_list(Pointer, Size, Result) ->
 joy_device_event_get_type(Pointer) ->
 	Code = int_to_bytelist(487),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -9472,9 +9518,9 @@ joy_device_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(488),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9483,9 +9529,9 @@ joy_device_event_set_type(Pointer, Attrib) ->
 joy_device_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(489),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -9495,9 +9541,9 @@ joy_device_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(490),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9506,9 +9552,9 @@ joy_device_event_set_timestamp(Pointer, Attrib) ->
 joy_device_event_get_which(Pointer) ->
 	Code = int_to_bytelist(491),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -9518,9 +9564,9 @@ joy_device_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(492),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9586,9 +9632,9 @@ parse_controller_axis_event_array(Bytelist, Size, Result) ->
 pointer_deref_controller_axis_event(Pointer) ->
 	Code = int_to_bytelist(493),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_axis_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9598,9 +9644,9 @@ pointer_deref_controller_axis_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(494),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_axis_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9610,9 +9656,9 @@ pointer_deref_controller_axis_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(495),
 	PList = pointer_to_bytelist(Pointer),
 	VList = controller_axis_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9623,9 +9669,9 @@ pointer_deref_controller_axis_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = controller_axis_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9633,9 +9679,9 @@ pointer_deref_controller_axis_event_array_assign(Pointer, Index, Value) ->
 
 new_controller_axis_event() ->
 	Code = int_to_bytelist(497),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -9644,9 +9690,9 @@ new_controller_axis_event() ->
 new_controller_axis_event_array(Size) ->
 	Code = int_to_bytelist(498),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -9655,9 +9701,9 @@ new_controller_axis_event_array(Size) ->
 delete_controller_axis_event(Pointer) ->
 	Code = int_to_bytelist(499),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9682,9 +9728,9 @@ controller_axis_event_array_to_list(Pointer, Size, Result) ->
 controller_axis_event_get_type(Pointer) ->
 	Code = int_to_bytelist(500),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -9694,9 +9740,9 @@ controller_axis_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(501),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9705,9 +9751,9 @@ controller_axis_event_set_type(Pointer, Attrib) ->
 controller_axis_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(502),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -9717,9 +9763,9 @@ controller_axis_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(503),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9728,9 +9774,9 @@ controller_axis_event_set_timestamp(Pointer, Attrib) ->
 controller_axis_event_get_which(Pointer) ->
 	Code = int_to_bytelist(504),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joystick_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -9740,9 +9786,9 @@ controller_axis_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(505),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9751,9 +9797,9 @@ controller_axis_event_set_which(Pointer, Attrib) ->
 controller_axis_event_get_axis(Pointer) ->
 	Code = int_to_bytelist(506),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9763,9 +9809,9 @@ controller_axis_event_set_axis(Pointer, Attrib) ->
 	Code = int_to_bytelist(507),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9774,9 +9820,9 @@ controller_axis_event_set_axis(Pointer, Attrib) ->
 controller_axis_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(508),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9786,9 +9832,9 @@ controller_axis_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(509),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9797,9 +9843,9 @@ controller_axis_event_set_padding1(Pointer, Attrib) ->
 controller_axis_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(510),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9809,9 +9855,9 @@ controller_axis_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(511),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9820,9 +9866,9 @@ controller_axis_event_set_padding2(Pointer, Attrib) ->
 controller_axis_event_get_padding3(Pointer) ->
 	Code = int_to_bytelist(512),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -9832,9 +9878,9 @@ controller_axis_event_set_padding3(Pointer, Attrib) ->
 	Code = int_to_bytelist(513),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9843,9 +9889,9 @@ controller_axis_event_set_padding3(Pointer, Attrib) ->
 controller_axis_event_get_value(Pointer) ->
 	Code = int_to_bytelist(514),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -9855,9 +9901,9 @@ controller_axis_event_set_value(Pointer, Attrib) ->
 	Code = int_to_bytelist(515),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9866,9 +9912,9 @@ controller_axis_event_set_value(Pointer, Attrib) ->
 controller_axis_event_get_padding4(Pointer) ->
 	Code = int_to_bytelist(516),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -9878,9 +9924,9 @@ controller_axis_event_set_padding4(Pointer, Attrib) ->
 	Code = int_to_bytelist(517),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9940,9 +9986,9 @@ parse_controller_button_event_array(Bytelist, Size, Result) ->
 pointer_deref_controller_button_event(Pointer) ->
 	Code = int_to_bytelist(518),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9952,9 +9998,9 @@ pointer_deref_controller_button_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(519),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -9964,9 +10010,9 @@ pointer_deref_controller_button_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(520),
 	PList = pointer_to_bytelist(Pointer),
 	VList = controller_button_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9977,9 +10023,9 @@ pointer_deref_controller_button_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = controller_button_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -9987,9 +10033,9 @@ pointer_deref_controller_button_event_array_assign(Pointer, Index, Value) ->
 
 new_controller_button_event() ->
 	Code = int_to_bytelist(522),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -9998,9 +10044,9 @@ new_controller_button_event() ->
 new_controller_button_event_array(Size) ->
 	Code = int_to_bytelist(523),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10009,9 +10055,9 @@ new_controller_button_event_array(Size) ->
 delete_controller_button_event(Pointer) ->
 	Code = int_to_bytelist(524),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10036,9 +10082,9 @@ controller_button_event_array_to_list(Pointer, Size, Result) ->
 controller_button_event_get_type(Pointer) ->
 	Code = int_to_bytelist(525),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10048,9 +10094,9 @@ controller_button_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(526),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10059,9 +10105,9 @@ controller_button_event_set_type(Pointer, Attrib) ->
 controller_button_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(527),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10071,9 +10117,9 @@ controller_button_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(528),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10082,9 +10128,9 @@ controller_button_event_set_timestamp(Pointer, Attrib) ->
 controller_button_event_get_which(Pointer) ->
 	Code = int_to_bytelist(529),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joystick_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -10094,9 +10140,9 @@ controller_button_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(530),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joystick_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10105,9 +10151,9 @@ controller_button_event_set_which(Pointer, Attrib) ->
 controller_button_event_get_button(Pointer) ->
 	Code = int_to_bytelist(531),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10117,9 +10163,9 @@ controller_button_event_set_button(Pointer, Attrib) ->
 	Code = int_to_bytelist(532),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10128,9 +10174,9 @@ controller_button_event_set_button(Pointer, Attrib) ->
 controller_button_event_get_state(Pointer) ->
 	Code = int_to_bytelist(533),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10140,9 +10186,9 @@ controller_button_event_set_state(Pointer, Attrib) ->
 	Code = int_to_bytelist(534),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10151,9 +10197,9 @@ controller_button_event_set_state(Pointer, Attrib) ->
 controller_button_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(535),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10163,9 +10209,9 @@ controller_button_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(536),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10174,9 +10220,9 @@ controller_button_event_set_padding1(Pointer, Attrib) ->
 controller_button_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(537),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10186,9 +10232,9 @@ controller_button_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(538),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10236,9 +10282,9 @@ parse_controller_device_event_array(Bytelist, Size, Result) ->
 pointer_deref_controller_device_event(Pointer) ->
 	Code = int_to_bytelist(539),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10248,9 +10294,9 @@ pointer_deref_controller_device_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(540),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10260,9 +10306,9 @@ pointer_deref_controller_device_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(541),
 	PList = pointer_to_bytelist(Pointer),
 	VList = controller_device_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10273,9 +10319,9 @@ pointer_deref_controller_device_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = controller_device_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10283,9 +10329,9 @@ pointer_deref_controller_device_event_array_assign(Pointer, Index, Value) ->
 
 new_controller_device_event() ->
 	Code = int_to_bytelist(543),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10294,9 +10340,9 @@ new_controller_device_event() ->
 new_controller_device_event_array(Size) ->
 	Code = int_to_bytelist(544),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10305,9 +10351,9 @@ new_controller_device_event_array(Size) ->
 delete_controller_device_event(Pointer) ->
 	Code = int_to_bytelist(545),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10332,9 +10378,9 @@ controller_device_event_array_to_list(Pointer, Size, Result) ->
 controller_device_event_get_type(Pointer) ->
 	Code = int_to_bytelist(546),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10344,9 +10390,9 @@ controller_device_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(547),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10355,9 +10401,9 @@ controller_device_event_set_type(Pointer, Attrib) ->
 controller_device_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(548),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10367,9 +10413,9 @@ controller_device_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(549),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10378,9 +10424,9 @@ controller_device_event_set_timestamp(Pointer, Attrib) ->
 controller_device_event_get_which(Pointer) ->
 	Code = int_to_bytelist(550),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10390,9 +10436,9 @@ controller_device_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(551),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10452,9 +10498,9 @@ parse_audio_device_event_array(Bytelist, Size, Result) ->
 pointer_deref_audio_device_event(Pointer) ->
 	Code = int_to_bytelist(552),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_audio_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10464,9 +10510,9 @@ pointer_deref_audio_device_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(553),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_audio_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10476,9 +10522,9 @@ pointer_deref_audio_device_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(554),
 	PList = pointer_to_bytelist(Pointer),
 	VList = audio_device_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10489,9 +10535,9 @@ pointer_deref_audio_device_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = audio_device_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10499,9 +10545,9 @@ pointer_deref_audio_device_event_array_assign(Pointer, Index, Value) ->
 
 new_audio_device_event() ->
 	Code = int_to_bytelist(556),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10510,9 +10556,9 @@ new_audio_device_event() ->
 new_audio_device_event_array(Size) ->
 	Code = int_to_bytelist(557),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10521,9 +10567,9 @@ new_audio_device_event_array(Size) ->
 delete_audio_device_event(Pointer) ->
 	Code = int_to_bytelist(558),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10548,9 +10594,9 @@ audio_device_event_array_to_list(Pointer, Size, Result) ->
 audio_device_event_get_type(Pointer) ->
 	Code = int_to_bytelist(559),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10560,9 +10606,9 @@ audio_device_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(560),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10571,9 +10617,9 @@ audio_device_event_set_type(Pointer, Attrib) ->
 audio_device_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(561),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10583,9 +10629,9 @@ audio_device_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(562),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10594,9 +10640,9 @@ audio_device_event_set_timestamp(Pointer, Attrib) ->
 audio_device_event_get_which(Pointer) ->
 	Code = int_to_bytelist(563),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10606,9 +10652,9 @@ audio_device_event_set_which(Pointer, Attrib) ->
 	Code = int_to_bytelist(564),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10617,9 +10663,9 @@ audio_device_event_set_which(Pointer, Attrib) ->
 audio_device_event_get_iscapture(Pointer) ->
 	Code = int_to_bytelist(565),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10629,9 +10675,9 @@ audio_device_event_set_iscapture(Pointer, Attrib) ->
 	Code = int_to_bytelist(566),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10640,9 +10686,9 @@ audio_device_event_set_iscapture(Pointer, Attrib) ->
 audio_device_event_get_padding1(Pointer) ->
 	Code = int_to_bytelist(567),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10652,9 +10698,9 @@ audio_device_event_set_padding1(Pointer, Attrib) ->
 	Code = int_to_bytelist(568),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10663,9 +10709,9 @@ audio_device_event_set_padding1(Pointer, Attrib) ->
 audio_device_event_get_padding2(Pointer) ->
 	Code = int_to_bytelist(569),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10675,9 +10721,9 @@ audio_device_event_set_padding2(Pointer, Attrib) ->
 	Code = int_to_bytelist(570),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10686,9 +10732,9 @@ audio_device_event_set_padding2(Pointer, Attrib) ->
 audio_device_event_get_padding3(Pointer) ->
 	Code = int_to_bytelist(571),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint8(DataList);
 		Msg ->
 			{error, Msg}
@@ -10698,9 +10744,9 @@ audio_device_event_set_padding3(Pointer, Attrib) ->
 	Code = int_to_bytelist(572),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint8_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10745,9 +10791,9 @@ parse_quit_event_array(Bytelist, Size, Result) ->
 pointer_deref_quit_event(Pointer) ->
 	Code = int_to_bytelist(573),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_quit_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10757,9 +10803,9 @@ pointer_deref_quit_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(574),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_quit_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10769,9 +10815,9 @@ pointer_deref_quit_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(575),
 	PList = pointer_to_bytelist(Pointer),
 	VList = quit_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10782,9 +10828,9 @@ pointer_deref_quit_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = quit_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10792,9 +10838,9 @@ pointer_deref_quit_event_array_assign(Pointer, Index, Value) ->
 
 new_quit_event() ->
 	Code = int_to_bytelist(577),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10803,9 +10849,9 @@ new_quit_event() ->
 new_quit_event_array(Size) ->
 	Code = int_to_bytelist(578),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10814,9 +10860,9 @@ new_quit_event_array(Size) ->
 delete_quit_event(Pointer) ->
 	Code = int_to_bytelist(579),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10841,9 +10887,9 @@ quit_event_array_to_list(Pointer, Size, Result) ->
 quit_event_get_type(Pointer) ->
 	Code = int_to_bytelist(580),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10853,9 +10899,9 @@ quit_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(581),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10864,9 +10910,9 @@ quit_event_set_type(Pointer, Attrib) ->
 quit_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(582),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -10876,9 +10922,9 @@ quit_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(583),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10935,9 +10981,9 @@ parse_user_event_array(Bytelist, Size, Result) ->
 pointer_deref_user_event(Pointer) ->
 	Code = int_to_bytelist(584),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_user_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10947,9 +10993,9 @@ pointer_deref_user_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(585),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_user_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -10959,9 +11005,9 @@ pointer_deref_user_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(586),
 	PList = pointer_to_bytelist(Pointer),
 	VList = user_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10972,9 +11018,9 @@ pointer_deref_user_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = user_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -10982,9 +11028,9 @@ pointer_deref_user_event_array_assign(Pointer, Index, Value) ->
 
 new_user_event() ->
 	Code = int_to_bytelist(588),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -10993,9 +11039,9 @@ new_user_event() ->
 new_user_event_array(Size) ->
 	Code = int_to_bytelist(589),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11004,9 +11050,9 @@ new_user_event_array(Size) ->
 delete_user_event(Pointer) ->
 	Code = int_to_bytelist(590),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11031,9 +11077,9 @@ user_event_array_to_list(Pointer, Size, Result) ->
 user_event_get_type(Pointer) ->
 	Code = int_to_bytelist(591),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11043,9 +11089,9 @@ user_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(592),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11054,9 +11100,9 @@ user_event_set_type(Pointer, Attrib) ->
 user_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(593),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11066,9 +11112,9 @@ user_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(594),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11077,9 +11123,9 @@ user_event_set_timestamp(Pointer, Attrib) ->
 user_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(595),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11089,9 +11135,9 @@ user_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(596),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11100,9 +11146,9 @@ user_event_set_windowID(Pointer, Attrib) ->
 user_event_get_code(Pointer) ->
 	Code = int_to_bytelist(597),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_sint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11112,9 +11158,9 @@ user_event_set_code(Pointer, Attrib) ->
 	Code = int_to_bytelist(598),
 	PList = pointer_to_bytelist(Pointer),
 	AList = sint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11123,9 +11169,9 @@ user_event_set_code(Pointer, Attrib) ->
 user_event_get_data1(Pointer) ->
 	Code = int_to_bytelist(599),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11135,9 +11181,9 @@ user_event_set_data1(Pointer, Attrib) ->
 	Code = int_to_bytelist(600),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11146,9 +11192,9 @@ user_event_set_data1(Pointer, Attrib) ->
 user_event_get_data2(Pointer) ->
 	Code = int_to_bytelist(601),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11158,9 +11204,9 @@ user_event_set_data2(Pointer, Attrib) ->
 	Code = int_to_bytelist(602),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11208,9 +11254,9 @@ parse_syswm_event_array(Bytelist, Size, Result) ->
 pointer_deref_syswm_event(Pointer) ->
 	Code = int_to_bytelist(603),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_syswm_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -11220,9 +11266,9 @@ pointer_deref_syswm_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(604),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_syswm_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -11232,9 +11278,9 @@ pointer_deref_syswm_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(605),
 	PList = pointer_to_bytelist(Pointer),
 	VList = syswm_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11245,9 +11291,9 @@ pointer_deref_syswm_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = syswm_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11255,9 +11301,9 @@ pointer_deref_syswm_event_array_assign(Pointer, Index, Value) ->
 
 new_syswm_event() ->
 	Code = int_to_bytelist(607),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11266,9 +11312,9 @@ new_syswm_event() ->
 new_syswm_event_array(Size) ->
 	Code = int_to_bytelist(608),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11277,9 +11323,9 @@ new_syswm_event_array(Size) ->
 delete_syswm_event(Pointer) ->
 	Code = int_to_bytelist(609),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11304,9 +11350,9 @@ syswm_event_array_to_list(Pointer, Size, Result) ->
 syswm_event_get_type(Pointer) ->
 	Code = int_to_bytelist(610),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11316,9 +11362,9 @@ syswm_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(611),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11327,9 +11373,9 @@ syswm_event_set_type(Pointer, Attrib) ->
 syswm_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(612),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11339,9 +11385,9 @@ syswm_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(613),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11350,9 +11396,9 @@ syswm_event_set_timestamp(Pointer, Attrib) ->
 syswm_event_get_msg(Pointer) ->
 	Code = int_to_bytelist(614),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11362,9 +11408,9 @@ syswm_event_set_msg(Pointer, Attrib) ->
 	Code = int_to_bytelist(615),
 	PList = pointer_to_bytelist(Pointer),
 	AList = pointer_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11430,9 +11476,9 @@ parse_touch_finger_event_array(Bytelist, Size, Result) ->
 pointer_deref_touch_finger_event(Pointer) ->
 	Code = int_to_bytelist(616),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_touch_finger_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -11442,9 +11488,9 @@ pointer_deref_touch_finger_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(617),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_touch_finger_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -11454,9 +11500,9 @@ pointer_deref_touch_finger_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(618),
 	PList = pointer_to_bytelist(Pointer),
 	VList = touch_finger_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11467,9 +11513,9 @@ pointer_deref_touch_finger_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = touch_finger_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11477,9 +11523,9 @@ pointer_deref_touch_finger_event_array_assign(Pointer, Index, Value) ->
 
 new_touch_finger_event() ->
 	Code = int_to_bytelist(620),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11488,9 +11534,9 @@ new_touch_finger_event() ->
 new_touch_finger_event_array(Size) ->
 	Code = int_to_bytelist(621),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11499,9 +11545,9 @@ new_touch_finger_event_array(Size) ->
 delete_touch_finger_event(Pointer) ->
 	Code = int_to_bytelist(622),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11526,9 +11572,9 @@ touch_finger_event_array_to_list(Pointer, Size, Result) ->
 touch_finger_event_get_type(Pointer) ->
 	Code = int_to_bytelist(623),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11538,9 +11584,9 @@ touch_finger_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(624),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11549,9 +11595,9 @@ touch_finger_event_set_type(Pointer, Attrib) ->
 touch_finger_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(625),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11561,9 +11607,9 @@ touch_finger_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(626),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11572,9 +11618,9 @@ touch_finger_event_set_timestamp(Pointer, Attrib) ->
 touch_finger_event_get_touchId(Pointer) ->
 	Code = int_to_bytelist(627),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_touch_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -11584,9 +11630,9 @@ touch_finger_event_set_touchId(Pointer, Attrib) ->
 	Code = int_to_bytelist(628),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11595,9 +11641,9 @@ touch_finger_event_set_touchId(Pointer, Attrib) ->
 touch_finger_event_get_fingerId(Pointer) ->
 	Code = int_to_bytelist(629),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_finger_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -11607,9 +11653,9 @@ touch_finger_event_set_fingerId(Pointer, Attrib) ->
 	Code = int_to_bytelist(630),
 	PList = pointer_to_bytelist(Pointer),
 	AList = finger_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11618,9 +11664,9 @@ touch_finger_event_set_fingerId(Pointer, Attrib) ->
 touch_finger_event_get_x(Pointer) ->
 	Code = int_to_bytelist(631),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -11630,9 +11676,9 @@ touch_finger_event_set_x(Pointer, Attrib) ->
 	Code = int_to_bytelist(632),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11641,9 +11687,9 @@ touch_finger_event_set_x(Pointer, Attrib) ->
 touch_finger_event_get_y(Pointer) ->
 	Code = int_to_bytelist(633),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -11653,9 +11699,9 @@ touch_finger_event_set_y(Pointer, Attrib) ->
 	Code = int_to_bytelist(634),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11664,9 +11710,9 @@ touch_finger_event_set_y(Pointer, Attrib) ->
 touch_finger_event_get_dx(Pointer) ->
 	Code = int_to_bytelist(635),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -11676,9 +11722,9 @@ touch_finger_event_set_dx(Pointer, Attrib) ->
 	Code = int_to_bytelist(636),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11687,9 +11733,9 @@ touch_finger_event_set_dx(Pointer, Attrib) ->
 touch_finger_event_get_dy(Pointer) ->
 	Code = int_to_bytelist(637),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -11699,9 +11745,9 @@ touch_finger_event_set_dy(Pointer, Attrib) ->
 	Code = int_to_bytelist(638),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11710,9 +11756,9 @@ touch_finger_event_set_dy(Pointer, Attrib) ->
 touch_finger_event_get_pressure(Pointer) ->
 	Code = int_to_bytelist(639),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -11722,9 +11768,9 @@ touch_finger_event_set_pressure(Pointer, Attrib) ->
 	Code = int_to_bytelist(640),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11790,9 +11836,9 @@ parse_multi_gesture_event_array(Bytelist, Size, Result) ->
 pointer_deref_multi_gesture_event(Pointer) ->
 	Code = int_to_bytelist(641),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_multi_gesture_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -11802,9 +11848,9 @@ pointer_deref_multi_gesture_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(642),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_multi_gesture_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -11814,9 +11860,9 @@ pointer_deref_multi_gesture_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(643),
 	PList = pointer_to_bytelist(Pointer),
 	VList = multi_gesture_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11827,9 +11873,9 @@ pointer_deref_multi_gesture_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = multi_gesture_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11837,9 +11883,9 @@ pointer_deref_multi_gesture_event_array_assign(Pointer, Index, Value) ->
 
 new_multi_gesture_event() ->
 	Code = int_to_bytelist(645),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11848,9 +11894,9 @@ new_multi_gesture_event() ->
 new_multi_gesture_event_array(Size) ->
 	Code = int_to_bytelist(646),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -11859,9 +11905,9 @@ new_multi_gesture_event_array(Size) ->
 delete_multi_gesture_event(Pointer) ->
 	Code = int_to_bytelist(647),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11886,9 +11932,9 @@ multi_gesture_event_array_to_list(Pointer, Size, Result) ->
 multi_gesture_event_get_type(Pointer) ->
 	Code = int_to_bytelist(648),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11898,9 +11944,9 @@ multi_gesture_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(649),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11909,9 +11955,9 @@ multi_gesture_event_set_type(Pointer, Attrib) ->
 multi_gesture_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(650),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -11921,9 +11967,9 @@ multi_gesture_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(651),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11932,9 +11978,9 @@ multi_gesture_event_set_timestamp(Pointer, Attrib) ->
 multi_gesture_event_get_touchId(Pointer) ->
 	Code = int_to_bytelist(652),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_touch_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -11944,9 +11990,9 @@ multi_gesture_event_set_touchId(Pointer, Attrib) ->
 	Code = int_to_bytelist(653),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11955,9 +12001,9 @@ multi_gesture_event_set_touchId(Pointer, Attrib) ->
 multi_gesture_event_get_dTheta(Pointer) ->
 	Code = int_to_bytelist(654),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -11967,9 +12013,9 @@ multi_gesture_event_set_dTheta(Pointer, Attrib) ->
 	Code = int_to_bytelist(655),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -11978,9 +12024,9 @@ multi_gesture_event_set_dTheta(Pointer, Attrib) ->
 multi_gesture_event_get_dDist(Pointer) ->
 	Code = int_to_bytelist(656),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -11990,9 +12036,9 @@ multi_gesture_event_set_dDist(Pointer, Attrib) ->
 	Code = int_to_bytelist(657),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12001,9 +12047,9 @@ multi_gesture_event_set_dDist(Pointer, Attrib) ->
 multi_gesture_event_get_x(Pointer) ->
 	Code = int_to_bytelist(658),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -12013,9 +12059,9 @@ multi_gesture_event_set_x(Pointer, Attrib) ->
 	Code = int_to_bytelist(659),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12024,9 +12070,9 @@ multi_gesture_event_set_x(Pointer, Attrib) ->
 multi_gesture_event_get_y(Pointer) ->
 	Code = int_to_bytelist(660),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -12036,9 +12082,9 @@ multi_gesture_event_set_y(Pointer, Attrib) ->
 	Code = int_to_bytelist(661),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12047,9 +12093,9 @@ multi_gesture_event_set_y(Pointer, Attrib) ->
 multi_gesture_event_get_numFingers(Pointer) ->
 	Code = int_to_bytelist(662),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -12059,9 +12105,9 @@ multi_gesture_event_set_numFingers(Pointer, Attrib) ->
 	Code = int_to_bytelist(663),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12070,9 +12116,9 @@ multi_gesture_event_set_numFingers(Pointer, Attrib) ->
 multi_gesture_event_get_padding(Pointer) ->
 	Code = int_to_bytelist(664),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint16(DataList);
 		Msg ->
 			{error, Msg}
@@ -12082,9 +12128,9 @@ multi_gesture_event_set_padding(Pointer, Attrib) ->
 	Code = int_to_bytelist(665),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint16_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12147,9 +12193,9 @@ parse_dollar_gesture_event_array(Bytelist, Size, Result) ->
 pointer_deref_dollar_gesture_event(Pointer) ->
 	Code = int_to_bytelist(666),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_dollar_gesture_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12159,9 +12205,9 @@ pointer_deref_dollar_gesture_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(667),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_dollar_gesture_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12171,9 +12217,9 @@ pointer_deref_dollar_gesture_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(668),
 	PList = pointer_to_bytelist(Pointer),
 	VList = dollar_gesture_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12184,9 +12230,9 @@ pointer_deref_dollar_gesture_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = dollar_gesture_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12194,9 +12240,9 @@ pointer_deref_dollar_gesture_event_array_assign(Pointer, Index, Value) ->
 
 new_dollar_gesture_event() ->
 	Code = int_to_bytelist(670),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -12205,9 +12251,9 @@ new_dollar_gesture_event() ->
 new_dollar_gesture_event_array(Size) ->
 	Code = int_to_bytelist(671),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -12216,9 +12262,9 @@ new_dollar_gesture_event_array(Size) ->
 delete_dollar_gesture_event(Pointer) ->
 	Code = int_to_bytelist(672),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12243,9 +12289,9 @@ dollar_gesture_event_array_to_list(Pointer, Size, Result) ->
 dollar_gesture_event_get_type(Pointer) ->
 	Code = int_to_bytelist(673),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -12255,9 +12301,9 @@ dollar_gesture_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(674),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12266,9 +12312,9 @@ dollar_gesture_event_set_type(Pointer, Attrib) ->
 dollar_gesture_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(675),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -12278,9 +12324,9 @@ dollar_gesture_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(676),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12289,9 +12335,9 @@ dollar_gesture_event_set_timestamp(Pointer, Attrib) ->
 dollar_gesture_event_get_touchId(Pointer) ->
 	Code = int_to_bytelist(677),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_touch_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -12301,9 +12347,9 @@ dollar_gesture_event_set_touchId(Pointer, Attrib) ->
 	Code = int_to_bytelist(678),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12312,9 +12358,9 @@ dollar_gesture_event_set_touchId(Pointer, Attrib) ->
 dollar_gesture_event_get_gestureId(Pointer) ->
 	Code = int_to_bytelist(679),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_gesture_id(DataList);
 		Msg ->
 			{error, Msg}
@@ -12324,9 +12370,9 @@ dollar_gesture_event_set_gestureId(Pointer, Attrib) ->
 	Code = int_to_bytelist(680),
 	PList = pointer_to_bytelist(Pointer),
 	AList = gesture_id_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12335,9 +12381,9 @@ dollar_gesture_event_set_gestureId(Pointer, Attrib) ->
 dollar_gesture_event_get_numFingers(Pointer) ->
 	Code = int_to_bytelist(681),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -12347,9 +12393,9 @@ dollar_gesture_event_set_numFingers(Pointer, Attrib) ->
 	Code = int_to_bytelist(682),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12358,9 +12404,9 @@ dollar_gesture_event_set_numFingers(Pointer, Attrib) ->
 dollar_gesture_event_get_error(Pointer) ->
 	Code = int_to_bytelist(683),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -12370,9 +12416,9 @@ dollar_gesture_event_set_error(Pointer, Attrib) ->
 	Code = int_to_bytelist(684),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12381,9 +12427,9 @@ dollar_gesture_event_set_error(Pointer, Attrib) ->
 dollar_gesture_event_get_x(Pointer) ->
 	Code = int_to_bytelist(685),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -12393,9 +12439,9 @@ dollar_gesture_event_set_x(Pointer, Attrib) ->
 	Code = int_to_bytelist(686),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12404,9 +12450,9 @@ dollar_gesture_event_set_x(Pointer, Attrib) ->
 dollar_gesture_event_get_y(Pointer) ->
 	Code = int_to_bytelist(687),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -12416,9 +12462,9 @@ dollar_gesture_event_set_y(Pointer, Attrib) ->
 	Code = int_to_bytelist(688),
 	PList = pointer_to_bytelist(Pointer),
 	AList = float_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12469,9 +12515,9 @@ parse_drop_event_array(Bytelist, Size, Result) ->
 pointer_deref_drop_event(Pointer) ->
 	Code = int_to_bytelist(689),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_drop_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12481,9 +12527,9 @@ pointer_deref_drop_event_array(Pointer, Index) ->
 	Code = int_to_bytelist(690),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_drop_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12493,9 +12539,9 @@ pointer_deref_drop_event_assign(Pointer, Value) ->
 	Code = int_to_bytelist(691),
 	PList = pointer_to_bytelist(Pointer),
 	VList = drop_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12506,9 +12552,9 @@ pointer_deref_drop_event_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = drop_event_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12516,9 +12562,9 @@ pointer_deref_drop_event_array_assign(Pointer, Index, Value) ->
 
 new_drop_event() ->
 	Code = int_to_bytelist(693),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -12527,9 +12573,9 @@ new_drop_event() ->
 new_drop_event_array(Size) ->
 	Code = int_to_bytelist(694),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -12538,9 +12584,9 @@ new_drop_event_array(Size) ->
 delete_drop_event(Pointer) ->
 	Code = int_to_bytelist(695),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12565,9 +12611,9 @@ drop_event_array_to_list(Pointer, Size, Result) ->
 drop_event_get_type(Pointer) ->
 	Code = int_to_bytelist(696),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -12577,9 +12623,9 @@ drop_event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(697),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12588,9 +12634,9 @@ drop_event_set_type(Pointer, Attrib) ->
 drop_event_get_timestamp(Pointer) ->
 	Code = int_to_bytelist(698),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -12600,9 +12646,9 @@ drop_event_set_timestamp(Pointer, Attrib) ->
 	Code = int_to_bytelist(699),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12611,9 +12657,9 @@ drop_event_set_timestamp(Pointer, Attrib) ->
 drop_event_get_file(Pointer) ->
 	Code = int_to_bytelist(700),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_string(DataList);
 		Msg ->
 			{error, Msg}
@@ -12623,9 +12669,9 @@ drop_event_set_file(Pointer, Attrib) ->
 	Code = int_to_bytelist(701),
 	PList = pointer_to_bytelist(Pointer),
 	AList = string_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12634,9 +12680,9 @@ drop_event_set_file(Pointer, Attrib) ->
 drop_event_get_windowID(Pointer) ->
 	Code = int_to_bytelist(702),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -12646,9 +12692,9 @@ drop_event_set_windowID(Pointer, Attrib) ->
 	Code = int_to_bytelist(703),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12674,9 +12720,9 @@ parse_event_array(Bytelist, Size) ->
 
 new_event() ->
 	Code = int_to_bytelist(704),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -12685,9 +12731,9 @@ new_event() ->
 new_event_array(Size) ->
 	Code = int_to_bytelist(705),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -12696,9 +12742,9 @@ new_event_array(Size) ->
 delete_event(Pointer) ->
 	Code = int_to_bytelist(706),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12713,9 +12759,9 @@ event_array_to_list(Pointer, Size) ->
 event_get_type(Pointer) ->
 	Code = int_to_bytelist(707),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_uint32(DataList);
 		Msg ->
 			{error, Msg}
@@ -12725,9 +12771,9 @@ event_set_type(Pointer, Attrib) ->
 	Code = int_to_bytelist(708),
 	PList = pointer_to_bytelist(Pointer),
 	AList = uint32_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12736,9 +12782,9 @@ event_set_type(Pointer, Attrib) ->
 event_get_common(Pointer) ->
 	Code = int_to_bytelist(709),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_common_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12748,9 +12794,9 @@ event_set_common(Pointer, Attrib) ->
 	Code = int_to_bytelist(710),
 	PList = pointer_to_bytelist(Pointer),
 	AList = common_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12759,9 +12805,9 @@ event_set_common(Pointer, Attrib) ->
 event_get_window(Pointer) ->
 	Code = int_to_bytelist(711),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_window_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12771,9 +12817,9 @@ event_set_window(Pointer, Attrib) ->
 	Code = int_to_bytelist(712),
 	PList = pointer_to_bytelist(Pointer),
 	AList = window_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12782,9 +12828,9 @@ event_set_window(Pointer, Attrib) ->
 event_get_key(Pointer) ->
 	Code = int_to_bytelist(713),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_keyboard_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12794,9 +12840,9 @@ event_set_key(Pointer, Attrib) ->
 	Code = int_to_bytelist(714),
 	PList = pointer_to_bytelist(Pointer),
 	AList = keyboard_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12805,9 +12851,9 @@ event_set_key(Pointer, Attrib) ->
 event_get_edit(Pointer) ->
 	Code = int_to_bytelist(715),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_text_editing_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12817,9 +12863,9 @@ event_set_edit(Pointer, Attrib) ->
 	Code = int_to_bytelist(716),
 	PList = pointer_to_bytelist(Pointer),
 	AList = text_editing_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12828,9 +12874,9 @@ event_set_edit(Pointer, Attrib) ->
 event_get_text(Pointer) ->
 	Code = int_to_bytelist(717),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_text_input_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12840,9 +12886,9 @@ event_set_text(Pointer, Attrib) ->
 	Code = int_to_bytelist(718),
 	PList = pointer_to_bytelist(Pointer),
 	AList = text_input_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12851,9 +12897,9 @@ event_set_text(Pointer, Attrib) ->
 event_get_motion(Pointer) ->
 	Code = int_to_bytelist(719),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_motion_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12863,9 +12909,9 @@ event_set_motion(Pointer, Attrib) ->
 	Code = int_to_bytelist(720),
 	PList = pointer_to_bytelist(Pointer),
 	AList = mouse_motion_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12874,9 +12920,9 @@ event_set_motion(Pointer, Attrib) ->
 event_get_button(Pointer) ->
 	Code = int_to_bytelist(721),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12886,9 +12932,9 @@ event_set_button(Pointer, Attrib) ->
 	Code = int_to_bytelist(722),
 	PList = pointer_to_bytelist(Pointer),
 	AList = mouse_button_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12897,9 +12943,9 @@ event_set_button(Pointer, Attrib) ->
 event_get_wheel(Pointer) ->
 	Code = int_to_bytelist(723),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_mouse_wheel_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12909,9 +12955,9 @@ event_set_wheel(Pointer, Attrib) ->
 	Code = int_to_bytelist(724),
 	PList = pointer_to_bytelist(Pointer),
 	AList = mouse_wheel_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12920,9 +12966,9 @@ event_set_wheel(Pointer, Attrib) ->
 event_get_jaxis(Pointer) ->
 	Code = int_to_bytelist(725),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_axis_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12932,9 +12978,9 @@ event_set_jaxis(Pointer, Attrib) ->
 	Code = int_to_bytelist(726),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_axis_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12943,9 +12989,9 @@ event_set_jaxis(Pointer, Attrib) ->
 event_get_jball(Pointer) ->
 	Code = int_to_bytelist(727),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_ball_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12955,9 +13001,9 @@ event_set_jball(Pointer, Attrib) ->
 	Code = int_to_bytelist(728),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_ball_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12966,9 +13012,9 @@ event_set_jball(Pointer, Attrib) ->
 event_get_jhat(Pointer) ->
 	Code = int_to_bytelist(729),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_hat_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -12978,9 +13024,9 @@ event_set_jhat(Pointer, Attrib) ->
 	Code = int_to_bytelist(730),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_hat_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -12989,9 +13035,9 @@ event_set_jhat(Pointer, Attrib) ->
 event_get_jbutton(Pointer) ->
 	Code = int_to_bytelist(731),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13001,9 +13047,9 @@ event_set_jbutton(Pointer, Attrib) ->
 	Code = int_to_bytelist(732),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_button_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13012,9 +13058,9 @@ event_set_jbutton(Pointer, Attrib) ->
 event_get_jdevice(Pointer) ->
 	Code = int_to_bytelist(733),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_joy_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13024,9 +13070,9 @@ event_set_jdevice(Pointer, Attrib) ->
 	Code = int_to_bytelist(734),
 	PList = pointer_to_bytelist(Pointer),
 	AList = joy_device_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13035,9 +13081,9 @@ event_set_jdevice(Pointer, Attrib) ->
 event_get_caxis(Pointer) ->
 	Code = int_to_bytelist(735),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_axis_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13047,9 +13093,9 @@ event_set_caxis(Pointer, Attrib) ->
 	Code = int_to_bytelist(736),
 	PList = pointer_to_bytelist(Pointer),
 	AList = controller_axis_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13058,9 +13104,9 @@ event_set_caxis(Pointer, Attrib) ->
 event_get_cbutton(Pointer) ->
 	Code = int_to_bytelist(737),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_button_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13070,9 +13116,9 @@ event_set_cbutton(Pointer, Attrib) ->
 	Code = int_to_bytelist(738),
 	PList = pointer_to_bytelist(Pointer),
 	AList = controller_button_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13081,9 +13127,9 @@ event_set_cbutton(Pointer, Attrib) ->
 event_get_cdevice(Pointer) ->
 	Code = int_to_bytelist(739),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_controller_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13093,9 +13139,9 @@ event_set_cdevice(Pointer, Attrib) ->
 	Code = int_to_bytelist(740),
 	PList = pointer_to_bytelist(Pointer),
 	AList = controller_device_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13104,9 +13150,9 @@ event_set_cdevice(Pointer, Attrib) ->
 event_get_adevice(Pointer) ->
 	Code = int_to_bytelist(741),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_audio_device_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13116,9 +13162,9 @@ event_set_adevice(Pointer, Attrib) ->
 	Code = int_to_bytelist(742),
 	PList = pointer_to_bytelist(Pointer),
 	AList = audio_device_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13127,9 +13173,9 @@ event_set_adevice(Pointer, Attrib) ->
 event_get_quit(Pointer) ->
 	Code = int_to_bytelist(743),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_quit_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13139,9 +13185,9 @@ event_set_quit(Pointer, Attrib) ->
 	Code = int_to_bytelist(744),
 	PList = pointer_to_bytelist(Pointer),
 	AList = quit_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13150,9 +13196,9 @@ event_set_quit(Pointer, Attrib) ->
 event_get_user(Pointer) ->
 	Code = int_to_bytelist(745),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_user_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13162,9 +13208,9 @@ event_set_user(Pointer, Attrib) ->
 	Code = int_to_bytelist(746),
 	PList = pointer_to_bytelist(Pointer),
 	AList = user_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13173,9 +13219,9 @@ event_set_user(Pointer, Attrib) ->
 event_get_syswm(Pointer) ->
 	Code = int_to_bytelist(747),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_syswm_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13185,9 +13231,9 @@ event_set_syswm(Pointer, Attrib) ->
 	Code = int_to_bytelist(748),
 	PList = pointer_to_bytelist(Pointer),
 	AList = syswm_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13196,9 +13242,9 @@ event_set_syswm(Pointer, Attrib) ->
 event_get_tfinger(Pointer) ->
 	Code = int_to_bytelist(749),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_touch_finger_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13208,9 +13254,9 @@ event_set_tfinger(Pointer, Attrib) ->
 	Code = int_to_bytelist(750),
 	PList = pointer_to_bytelist(Pointer),
 	AList = touch_finger_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13219,9 +13265,9 @@ event_set_tfinger(Pointer, Attrib) ->
 event_get_mgesture(Pointer) ->
 	Code = int_to_bytelist(751),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_multi_gesture_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13231,9 +13277,9 @@ event_set_mgesture(Pointer, Attrib) ->
 	Code = int_to_bytelist(752),
 	PList = pointer_to_bytelist(Pointer),
 	AList = multi_gesture_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13242,9 +13288,9 @@ event_set_mgesture(Pointer, Attrib) ->
 event_get_dgesture(Pointer) ->
 	Code = int_to_bytelist(753),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_dollar_gesture_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13254,9 +13300,9 @@ event_set_dgesture(Pointer, Attrib) ->
 	Code = int_to_bytelist(754),
 	PList = pointer_to_bytelist(Pointer),
 	AList = dollar_gesture_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13265,9 +13311,9 @@ event_set_dgesture(Pointer, Attrib) ->
 event_get_drop(Pointer) ->
 	Code = int_to_bytelist(755),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{ _, { data, DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_drop_event(DataList);
 		Msg ->
 			{error, Msg}
@@ -13277,9 +13323,9 @@ event_set_drop(Pointer, Attrib) ->
 	Code = int_to_bytelist(756),
 	PList = pointer_to_bytelist(Pointer),
 	AList = drop_event_to_bytelist(Attrib),
-	sdl_port ! {self(), {command, [Code, PList, AList]}},
-	receive
-		{ _, { data, _DataList }} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, AList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13290,9 +13336,9 @@ event_set_drop(Pointer, Attrib) ->
 init(Uint32_1) ->
 	Code = int_to_bytelist(757),
 	Param1 = uint32_to_bytelist(Uint32_1),
-	sdl_port ! {self(), {command, [Code, Param1]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_int(DataList),
 			RetParam1;
 		Msg ->
@@ -13301,9 +13347,9 @@ init(Uint32_1) ->
 
 quit() ->
 	Code = int_to_bytelist(758),
-	sdl_port ! {self(), {command, [Code, []]}},
-	receive
-		{_, {data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13317,9 +13363,9 @@ create_window(String_1, Int_2, Int_3, Int_4, Int_5, Uint32_6) ->
 	Param4 = int_to_bytelist(Int_4),
 	Param5 = int_to_bytelist(Int_5),
 	Param6 = uint32_to_bytelist(Uint32_6),
-	sdl_port ! {self(), {command, [Code, Param1, Param2, Param3, Param4, Param5, Param6]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4, Param5, Param6]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_pointer(DataList),
 			RetParam1;
 		Msg ->
@@ -13329,9 +13375,9 @@ create_window(String_1, Int_2, Int_3, Int_4, Int_5, Uint32_6) ->
 get_window_surface(P_Window_1) ->
 	Code = int_to_bytelist(760),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	sdl_port ! {self(), {command, [Code, Param1]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_pointer(DataList),
 			RetParam1;
 		Msg ->
@@ -13341,9 +13387,9 @@ get_window_surface(P_Window_1) ->
 load_bmp(String_1) ->
 	Code = int_to_bytelist(761),
 	Param1 = string_to_bytelist(String_1),
-	sdl_port ! {self(), {command, [Code, Param1]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_pointer(DataList),
 			RetParam1;
 		Msg ->
@@ -13353,9 +13399,9 @@ load_bmp(String_1) ->
 free_surface(P_Surface_1) ->
 	Code = int_to_bytelist(762),
 	Param1 = pointer_to_bytelist(P_Surface_1),
-	sdl_port ! {self(), {command, [Code, Param1]}},
-	receive
-		{_, {data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13367,9 +13413,9 @@ blit_surface(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	Param2 = pointer_to_bytelist(P_Rect_2),
 	Param3 = pointer_to_bytelist(P_Surface_3),
 	Param4 = pointer_to_bytelist(P_Rect_4),
-	sdl_port ! {self(), {command, [Code, Param1, Param2, Param3, Param4]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_int(DataList),
 			RetParam1;
 		Msg ->
@@ -13382,9 +13428,9 @@ blit_scaled(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	Param2 = pointer_to_bytelist(P_Rect_2),
 	Param3 = pointer_to_bytelist(P_Surface_3),
 	Param4 = pointer_to_bytelist(P_Rect_4),
-	sdl_port ! {self(), {command, [Code, Param1, Param2, Param3, Param4]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_int(DataList),
 			RetParam1;
 		Msg ->
@@ -13394,9 +13440,9 @@ blit_scaled(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 update_window_surface(P_Window_1) ->
 	Code = int_to_bytelist(765),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	sdl_port ! {self(), {command, [Code, Param1]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_int(DataList),
 			RetParam1;
 		Msg ->
@@ -13406,9 +13452,9 @@ update_window_surface(P_Window_1) ->
 destroy_window(P_Window_1) ->
 	Code = int_to_bytelist(766),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	sdl_port ! {self(), {command, [Code, Param1]}},
-	receive
-		{_, {data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -13417,9 +13463,9 @@ destroy_window(P_Window_1) ->
 get_window_size(P_Window_1) ->
 	Code = int_to_bytelist(767),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	sdl_port ! {self(), {command, [Code, Param1]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+	case ResultCall of
+		{datalist, DataList} ->
 			R0 = DataList,
 			{RetParam1, R1} = parse_int(R0),
 			{RetParam2, _R2} = parse_int(R1),
@@ -13430,9 +13476,9 @@ get_window_size(P_Window_1) ->
 
 get_error() ->
 	Code = int_to_bytelist(768),
-	sdl_port ! {self(), {command, [Code, []]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_string(DataList),
 			RetParam1;
 		Msg ->
@@ -13441,9 +13487,9 @@ get_error() ->
 
 poll_event() ->
 	Code = int_to_bytelist(769),
-	sdl_port ! {self(), {command, [Code, []]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, R1} = parse_int(DataList),
 			{RetParam2, _R2} = parse_event(R1),
 			{RetParam1, RetParam2};
@@ -13455,9 +13501,9 @@ maxint(P_Int_1, Int_2) ->
 	Code = int_to_bytelist(770),
 	Param1 = pointer_to_bytelist(P_Int_1),
 	Param2 = int_to_bytelist(Int_2),
-	sdl_port ! {self(), {command, [Code, Param1, Param2]}},
-	receive
-		{_, {data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2]),
+	case ResultCall of
+		{datalist, DataList} ->
 			{RetParam1, _R1} = parse_int(DataList),
 			RetParam1;
 		Msg ->

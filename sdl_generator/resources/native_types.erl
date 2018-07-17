@@ -53,9 +53,9 @@ parse_int_array(Bytelist, Size, NBits, Result) ->
 pointer_deref_int8(Pointer) ->
 	Code = int_to_bytelist(1),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 8);
 		Msg ->
 			{error, Msg}
@@ -65,9 +65,9 @@ pointer_deref_int8_array(Pointer, Index) ->
 	Code = int_to_bytelist(2),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 8);
 		Msg ->
 			{error, Msg}
@@ -77,9 +77,9 @@ pointer_deref_int8_assign(Pointer, Value) ->
 	Code = int_to_bytelist(3),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 8),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -90,9 +90,9 @@ pointer_deref_int8_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 8),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -100,9 +100,9 @@ pointer_deref_int8_array_assign(Pointer, Index, Value) ->
 
 new_int8() ->
 	Code = int_to_bytelist(5),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -111,9 +111,9 @@ new_int8() ->
 new_int8_array(Size) ->
 	Code = int_to_bytelist(6),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -122,9 +122,9 @@ new_int8_array(Size) ->
 delete_int8(Pointer) ->
 	Code = int_to_bytelist(7),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -149,9 +149,9 @@ int8_array_to_list(Pointer, Size, Result) ->
 pointer_deref_int16(Pointer) ->
 	Code = int_to_bytelist(8),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 16);
 		Msg ->
 			{error, Msg}
@@ -161,9 +161,9 @@ pointer_deref_int16_array(Pointer, Index) ->
 	Code = int_to_bytelist(9),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 16);
 		Msg ->
 			{error, Msg}
@@ -173,9 +173,9 @@ pointer_deref_int16_assign(Pointer, Value) ->
 	Code = int_to_bytelist(10),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 16),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -186,9 +186,9 @@ pointer_deref_int16_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 16),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -196,9 +196,9 @@ pointer_deref_int16_array_assign(Pointer, Index, Value) ->
 
 new_int16() ->
 	Code = int_to_bytelist(12),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -207,9 +207,9 @@ new_int16() ->
 new_int16_array(Size) ->
 	Code = int_to_bytelist(13),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -218,9 +218,9 @@ new_int16_array(Size) ->
 delete_int16(Pointer) ->
 	Code = int_to_bytelist(14),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -245,9 +245,9 @@ int16_array_to_list(Pointer, Size, Result) ->
 pointer_deref_int32(Pointer) ->
 	Code = int_to_bytelist(15),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 32);
 		Msg ->
 			{error, Msg}
@@ -257,9 +257,9 @@ pointer_deref_int32_array(Pointer, Index) ->
 	Code = int_to_bytelist(16),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 32);
 		Msg ->
 			{error, Msg}
@@ -269,9 +269,9 @@ pointer_deref_int32_assign(Pointer, Value) ->
 	Code = int_to_bytelist(17),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 32),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -282,9 +282,9 @@ pointer_deref_int32_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 32),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -292,9 +292,9 @@ pointer_deref_int32_array_assign(Pointer, Index, Value) ->
 
 new_int32() ->
 	Code = int_to_bytelist(19),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -303,9 +303,9 @@ new_int32() ->
 new_int32_array(Size) ->
 	Code = int_to_bytelist(20),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -314,9 +314,9 @@ new_int32_array(Size) ->
 delete_int32(Pointer) ->
 	Code = int_to_bytelist(21),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -341,9 +341,9 @@ int32_array_to_list(Pointer, Size, Result) ->
 pointer_deref_int64(Pointer) ->
 	Code = int_to_bytelist(22),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 64);
 		Msg ->
 			{error, Msg}
@@ -353,9 +353,9 @@ pointer_deref_int64_array(Pointer, Index) ->
 	Code = int_to_bytelist(23),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_int(DataList, 64);
 		Msg ->
 			{error, Msg}
@@ -365,9 +365,9 @@ pointer_deref_int64_assign(Pointer, Value) ->
 	Code = int_to_bytelist(24),
 	PList = pointer_to_bytelist(Pointer),
 	VList = int_to_bytelist(Value, 64),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -378,9 +378,9 @@ pointer_deref_int64_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = int_to_bytelist(Value, 64),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -388,9 +388,9 @@ pointer_deref_int64_array_assign(Pointer, Index, Value) ->
 
 new_int64() ->
 	Code = int_to_bytelist(26),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -399,9 +399,9 @@ new_int64() ->
 new_int64_array(Size) ->
 	Code = int_to_bytelist(27),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -410,9 +410,9 @@ new_int64_array(Size) ->
 delete_int64(Pointer) ->
 	Code = int_to_bytelist(28),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -507,9 +507,9 @@ parse_float_array(Bytelist, Size, Result) ->
 pointer_deref_float(Pointer) ->
 	Code = int_to_bytelist(29),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -519,9 +519,9 @@ pointer_deref_float_array(Pointer, Index) ->
 	Code = int_to_bytelist(30),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_float(DataList);
 		Msg ->
 			{error, Msg}
@@ -531,9 +531,9 @@ pointer_deref_float_assign(Pointer, Value) ->
 	Code = int_to_bytelist(31),
 	PList = pointer_to_bytelist(Pointer),
 	VList = float_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -544,9 +544,9 @@ pointer_deref_float_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = float_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -554,9 +554,9 @@ pointer_deref_float_array_assign(Pointer, Index, Value) ->
 
 new_float() ->
 	Code = int_to_bytelist(33),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -565,9 +565,9 @@ new_float() ->
 new_float_array(Size) ->
 	Code = int_to_bytelist(34),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -576,9 +576,9 @@ new_float_array(Size) ->
 delete_float(Pointer) ->
 	Code = int_to_bytelist(35),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -633,9 +633,9 @@ parse_double_array(Bytelist, Size, Result) ->
 pointer_deref_double(Pointer) ->
 	Code = int_to_bytelist(36),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_double(DataList);
 		Msg ->
 			{error, Msg}
@@ -645,9 +645,9 @@ pointer_deref_double_array(Pointer, Index) ->
 	Code = int_to_bytelist(37),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_double(DataList);
 		Msg ->
 			{error, Msg}
@@ -657,9 +657,9 @@ pointer_deref_double_assign(Pointer, Value) ->
 	Code = int_to_bytelist(38),
 	PList = pointer_to_bytelist(Pointer),
 	VList = double_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -670,9 +670,9 @@ pointer_deref_double_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = double_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -680,9 +680,9 @@ pointer_deref_double_array_assign(Pointer, Index, Value) ->
 
 new_double() ->
 	Code = int_to_bytelist(40),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -691,9 +691,9 @@ new_double() ->
 new_double_array(Size) ->
 	Code = int_to_bytelist(41),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -702,9 +702,9 @@ new_double_array(Size) ->
 delete_double(Pointer) ->
 	Code = int_to_bytelist(42),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -781,9 +781,9 @@ parse_string_array(Bytelist, Size) ->
 pointer_deref_string(Pointer, Enconding) ->
 	Code = int_to_bytelist(43),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_string(DataList, Enconding);
 		Msg ->
 			{error, Msg}
@@ -793,9 +793,9 @@ pointer_deref_string_array(Pointer, Index, Enconding) ->
 	Code = int_to_bytelist(44),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_string(DataList, Enconding);
 		Msg ->
 			{error, Msg}
@@ -805,9 +805,9 @@ pointer_deref_string_assign(Pointer, Value, Enconding) ->
 	Code = int_to_bytelist(45),
 	PList = pointer_to_bytelist(Pointer),
 	VList = string_to_bytelist(Value, Enconding),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -818,9 +818,9 @@ pointer_deref_string_array_assign(Pointer, Index, Value, Enconding) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = string_to_bytelist(Value, Enconding),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -828,9 +828,9 @@ pointer_deref_string_array_assign(Pointer, Index, Value, Enconding) ->
 
 new_string() ->
 	Code = int_to_bytelist(47),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -839,9 +839,9 @@ new_string() ->
 new_string_array(Size) ->
 	Code = int_to_bytelist(48),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -850,9 +850,9 @@ new_string_array(Size) ->
 delete_string(Pointer) ->
 	Code = int_to_bytelist(49),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -925,9 +925,9 @@ parse_pointer_array(Bytelist, Size, Result) ->
 pointer_deref_pointer(Pointer) ->
 	Code = int_to_bytelist(50),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -937,9 +937,9 @@ pointer_deref_pointer_array(Pointer, Index) ->
 	Code = int_to_bytelist(51),
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
-	sdl_port ! {self(), {command, [Code, PList, IList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -949,9 +949,9 @@ pointer_deref_pointer_assign(Pointer, Value) ->
 	Code = int_to_bytelist(52),
 	PList = pointer_to_bytelist(Pointer),
 	VList = pointer_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -962,9 +962,9 @@ pointer_deref_pointer_array_assign(Pointer, Index, Value) ->
 	PList = pointer_to_bytelist(Pointer),
 	IList = int_to_bytelist(Index),
 	VList = pointer_to_bytelist(Value),
-	sdl_port ! {self(), {command, [Code, PList, IList, VList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList, IList, VList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
@@ -972,9 +972,9 @@ pointer_deref_pointer_array_assign(Pointer, Index, Value) ->
 
 new_pointer() ->
 	Code = int_to_bytelist(54),
-	sdl_port ! {self(), {command, [Code]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -983,9 +983,9 @@ new_pointer() ->
 new_pointer_array(Size) ->
 	Code = int_to_bytelist(55),
 	SList = int_to_bytelist(Size),
-	sdl_port ! {self(), {command, [Code, SList]}},
-	receive
-		{_, { data, DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, SList]),
+	case ResultCall of
+		{datalist, DataList} ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
@@ -994,9 +994,9 @@ new_pointer_array(Size) ->
 delete_pointer(Pointer) ->
 	Code = int_to_bytelist(56),
 	PList = pointer_to_bytelist(Pointer),
-	sdl_port ! {self(), {command, [Code, PList]}},
-	receive
-		{_, { data, _DataList}} ->
+	ResultCall = call_port_owner(?PORT_NAME, [Code, PList]),
+	case ResultCall of
+		{datalist, _DataList} ->
 			ok;
 		Msg ->
 			{error, Msg}
