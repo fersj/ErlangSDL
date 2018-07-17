@@ -2,11 +2,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdint.h>
-
 #include <SDL2/SDL.h>
 
 #define BUF_SIZE 60000
-
 typedef unsigned char byte;
 typedef unsigned char string[BUF_SIZE];
 typedef void (*handler)(byte *in, size_t len_in, byte *out, size_t *len_out);
@@ -29,13 +27,15 @@ typedef struct {
 
 int max (int *array, int size) {
 	int max = -2147483648;
-	
+
 	for (int i=0; i<size; i++) {
 		if (array[i]>max) max=array[i];
 	}
 
 	return max;
-}//--------------------------------------------------------
+}
+
+//--------------------------------------------------------
 
 byte * read_pointer(byte *in, void **result);
 byte * write_pointer(void **pointer, byte *out, size_t *len);

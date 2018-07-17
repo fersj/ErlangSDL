@@ -1,6 +1,9 @@
 -module(sdl_ports_gen).
 -include("sdl_ports_gen.hrl").
+
 -compile(export_all).
+
+%--------------------------------------------------------
 
 -export([
 	init_port/0,
@@ -832,7 +835,7 @@ call_port_owner(PortOwner, List) ->
 	end.
 
 init_port() ->
-	Pid = spawn(fun() -> start_port_owner("_checkouts/sdl_generator/sdl_ports_gen") end),
+	Pid = spawn(fun() -> start_port_owner("../sdl_generator/sdl_ports_gen") end),
 	%io:format("PID Owner: ~w~n", [Pid]),
 	register(?PORT_NAME, Pid),
 	%code:ensure_loaded(erlang_gc),

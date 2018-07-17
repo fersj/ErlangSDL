@@ -1,4 +1,36 @@
 {spec,
+  % {GENERATOR_INFO, erl_file_gen, hrl_file_gen, erl_module_name, port_name,  c_file_gen, c_handler_file, c_lib_import}
+  {generator_info, "sdl_ports_gen.erl", "sdl_ports_gen.hrl", "sdl_ports_gen", "sdl_port", "sdl_ports_gen.c", "../sdl_generator/sdl_ports_gen", "SDL2/SDL.h"},
+  {erlang_header,
+"-compile(export_all)."
+  },
+  {c_header,
+"typedef struct {
+	int id;
+	int values[10];
+} ArrayA;
+
+typedef struct {
+	int id;
+	int *values;
+} ArrayB;
+
+typedef struct {
+	int id;
+	int *values;
+	int size;
+} ArrayC;
+
+int max (int *array, int size) {
+	int max = -2147483648;
+
+	for (int i=0; i<size; i++) {
+		if (array[i]>max) max=array[i];
+	}
+
+	return max;
+}"
+  },
   [
     {macro_spec, "SDL_INIT_TIMER", "16#00000001"},
     {macro_spec, "SDL_INIT_AUDIO", "16#00000010"},

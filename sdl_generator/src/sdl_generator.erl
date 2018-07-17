@@ -1,22 +1,15 @@
 -module(sdl_generator).
 
--export([main/1, generate_code/0, generate_code/1, sdl_helper/1]).
+-export([main/1, generate_code/0, generate_code/1]).
 
 -import(bbmustache, [render/2]).
 
+-record(generator_info, {erl_file_gen, hrl_file_gen, erl_module_name, port_name,  c_file_gen, c_handler_file, c_lib_import}).
 -record(macro_spec, {name, value}).
 -record(type_spec, {erlang_name, c_name, type_descr, option}).
 -record(fun_spec, {erlang_name, c_name, params, type_descr, option}).
 -record(struct_member, {erlang_name, c_name, type_descr, option}).
-%-record(param_spec, {type_descr, option}).
 
--define(ERL_FILENAME, "sdl_ports_gen.erl").
--define(HRL_FILENAME, "sdl_ports_gen.hrl").
--define(C_FILENAME, "sdl_ports_gen.c").
--define(C_HANDLER, "_checkouts/sdl_generator/sdl_ports_gen").
--define(MODULE_NAME, "sdl_ports_gen").
--define(PORT_NAME, sdl_port).   % atom
--define(C_LIB_IMPORT, "SDL2/SDL.h").
 -define(SEPARATOR_ERL, "%--------------------------------------------------------\n\n").
 -define(SEPARATOR_C, "//--------------------------------------------------------\n\n").
 
@@ -36,30 +29,32 @@ generate_code(Filename) ->
       NativeFucsList = [],
       io:format("Error reading file: ~p~n", [ErrorNF])
   end,
-  register(sdl_helper, spawn(?MODULE, sdl_helper, [length(NativeFucsList)+1])),
+
   case file:open(Filename, [read]) of
     {ok, InputDeviceS} ->
-      {ok, {spec, MacroList, TypeList, FunList}} = io:read(InputDeviceS, ""),
+      {ok, {spec, Info, {erlang_header, EHeader}, {c_header, CHeader}, MacroList, TypeList, FunList}} = io:read(InputDeviceS, ""),
       file:close(InputDeviceS),
-      file:delete(?ERL_FILENAME),
-      file:delete(?HRL_FILENAME),
-      file:delete(?C_FILENAME),
+      file:delete(Info#generator_info.erl_file_gen),
+      file:delete(Info#generator_info.hrl_file_gen),
+      file:delete(Info#generator_info.c_file_gen),
+
+      register(generator_helper, spawn(fun() -> generator_helper(length(NativeFucsList)+1, Info) end)),
 
       % Erlang code
-      InitLines = "-module("++?MODULE_NAME++").\n"
-                  "-include(\"sdl_ports_gen.hrl\").\n"
-                  "-compile(export_all).\n\n",
-      write_file(?ERL_FILENAME, InitLines, [append]),
+      generate_init_erl(Info#generator_info.erl_module_name),
+      write_file(Info#generator_info.erl_file_gen, EHeader++"\n\n"++?SEPARATOR_ERL, [append]),
       generate_export(NativeFucsList, TypeList, FunList),
       generate_macros(MacroList),
-      generate_init_port(),
+      generate_init_port(Info#generator_info.port_name, Info#generator_info.c_handler_file),
       generate_native_types_parser_erl(),
       generate_types_parser_erl(TypeList),
       generate_functions_erl(FunList),
 
-      % C code
       reset_fun_code(1),
-      generate_init_c(?C_LIB_IMPORT),
+
+      % C code
+      generate_init_c(Info#generator_info.c_lib_import),
+      write_file(Info#generator_info.c_file_gen, CHeader++"\n\n"++?SEPARATOR_C, [append]),
       generate_native_types_parser_c(),
       generate_types_parser_c(TypeList),
       generate_functions_c(FunList),
@@ -73,12 +68,17 @@ generate_code(Filename) ->
   end_helper(),
   ok.
 
+generate_init_erl(ModuleName) ->
+  Content = read_file("resources/init_erl_code.erl"),
+  NewContent = bbmustache:render(Content, #{"Module"=>ModuleName}),
+  write_file(get_erl_filename(), NewContent, [append]).
+
 % TODO Añadir los bytelist_to_XXX, XXX_to_bytelist y parse_XXX ???
 generate_export(NativeFucsList, TypeList, FunList) ->
   generate_export(NativeFucsList, TypeList, FunList, lists:reverse(NativeFucsList)++["init_port/0"]).
 generate_export(_NativeFucsList, [], [], Result) ->
   Line = "-export([\n\t"++string:join(lists:reverse(Result), ",\n\t")++"]).\n\n",
-  write_file(?ERL_FILENAME, Line, [append]);
+  write_file(get_erl_filename(), Line, [append]);
 generate_export(NativeFucsList, [], [{_,Name,_,Params,_,_}|FunList], Result) ->
   P = [ T || {_,T,O} <- Params, not lists:member(return, O) ],
   Elem = atom_to_list(Name)++"/"++integer_to_list(length(P)),
@@ -131,38 +131,31 @@ generate_export_setters_getters([M|Members], StructName, Result) ->
   generate_export_setters_getters(Members, StructName, [Set|[Get|Result]]).
 
 generate_macros([]) ->
-  write_file(?HRL_FILENAME, "\n", [append]);
+  write_file(get_hrl_filename(), "\n", [append]);
 generate_macros([Macro|MacroList]) ->
   Line = "-define(" ++ Macro#macro_spec.name ++ ", " ++ Macro#macro_spec.value ++ ").\n",
-  case write_file(?HRL_FILENAME, Line, [append]) of
+  case write_file(get_hrl_filename(), Line, [append]) of
     ok -> ok;
     {error, Reason} -> io:format("Write macro error: ~p~n",[Reason])
   end,
   generate_macros(MacroList).
 
-generate_init_port() ->
-  % Init = bbmustache:render(<<"init_port() ->\n"
-  %         "\tPort = open_port({spawn, \"{{H}}\"}, [{packet, 2}]),\n"
-  %         "\tregister({{P}}, Port), Port.\n\n">>, #{"H" => ?C_HANDLER, "P" => atom_to_list(?PORT_NAME)}),
-  % case file:write_file(?ERL_FILENAME, binary_to_list(Init)++?SEPARATOR_ERL, [append]) of
-  %   ok -> ok;
-  %   {error, Reason} -> io:format("Write macro error: ~p~n",[Reason])
-  % end
+generate_init_port(PortName, CHandlerFile) ->
   case file:read_file("resources/port_code.erl") of
     {ok, Content} -> ok;
     {error, Error} ->
       io:format("Error reading file: ~p~n", [Error]),
       Content = <<"">>
   end,
-  Map = #{"PortName" => ?PORT_NAME,
-          "CHandlerPath" => ?C_HANDLER},
+  Map = #{"PortName" => PortName,
+          "CHandlerPath" => CHandlerFile},
   InitPort = bbmustache:render(Content, Map),
-  write_file(?ERL_FILENAME, InitPort, [append]).
+  write_file(get_erl_filename(), InitPort, [append]).
 
 generate_native_types_parser_erl() ->
   {ok, File} = file:read_file("resources/native_types.erl"),
   Content = unicode:characters_to_list(File),
-  write_file(?ERL_FILENAME, Content++?SEPARATOR_ERL, [append]).
+  write_file(get_erl_filename(), Content++?SEPARATOR_ERL, [append]).
 
 generate_types_parser_erl([]) ->
   write_file("sdl_ports_gen.erl", ?SEPARATOR_ERL, [append]);
@@ -184,7 +177,7 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
       Type = TypeDescr,
       Desc = undefined
   end,
-  ContentMap = #{"ErlName"=>ErlName, "Type"=>Type, "Desc"=>Desc, "Port"=>atom_to_list(?PORT_NAME)},
+  ContentMap = #{"ErlName"=>ErlName, "Type"=>Type, "Desc"=>Desc},
 
   case TypeDescr of
     {T, opaque} when (T==struct) or (T==union) ->
@@ -214,7 +207,7 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
                         "CodeDelete" => integer_to_list(get_fun_code(DeleteName))},
       FinalMap = maps:merge(ContentMap, NewContentMap),
       RecordLine = bbmustache:render(<<"-record({{ErlName}}, {{{{Args}}}}).\n">>, FinalMap),
-      write_file(?HRL_FILENAME, RecordLine, [append]),
+      write_file(get_hrl_filename(), RecordLine, [append]),
       ContentPart1 = generate_struct_to_bytelist(MemberList, ErlName),
       ContentPart2 = generate_bytelist_to_struct(MemberList, ErlName),
       ContentPart3 = generate_parse_struct(MemberList, ErlName),
@@ -447,7 +440,6 @@ generate_getters_setters_erl(MemberList, [M|MemberListIt], StructName, Result) -
           "\tend.\n\n">>,
   Map = #{"StructName" => StructName,
           "Attrib" => AttribName,
-          "Port" => ?PORT_NAME,
           "CodeGet" => integer_to_list(get_fun_code(atom_to_list(StructName)++"_get_"++atom_to_list(AttribName))),
           "CodeSet" => integer_to_list(get_fun_code(atom_to_list(StructName)++"_set_"++atom_to_list(AttribName))),
           "LineGet" => LineGet,
@@ -580,14 +572,13 @@ generate_functions_erl([Fun|FunList]) ->
   Map = #{"ErlName"=>atom_to_list(ErlName),
           "HParams"=>string:join(StrParams, ", "),
           "BodyParams"=>generate_body_parameters_to_send(Params, StrParams),
-          "Port"=>atom_to_list(?PORT_NAME),
           "Code"=>integer_to_list(get_fun_code(atom_to_list(ErlName))),
           "Vars"=>string:join(VarList,", "),
           "RetType"=>atom_to_list(RetType),
           "RetParams"=>RetParams},
   FunContent = bbmustache:render(<<Header/binary, Body1/binary, Body2/binary>>, Map),
   FunContentArrays = generate_fun_with_array_size_erl(ErlName, Params, Descr),
-  write_file(?ERL_FILENAME, <<FunContent/binary, FunContentArrays/binary>>, [append]),
+  write_file(get_erl_filename(), <<FunContent/binary, FunContentArrays/binary>>, [append]),
   generate_functions_erl(FunList).
 
 fun_params_to_string(Params) ->
@@ -750,14 +741,14 @@ generate_fun_with_array_size_erl(FunName, TupleParams, Descr, [{Name,Index,Index
   generate_fun_with_array_size_erl(FunName, TupleParams, Descr, LengthParams, <<Result/binary, NewLines/binary>>, NewPtrToDelete).
 
 generate_init_c(CLib) ->
-  {ok, File} = file:read_file("resources/init_c_code.c"),
-  StringLines = binary_to_list(bbmustache:render(File, #{"CLib"=>CLib})),
-  write_file(?C_FILENAME, StringLines++?SEPARATOR_C, [append]).
+  Content = read_file("resources/init_c_code.c"),
+  NewContent = bbmustache:render(Content, #{"CLib"=>CLib}),
+  write_file(get_c_filename(), NewContent, [append]).
 
 generate_native_types_parser_c() ->
   {ok, File} = file:read_file("resources/native_types.c"),
   Content = unicode:characters_to_list(File),
-  write_file(?C_FILENAME, Content++?SEPARATOR_C, [append]),
+  write_file(get_c_filename(), Content++?SEPARATOR_C, [append]),
   add_type_name(int, "int"),
   add_type_name(float, "float"),
   add_type_name(double, "double"),
@@ -798,8 +789,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
                   "CName"=>CName,
                   "Type"=>Type,
                   "Desc"=>Desc,
-                  "DescC"=>get_type_name(Desc),
-                  "Port"=>atom_to_list(?PORT_NAME)},
+                  "DescC"=>get_type_name(Desc)},
   add_type_name(ErlName, CName),
 
   case TypeDescr of
@@ -984,7 +974,7 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
 
 generate_functions_c([]) ->
   Array = generate_fun_array(get_fun_list()),
-  write_file(?C_FILENAME, binary_to_list(Array)++?SEPARATOR_C, [append]),
+  write_file(get_c_filename(), binary_to_list(Array)++?SEPARATOR_C, [append]),
   ok;
 generate_functions_c([F|FunList]) ->
   #fun_spec{erlang_name=ErlName, c_name=CName, params=Params, type_descr=Descr} = F,
@@ -1019,7 +1009,7 @@ generate_functions_c([F|FunList]) ->
           "RetCType" => get_type_name(RetType),
           "RetType" => atom_to_list(RetType)},
   Content = <<InitLines/binary, ReadLines/binary, FunLine/binary, ReturnLines/binary, FinalLine/binary>>,
-  write_file(?C_FILENAME, binary_to_list(bbmustache:render(Content, Map)), [append]),
+  write_file(get_c_filename(), binary_to_list(bbmustache:render(Content, Map)), [append]),
   add_fun_code(HandlerName),
   generate_functions_c(FunList).
 
@@ -1090,7 +1080,7 @@ generate_fun_array([{Code,Name}|FunList], Result) ->
 generate_main_c() ->
   {ok, File} = file:read_file("resources/main_funcs.c"),
   Content = unicode:characters_to_list(File),
-  write_file(?C_FILENAME, Content, [append]).
+  write_file(get_c_filename(), Content, [append]).
 
 % find_type_spec_by_erlname(_Type, []) -> nil;
 % find_type_spec_by_erlname(Type, [TS|TypeSpecList]) ->
@@ -1115,57 +1105,92 @@ write_file(File, Content, Modes) ->
     {error, Reason} -> io:format("Write error: ~p~n",[Reason])
   end.
 
-sdl_helper(InitCode) ->
-  sdl_helper(InitCode, [], maps:new()).
-sdl_helper(Code, FunList, TypeMap) ->
+read_file(File) ->
+  case file:read_file(File) of
+    {ok, Content} -> Content;
+    {error, Error} ->
+      io:format("Error reading file: ~p~n", [Error]),
+      <<"">>
+  end.
+
+generator_helper(InitCode, Info) ->
+  generator_helper(InitCode, Info, [], maps:new()).
+generator_helper(Code, Info, FunList, TypeMap) ->
   receive
     {Pid, {fun_code, NameFun}} ->
       Pid ! {fun_code, Code},
-      sdl_helper(Code+1, FunList++[{Code, NameFun}], TypeMap);
+      generator_helper(Code+1, Info, FunList++[{Code, NameFun}], TypeMap);
     {_Pid, {fun_add, NameFun}} ->
-      sdl_helper(Code+1, FunList++[{Code, NameFun}], TypeMap);
+      generator_helper(Code+1, Info, FunList++[{Code, NameFun}], TypeMap);
     {Pid, fun_list} ->
       Pid ! {fun_list, FunList},
-      sdl_helper(Code, FunList, TypeMap);
+      generator_helper(Code, Info, FunList, TypeMap);
     {_Pid, {reset, InitCode}} ->
-      sdl_helper(InitCode, [], maps:new());
+      generator_helper(InitCode, Info, [], maps:new());
     {_Pid, {new_type, ErlName, CName}} ->
-      sdl_helper(Code, FunList, maps:put(ErlName, CName, TypeMap));
+      generator_helper(Code, Info, FunList, maps:put(ErlName, CName, TypeMap));
     {Pid, {get_type, ErlName}} ->
       Pid ! {type_name, maps:get(ErlName, TypeMap, "")},
-      sdl_helper(Code, FunList, TypeMap);
+      generator_helper(Code, Info, FunList, TypeMap);
+    {Pid, erl_filename} ->
+      Pid ! {erl_filename, Info#generator_info.erl_file_gen},
+      generator_helper(Code, Info, FunList, TypeMap);
+    {Pid, hrl_filename} ->
+      Pid ! {hrl_filename, Info#generator_info.hrl_file_gen},
+      generator_helper(Code, Info, FunList, TypeMap);
+    {Pid, c_filename} ->
+      Pid ! {c_filename, Info#generator_info.c_file_gen},
+      generator_helper(Code, Info, FunList, TypeMap);
     {_Pid, exit} ->
       ok;
     _ ->
-      sdl_helper(Code, FunList, TypeMap)
+      generator_helper(Code, Info, FunList, TypeMap)
   end.
 
 get_fun_code(NameFun) ->
-  sdl_helper ! {self(), {fun_code, NameFun}},
+  generator_helper ! {self(), {fun_code, NameFun}},
   receive
     {fun_code, Code} -> Code
   end.
 
 add_fun_code(NameFun) ->
-  sdl_helper ! {self(), {fun_add, NameFun}}.
+  generator_helper ! {self(), {fun_add, NameFun}}.
 
 get_fun_list() ->
-  sdl_helper ! {self(), fun_list},
+  generator_helper ! {self(), fun_list},
   receive
     {fun_list, FunList} -> FunList
   end.
 
 reset_fun_code(InitCode) ->
-  sdl_helper ! {self(), {reset, InitCode}}.
+  generator_helper ! {self(), {reset, InitCode}}.
 
 add_type_name(ErlName, CName) ->
-  sdl_helper ! {self(), {new_type, ErlName, CName}}.
+  generator_helper ! {self(), {new_type, ErlName, CName}}.
 
 get_type_name(ErlName) ->
-  sdl_helper ! {self(), {get_type, ErlName}},
+  generator_helper ! {self(), {get_type, ErlName}},
   receive
     {type_name, CName} -> CName
   end.
 
+get_erl_filename() ->
+  generator_helper ! {self(), erl_filename},
+  receive
+    {erl_filename, ErlFileName} -> ErlFileName
+  end.
+
+get_hrl_filename() ->
+  generator_helper ! {self(), hrl_filename},
+  receive
+    {hrl_filename, HrlFileName} -> HrlFileName
+  end.
+
+get_c_filename() ->
+  generator_helper ! {self(), c_filename},
+  receive
+    {c_filename, CFileName} -> CFileName
+  end.
+
 end_helper() ->
-  sdl_helper ! {self(), exit}.
+  generator_helper ! {self(), exit}.
