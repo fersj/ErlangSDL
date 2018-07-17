@@ -17,6 +17,22 @@
     {macro_spec, "SDLK_UP", "82 bor ?SDLK_SCANCODE_MASK"}
   ],
   [
+    {type_spec, arrayA, "ArrayA",
+      {struct, [
+        {struct_member, id, "id", int, []},
+        {struct_member, values, "values", {fixed_array, int, 10}, []}
+      ]}, []},
+    {type_spec, arrayB, "ArrayB",
+      {struct, [
+        {struct_member, id, "id", int, []},
+        {struct_member, values, "values", {pointer, int}, []}
+      ]}, []},
+    {type_spec, arrayC, "ArrayC",
+      {struct, [
+        {struct_member, id, "id", int, []},
+        {struct_member, values, "values", {pointer, int}, []},
+        {struct_member, size, "size", int, [{length_of,2}]}
+      ]}, []},
     {type_spec, uint64, "Uint64", {int, 64}, [unsigned]},
     {type_spec, uint32, "Uint32", {int, 32}, [unsigned]},
     {type_spec, uint16, "Uint16", {int, 16}, [unsigned]},
@@ -659,6 +675,11 @@
       string, []},
     {fun_spec, poll_event, "SDL_PollEvent", [
       {param_spec, {pointer, event}, [return]}
+      ],
+      int, []},
+    {fun_spec, maxint, "max", [
+      {param_spec, {pointer, int}, []},
+      {param_spec, int, [{length_of, 1}, free_after]}
       ],
       int, []}
   ]

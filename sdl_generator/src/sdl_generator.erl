@@ -88,17 +88,34 @@ generate_export(NativeFucsList, [T|TypeList], FunList, Result) ->
   case is_tuple(TypeDescr) of
     true when (element(1,TypeDescr)==pointer) ->
       Deref = "pointer_deref_"++atom_to_list(ErlName)++"/1",
+      DerefArray = "pointer_deref_"++atom_to_list(ErlName)++"_array/2",
       DerefAssign = "pointer_deref_"++atom_to_list(ErlName)++"_assign/2",
-      generate_export(TypeList, FunList, [DerefAssign|[Deref|Result]]);
+      DerefArrayAssign = "pointer_deref_"++atom_to_list(ErlName)++"_array_assign/3",
+      generate_export(NativeFucsList, TypeList, FunList, [DerefArrayAssign|[DerefAssign|[DerefArray|[Deref|Result]]]]);
     true when (element(1,TypeDescr)==struct) and (element(2,TypeDescr)/=opaque) ->
       Deref = "pointer_deref_"++atom_to_list(ErlName)++"/1",
+      DerefArray = "pointer_deref_"++atom_to_list(ErlName)++"_array/2",
       DerefAssign = "pointer_deref_"++atom_to_list(ErlName)++"_assign/2",
+      DerefArrayAssign = "pointer_deref_"++atom_to_list(ErlName)++"_array_assign/3",
       New = "new_"++atom_to_list(ErlName)++"/0",
+      NewArray = "new_"++atom_to_list(ErlName)++"_array/1",
       Delete = "delete_"++atom_to_list(ErlName)++"/1",
-      NewResult = generate_export_setters_getters(element(2,TypeDescr), atom_to_list(ErlName), [Delete|[New|[DerefAssign|[Deref|Result]]]]),
+      PreResult = [Delete|[NewArray|[New|[DerefArrayAssign|[DerefAssign|[DerefArray|[Deref|Result]]]]]]],
+      NewResult = generate_export_setters_getters(element(2,TypeDescr), atom_to_list(ErlName), PreResult),
       generate_export(NativeFucsList, TypeList, FunList, NewResult);
     true when (element(1,TypeDescr)==union) and (element(2,TypeDescr)/=opaque) ->
-      NewResult = generate_export_setters_getters(element(2,TypeDescr), atom_to_list(ErlName), Result),
+      New = "new_"++atom_to_list(ErlName)++"/0",
+      NewArray = "new_"++atom_to_list(ErlName)++"_array/1",
+      Delete = "delete_"++atom_to_list(ErlName)++"/1",
+      PreResult = [Delete|[NewArray|[New|Result]]],
+      NewResult = generate_export_setters_getters(element(2,TypeDescr), atom_to_list(ErlName), PreResult),
+      generate_export(NativeFucsList, TypeList, FunList, NewResult);
+    true when element(2,TypeDescr)==opaque ->
+      DerefArray = "pointer_deref_"++atom_to_list(ErlName)++"_array/2",
+      DerefArrayAssign = "pointer_deref_"++atom_to_list(ErlName)++"_array_assign/3",
+      NewArray = "new_"++atom_to_list(ErlName)++"_array/1",
+      Delete = "delete_"++atom_to_list(ErlName)++"/1",
+      NewResult = [Delete|[NewArray|[DerefArrayAssign|[DerefArray|Result]]]],
       generate_export(NativeFucsList, TypeList, FunList, NewResult);
     true ->
       generate_export(NativeFucsList, TypeList, FunList, Result);
@@ -142,31 +159,48 @@ generate_types_parser_erl([]) ->
 generate_types_parser_erl([TypeSpec|TypeList]) ->
   %io:format("Type spec: ~p~n", [Type]),
   #type_spec{erlang_name=ErlName, type_descr=TypeDescr} = TypeSpec,
-  if
-    is_tuple(TypeDescr) -> {Type, Desc} = TypeDescr;
-    true -> Type = TypeDescr, Desc = nil
+  case is_tuple(TypeDescr) of
+    true ->
+      case tuple_size(TypeDescr) of
+        2 ->
+          {Type, Desc} = TypeDescr;
+        3 ->
+          case is_tuple(element(2,TypeDescr)) of
+            true -> {_, {Type, _}, Desc} = TypeDescr;
+            false -> {_, Type, Desc} = TypeDescr
+          end
+      end;
+    false ->
+      Type = TypeDescr,
+      Desc = undefined
   end,
   ContentMap = #{"ErlName"=>ErlName, "Type"=>Type, "Desc"=>Desc, "Port"=>atom_to_list(?PORT_NAME)},
 
   case TypeDescr of
     {T, opaque} when (T==struct) or (T==union) ->
       FinalMap = ContentMap,
-      Content = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                "\tpointer_to_bytelist(Value).\n\n"
-                "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                "\tbytelist_to_pointer(Bytelist).\n\n"
-                "parse_{{ErlName}}(Bytelist) ->\n"
-                "\tparse_pointer(Bytelist).\n\n">>;
+      case file:read_file("resources/opaque_fun_templates.erl") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     {struct, MemberList} ->
       Args = string:join([atom_to_list(A) || {_,A,_,_,_} <- MemberList], ", "),
       DerefName = "pointer_deref_"++atom_to_list(ErlName),
+      DerefArrayName = "pointer_deref_"++atom_to_list(ErlName)++"_array",
       DerefAssignName = "pointer_deref_"++atom_to_list(ErlName)++"_assign",
+      DerefArrayAssignName = "pointer_deref_"++atom_to_list(ErlName)++"_array_assign",
       NewName = "new_"++atom_to_list(ErlName),
+      NewArrayName = "new_"++atom_to_list(ErlName)++"_array",
       DeleteName = "delete_"++atom_to_list(ErlName),
       NewContentMap = #{"Args" => Args,
                         "Code" => integer_to_list(get_fun_code(DerefName)),
+                        "CodeArray" => integer_to_list(get_fun_code(DerefArrayName)),
                         "CodeAssign" => integer_to_list(get_fun_code(DerefAssignName)),
+                        "CodeArrayAssign" => integer_to_list(get_fun_code(DerefArrayAssignName)),
                         "CodeNew" => integer_to_list(get_fun_code(NewName)),
+                        "CodeNewArray" => integer_to_list(get_fun_code(NewArrayName)),
                         "CodeDelete" => integer_to_list(get_fun_code(DeleteName))},
       FinalMap = maps:merge(ContentMap, NewContentMap),
       RecordLine = bbmustache:render(<<"-record({{ErlName}}, {{{{Args}}}}).\n">>, FinalMap),
@@ -174,133 +208,83 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
       ContentPart1 = generate_struct_to_bytelist(MemberList, ErlName),
       ContentPart2 = generate_bytelist_to_struct(MemberList, ErlName),
       ContentPart3 = generate_parse_struct(MemberList, ErlName),
-      ContentPart4 = <<"pointer_deref_{{ErlName}}(Pointer) ->\n"
-                      "\tCode = int_to_bytelist({{Code}}),\n"
-                      "\tPList = pointer_to_bytelist(Pointer),\n"
-                      "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
-                      "\treceive\n"
-                      "\t\t{_, { data, DataList}} ->\n"
-                      "\t\t\tbytelist_to_{{ErlName}}(DataList);\n"
-                      "\t\tMsg ->\n"
-                      "\t\t\t{error, Msg}\n"
-                      "\tend.\n\n"
-                    "pointer_deref_{{ErlName}}_assign(Pointer, Value) ->\n"
-                      "\tCode = int_to_bytelist({{CodeAssign}}),\n"
-                      "\tPList = pointer_to_bytelist(Pointer),\n"
-                      "\tVList = {{ErlName}}_to_bytelist(Pointer),\n"
-                      "\t{{Port}} ! {self(), {command, [Code, PList, VList]}},\n"
-                      "\treceive\n"
-                      "\t\t{_, { data, _DataList}} ->\n"
-                      "\t\t\tok;\n"
-                      "\t\tMsg ->\n"
-                      "\t\t\t{error, Msg}\n"
-                      "\tend.\n\n"
-                    "new_{{ErlName}}() ->\n"
-                      "\tCode = int_to_bytelist({{CodeNew}}),\n"
-                      "\t{{Port}} ! {self(), {command, [Code]}},\n"
-                      "\treceive\n"
-                      "\t\t{_, { data, DataList}} ->\n"
-                      "\t\t\tbytelist_to_pointer(DataList);\n"
-                      "\t\tMsg ->\n"
-                      "\t\t\t{error, Msg}\n"
-                      "\tend.\n\n"
-                    "delete_{{ErlName}}(Pointer) ->\n"
-                      "\tCode = int_to_bytelist({{CodeDelete}}),\n"
-                      "\tPList = pointer_to_bytelist(Pointer),\n"
-                      "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
-                      "\treceive\n"
-                      "\t\t{_, { data, _DataList}} ->\n"
-                      "\t\t\tok;\n"
-                      "\t\tMsg ->\n"
-                      "\t\t\t{error, Msg}\n"
-                      "\tend.\n\n">>,
+      case file:read_file("resources/struct_fun_templates.erl") of
+        {ok, ContentPart4} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          ContentPart4 = <<"">>
+      end,
       ContentPart5 = generate_getters_setters_erl(MemberList, ErlName),
       Content = <<ContentPart1/binary, ContentPart2/binary, ContentPart3/binary,
                   ContentPart4/binary, ContentPart5/binary>>;
     {union, MemberList} ->
-      FinalMap = ContentMap,
-      ContentPart1 = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                      "\tpointer_to_bytelist(Value).\n\n"
-                      "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                      "\tbytelist_to_pointer(Bytelist).\n\n"
-                      "parse_{{ErlName}}(Bytelist) ->\n"
-                      "\tparse_pointer(Bytelist).\n\n">>,
+      NewName = "new_"++atom_to_list(ErlName),
+      NewArrayName = "new_"++atom_to_list(ErlName)++"_array",
+      DeleteName = "delete_"++atom_to_list(ErlName),
+      NewContentMap = #{"CodeNew" => integer_to_list(get_fun_code(NewName)),
+                        "CodeNewArray" => integer_to_list(get_fun_code(NewArrayName)),
+                        "CodeDelete" => integer_to_list(get_fun_code(DeleteName))},
+      FinalMap = maps:merge(ContentMap, NewContentMap),
+      case file:read_file("resources/union_fun_templates.erl") of
+        {ok, ContentPart1} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          ContentPart1 = <<"">>
+      end,
       ContentPart2 = generate_getters_setters_erl(MemberList, ErlName),
       Content = <<ContentPart1/binary, ContentPart2/binary>>;
     {enum, ElemList} ->
       FinalMap = ContentMap,
       GetInt = generate_enum_get_int(ElemList),
       GetAtom = generate_enum_get_atom(ElemList),
-      SerializeEnum = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                      "\tInt = {{ErlName}}_get_int(Value),\n"
-                      "\tint_to_bytelist(Int).\n\n",
-                      "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                      "\tInt = bytelist_to_int(Bytelist),\n"
-                      "\t{{ErlName}}_get_atom(Int).\n\n"
-                      "parse_{{ErlName}}(Bytelist) ->\n"
-                      "\t{Int, RList} = parse_int(Bytelist),\n"
-                      "\t{{{ErlName}}_get_atom(Int), RList}.\n\n">>,
-      Content = <<GetInt/binary, GetAtom/binary, SerializeEnum/binary>>;
-    {array, _TD} ->
+      case file:read_file("resources/enum_fun_templates.erl") of
+        {ok, EnumFuns} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          EnumFuns = <<"">>
+      end,
+      Content = <<GetInt/binary, GetAtom/binary, EnumFuns/binary>>;
+    {fixed_array, _TD, _Num} ->
+      % TODO añadir new, delete, deref y eso???
       FinalMap = ContentMap,
-      Content = <<"">>; % De momento no
+      case file:read_file("resources/fixed_array_fun_templates.erl") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     {string, _Cod} ->
       FinalMap = ContentMap,
-      Content = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                "\tstring_to_bytelist(Value, {{Desc}}).\n\n"
-                "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                "\tbytelist_to_string(Bytelist, {{Desc}}).\n\n"
-                "parse_{{ErlName}}(Bytelist) ->\n"
-                "\tparse_string(Bytelist).\n\n">>;
+      case file:read_file("resources/string_cod_fun_templates.erl") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     {pointer, _TD} ->
-      DerefName = "pointer_deref_"++atom_to_list(ErlName),
-      DerefAssignName = "pointer_deref_"++atom_to_list(ErlName)++"_assign",
-      NewContentMap = #{"Code" => integer_to_list(get_fun_code(DerefName)),
-                        "CodeAssign" => integer_to_list(get_fun_code(DerefAssignName))},
-      FinalMap = maps:merge(ContentMap, NewContentMap),
-      Content = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                  "\tpointer_to_bytelist(Value).\n\n"
-                "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                  "\tbytelist_to_pointer(Bytelist).\n\n"
-                "parse_{{ErlName}}(Bytelist) ->\n"
-                  "\tparse_pointer(Bytelist).\n\n"
-                "pointer_deref_{{ErlName}}(Pointer) ->\n"
-                  "\tPList = pointer_to_bytelist(Pointer)\n"
-                  "\tCode = int_to_bytelist({{Code}}),\n"
-                  "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
-                  "\treceive\n"
-                  "\t\t{ _, { data, DataList }} ->\n"
-                  "\t\t\tbytelist_to_{{Desc}}(DataList);\n"
-                  "\t\tMsg ->\n"
-                  "\t\t\t{error, Msg}\n"
-                  "\tend.\n\n"
-                "pointer_deref_{{ErlName}}_assign(Pointer, Value) ->\n"
-                  "\tCode = int_to_bytelist({{CodeAssign}}),\n"
-                  "\tPList = pointer_to_bytelist(Pointer),\n"
-                  "\tVList = {{Desc}}_to_bytelist(Pointer),\n"
-                  "\t{{Port}} ! {self(), {command, [Code, PList, VList]}},\n"
-                  "\treceive\n"
-                  "\t\t{_, { data, _DataList}} ->\n"
-                  "\t\t\tok;\n"
-                  "\t\tMsg ->\n"
-                  "\t\t\t{error, Msg}\n"
-                  "\tend.\n\n">>;
+      FinalMap = ContentMap,
+      case file:read_file("resources/pointertype_fun_templates.erl") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     {T, _NBits} when (T==int) or (T==float) ->
       FinalMap = ContentMap,
-      Content = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                "\t{{Type}}_to_bytelist(Value, {{Desc}}).\n\n"
-                "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                "\tbytelist_to_{{Type}}(Bytelist, {{Desc}}).\n\n"
-                "parse_{{ErlName}}(Bytelist) ->\n"
-                "\tparse_{{Type}}(Bytelist, {{Desc}}).\n\n">>;
+      case file:read_file("resources/type_nbits_fun_templates.erl") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     _ ->
       FinalMap = ContentMap,
-      Content = <<"{{ErlName}}_to_bytelist(Value) ->\n"
-                "\t{{Type}}_to_bytelist(Value).\n\n"
-                "bytelist_to_{{ErlName}}(Bytelist) ->\n"
-                "\tbytelist_to_{{Type}}(Bytelist).\n\n"
-                "parse_{{ErlName}}(Bytelist) ->\n"
-                "\tparse_{{Type}}(Bytelist).\n\n">>
+      case file:read_file("resources/generic_type_fun_templates.erl") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end
   end,
   write_file("sdl_ports_gen.erl", binary_to_list(bbmustache:render(Content,FinalMap)), [append]),
   generate_types_parser_erl(TypeList).
@@ -311,41 +295,79 @@ generate_struct_to_bytelist(Members, StructName) ->
   generate_struct_to_bytelist(Members, StructName, Init).
 generate_struct_to_bytelist([M|[]], StructName, Result) ->
   #struct_member{erlang_name=ErlName, type_descr=TypeDescr} = M,
-  case is_tuple(TypeDescr)==true of
-    true -> {Type,_} = TypeDescr;
+  case is_tuple(TypeDescr) of
+    true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
   end,
-  Final = bbmustache:render(<<"{{TD}}_to_bytelist(Value#{{SN}}.{{EN}})],\n"
-                              "\tlists:flatten(Return).\n\n">>,
-                            #{"TD"=>Type, "SN"=>StructName, "EN"=>ErlName}),
+  case Type of
+    fixed_array ->
+      Line = <<"{{TD}}_array_to_bytelist(Value#{{SN}}.{{EN}}, {{Size}})],\n"
+                "\tlists:flatten(Return).\n\n">>,
+      Map = #{"TD"=>element(2,TypeDescr), "SN"=>StructName, "EN"=>ErlName, "Size"=>element(3,TypeDescr)};
+    _ ->
+      Line = <<"{{TD}}_to_bytelist(Value#{{SN}}.{{EN}})],\n"
+                "\tlists:flatten(Return).\n\n">>,
+      Map = #{"TD"=>Type, "SN"=>StructName, "EN"=>ErlName}
+  end,
+  Final = bbmustache:render(Line, Map),
   <<Result/binary, Final/binary>>;
 generate_struct_to_bytelist([M|Members], StructName, Result) ->
   #struct_member{erlang_name=ErlName, type_descr=TypeDescr} = M,
-  case is_tuple(TypeDescr)==true of
-    true -> {Type,_} = TypeDescr;
+  case is_tuple(TypeDescr) of
+    true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
   end,
-  Line = bbmustache:render(<<"{{TD}}_to_bytelist(Value#{{SN}}.{{EN}}),\n\t">>, #{"TD"=>Type, "SN"=>StructName, "EN"=>ErlName}),
-  generate_struct_to_bytelist(Members, StructName, <<Result/binary, Line/binary>>).
+  case Type of
+    fixed_array ->
+      Line = <<"{{TD}}_array_to_bytelist(Value#{{SN}}.{{EN}}, {{Size}}),\n\t">>,
+      Map = #{"TD"=>element(2,TypeDescr), "SN"=>StructName, "EN"=>ErlName, "Size"=>element(3,TypeDescr)};
+    _ ->
+      Line = <<"{{TD}}_to_bytelist(Value#{{SN}}.{{EN}}),\n\t">>,
+      Map = #{"TD"=>Type, "SN"=>StructName, "EN"=>ErlName}
+  end,
+  NewLine = bbmustache:render(Line, Map),
+  generate_struct_to_bytelist(Members, StructName, <<Result/binary, NewLine/binary>>).
 
 generate_bytelist_to_struct(Members, StructName) ->
   InitLines = <<"bytelist_to_{{ErlName}}(Bytelist) ->\n"
           "\tR0 = Bytelist,\n">>,
   generate_bytelist_to_struct(Members, [], StructName, InitLines, 1).
-generate_bytelist_to_struct([], MemberNames, StructName, Result, _Cnt) ->
-  MNames = string:join(lists:reverse(MemberNames), ", "),
-  Line = bbmustache:render(<<"\t#{{SN}}{{{{M}}}}.\n\n">>, #{"SN"=>StructName, "M"=>MNames}),
-  <<Result/binary, Line/binary>>;
-generate_bytelist_to_struct([M|Members], MemberNames, StructName, Result, Cnt) ->
+generate_bytelist_to_struct([M|[]], MemberNames, StructName, Result, Cnt) ->
   #struct_member{erlang_name=ErlName, type_descr=TypeDescr} = M,
-  case is_tuple(TypeDescr)==true of
-    true -> {Type,_} = TypeDescr;
+  case is_tuple(TypeDescr) of
+    true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
   end,
-  MName = atom_to_list(ErlName)++"="++string:titlecase(atom_to_list(ErlName)),
-  LineMap = #{"TD"=>Type, "EN"=>string:titlecase(atom_to_list(ErlName)), "Cnt"=>Cnt, "CntPrev"=>Cnt-1},
-  Line = bbmustache:render(<<"\t{{{EN}}, R{{Cnt}}} = parse_{{TD}}(R{{CntPrev}}),\n">>, LineMap),
-  generate_bytelist_to_struct(Members, [MName|MemberNames], StructName, <<Result/binary, Line/binary>>, Cnt+1).
+  MN = atom_to_list(ErlName)++"="++string:titlecase(atom_to_list(ErlName)),
+  case Type of
+    fixed_array ->
+      Line = <<"\t{{{EN}}, _} = parse_{{TD}}_array(R{{CntPrev}}, {{Size}}),\n">>,
+      Map = #{"TD"=>element(2,TypeDescr), "EN"=>string:titlecase(atom_to_list(ErlName)), "CntPrev"=>Cnt-1, "Size"=>element(3,TypeDescr)};
+    _ ->
+      Line = <<"\t{{{EN}}, _} = parse_{{TD}}(R{{CntPrev}}),\n">>,
+      Map = #{"TD"=>Type, "EN"=>string:titlecase(atom_to_list(ErlName)), "CntPrev"=>Cnt-1}
+  end,
+  NewLine = bbmustache:render(Line, Map),
+  MNames = string:join(lists:reverse([MN|MemberNames]), ", "),
+  FinalLine = bbmustache:render(<<"\t#{{SN}}{{{{M}}}}.\n\n">>, #{"SN"=>StructName, "M"=>MNames}),
+  <<Result/binary, NewLine/binary, FinalLine/binary>>;
+generate_bytelist_to_struct([M|Members], MemberNames, StructName, Result, Cnt) ->
+  #struct_member{erlang_name=ErlName, type_descr=TypeDescr} = M,
+  case is_tuple(TypeDescr) of
+    true -> Type = element(1, TypeDescr);
+    false -> Type = TypeDescr
+  end,
+  MN = atom_to_list(ErlName)++"="++string:titlecase(atom_to_list(ErlName)),
+  case Type of
+    fixed_array ->
+      Line = <<"\t{{{EN}}, R{{Cnt}}} = parse_{{TD}}_array(R{{CntPrev}}, {{Size}}),\n">>,
+      Map = #{"TD"=>element(2,TypeDescr), "EN"=>string:titlecase(atom_to_list(ErlName)), "Cnt"=>Cnt, "CntPrev"=>Cnt-1, "Size"=>element(3,TypeDescr)};
+    _ ->
+      Line = <<"\t{{{EN}}, R{{Cnt}}} = parse_{{TD}}(R{{CntPrev}}),\n">>,
+      Map = #{"TD"=>Type, "EN"=>string:titlecase(atom_to_list(ErlName)), "Cnt"=>Cnt, "CntPrev"=>Cnt-1}
+  end,
+  NewLine = bbmustache:render(Line, Map),
+  generate_bytelist_to_struct(Members, [MN|MemberNames], StructName, <<Result/binary, NewLine/binary>>, Cnt+1).
 
 generate_parse_struct(Members, StructName) ->
   InitLines = <<"parse_{{ErlName}}(Bytelist) ->\n"
@@ -357,23 +379,40 @@ generate_parse_struct([], MemberNames, StructName, Result, Cnt) ->
   <<Result/binary, Line/binary>>;
 generate_parse_struct([M|Members], MemberNames, StructName, Result, Cnt) ->
   #struct_member{erlang_name=ErlName, type_descr=TypeDescr} = M,
-  case is_tuple(TypeDescr)==true of
-    true -> {Type,_} = TypeDescr;
+  case is_tuple(TypeDescr) of
+    true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
   end,
-  MName = atom_to_list(ErlName)++"="++string:titlecase(atom_to_list(ErlName)),
-  LineMap = #{"TD"=>Type, "EN"=>string:titlecase(atom_to_list(ErlName)), "Cnt"=>Cnt, "CntPrev"=>Cnt-1},
-  Line = bbmustache:render(<<"\t{{{EN}}, R{{Cnt}}} = parse_{{TD}}(R{{CntPrev}}),\n">>, LineMap),
-  generate_parse_struct(Members, [MName|MemberNames], StructName, <<Result/binary, Line/binary>>, Cnt+1).
+  MN = atom_to_list(ErlName)++"="++string:titlecase(atom_to_list(ErlName)),
+  case Type of
+    fixed_array ->
+      Line = <<"\t{{{EN}}, R{{Cnt}}} = parse_{{TD}}_array(R{{CntPrev}}, {{Size}}),\n">>,
+      Map = #{"TD"=>element(2,TypeDescr), "EN"=>string:titlecase(atom_to_list(ErlName)), "Cnt"=>Cnt, "CntPrev"=>Cnt-1, "Size"=>element(3,TypeDescr)};
+    _ ->
+      Line = <<"\t{{{EN}}, R{{Cnt}}} = parse_{{TD}}(R{{CntPrev}}),\n">>,
+      Map = #{"TD"=>Type, "EN"=>string:titlecase(atom_to_list(ErlName)), "Cnt"=>Cnt, "CntPrev"=>Cnt-1}
+  end,
+  NewLine = bbmustache:render(Line, Map),
+  generate_parse_struct(Members, [MN|MemberNames], StructName, <<Result/binary, NewLine/binary>>, Cnt+1).
 
 generate_getters_setters_erl(MemberList, StructName) ->
-  generate_getters_setters_erl(MemberList, StructName, <<"">>).
-generate_getters_setters_erl([], _StructName, Result) -> Result;
-generate_getters_setters_erl([M|MemberList], StructName, Result) ->
+  generate_getters_setters_erl(MemberList, MemberList, StructName, <<"">>).
+generate_getters_setters_erl(MemberList, [], StructName, Result) ->
+  NewLines = generate_array_getters_erl(MemberList, StructName),
+  <<Result/binary, NewLines/binary>>;
+generate_getters_setters_erl(MemberList, [M|MemberListIt], StructName, Result) ->
   #struct_member{erlang_name=AttribName, type_descr=TypeDescr} = M,
   case is_tuple(TypeDescr) of
-    true -> {Type,_} = TypeDescr;
+    true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
+  end,
+  case Type of
+    fixed_array ->
+      LineGet = "bytelist_to_"++atom_to_list(element(2,TypeDescr))++"_array(DataList, "++integer_to_list(element(3,TypeDescr))++")",
+      LineSet = "AList = "++atom_to_list(element(2,TypeDescr))++"_array_to_bytelist(Attrib, "++integer_to_list(element(3,TypeDescr))++")";
+    _ ->
+      LineGet = "bytelist_to_"++atom_to_list(Type)++"(DataList)",
+      LineSet = "AList = "++atom_to_list(Type)++"_to_bytelist(Attrib)"
   end,
   Get = <<"{{StructName}}_get_{{Attrib}}(Pointer) ->\n"
           "\tCode = int_to_bytelist({{CodeGet}}),\n"
@@ -381,14 +420,14 @@ generate_getters_setters_erl([M|MemberList], StructName, Result) ->
           "\t{{Port}} ! {self(), {command, [Code, PList]}},\n"
           "\treceive\n"
           "\t\t{ _, { data, DataList }} ->\n"
-          "\t\t\tbytelist_to_{{Type}}(DataList);\n"
+          "\t\t\t{{LineGet}};\n"
           "\t\tMsg ->\n"
           "\t\t\t{error, Msg}\n"
           "\tend.\n\n">>,
   Set = <<"{{StructName}}_set_{{Attrib}}(Pointer, Attrib) ->\n"
           "\tCode = int_to_bytelist({{CodeSet}}),\n"
           "\tPList = pointer_to_bytelist(Pointer),\n"
-          "\tAList = {{Type}}_to_bytelist(Attrib),\n"
+          "\t{{LineSet}},\n"
           "\t{{Port}} ! {self(), {command, [Code, PList, AList]}},\n"
           "\treceive\n"
           "\t\t{ _, { data, _DataList }} ->\n"
@@ -396,14 +435,41 @@ generate_getters_setters_erl([M|MemberList], StructName, Result) ->
           "\t\tMsg ->\n"
           "\t\t\t{error, Msg}\n"
           "\tend.\n\n">>,
-  Map = #{"StructName" => atom_to_list(StructName),
-          "Attrib" => atom_to_list(AttribName),
-          "Port" => atom_to_list(?PORT_NAME),
+  Map = #{"StructName" => StructName,
+          "Attrib" => AttribName,
+          "Port" => ?PORT_NAME,
           "CodeGet" => integer_to_list(get_fun_code(atom_to_list(StructName)++"_get_"++atom_to_list(AttribName))),
           "CodeSet" => integer_to_list(get_fun_code(atom_to_list(StructName)++"_set_"++atom_to_list(AttribName))),
-          "Type" => atom_to_list(Type)},
+          "LineGet" => LineGet,
+          "LineSet" => LineSet},
   NewLines = bbmustache:render(<<Get/binary, Set/binary>>, Map),
-  generate_getters_setters_erl(MemberList, StructName, <<Result/binary, NewLines/binary>>).
+  generate_getters_setters_erl(MemberList, MemberListIt, StructName, <<Result/binary, NewLines/binary>>).
+
+generate_array_getters_erl(MemberList, StructName) ->
+  LengthMembers = [{Name, Index} ||
+                    {Name, [Index]} <- [{Name,[Index || {length_of, Index}<-Opt]} || {_,Name,_,_,Opt}<-MemberList, length(Opt)>0]],
+  generate_array_getters_erl(MemberList, StructName, LengthMembers, <<"">>).
+generate_array_getters_erl(_MemberList, _StructName, [], Result) -> Result;
+generate_array_getters_erl(MemberList, StructName, [{AttribS,Index}|LengthMembers], Result) ->
+  #struct_member{erlang_name=AttribP, type_descr={pointer,TypeP}} = lists:nth(Index, MemberList),
+  GetArray = <<"{{StructName}}_get_arraylist_{{AttribP}}(Pointer) ->\n"
+                  "\tArrayPtr = {{StructName}}_get_{{AttribP}}(Pointer),\n"
+                  "\tSize = {{StructName}}_get_{{AttribS}}(Pointer),\n"
+                  "\t{{TypeP}}_array_to_list(ArrayPtr, Size).\n\n">>,
+  SetArray = <<"{{StructName}}_set_arraylist_{{AttribP}}(Pointer, List) ->\n"
+                  "\tArrayPtr = {{StructName}}_get_{{AttribP}}(Pointer),\n"
+                  "\tSize = {{StructName}}_get_{{AttribS}}(Pointer),\n"
+                  "\t{{StructName}}_set_arraylist_{{AttribP}}(ArrayPtr, List, Size, 0).\n"
+                "{{StructName}}_set_arraylist_{{AttribP}}(_ArrayPtr, _List, Size, Index) when Size==Index -> ok;\n"
+                "{{StructName}}_set_arraylist_{{AttribP}}(ArrayPtr, [Value|List], Size, Index) ->\n"
+                  "\tpointer_deref_{{TypeP}}_array_assign(ArrayPtr, Index, Value),\n"
+                  "\t{{StructName}}_set_arraylist_{{AttribP}}(ArrayPtr, List, Size, Index+1).\n\n">>,
+  Map = #{"StructName" => StructName,
+          "AttribP" => AttribP,
+          "AttribS" => AttribS,
+          "TypeP" => TypeP},
+  NewLines = bbmustache:render(<<GetArray/binary, SetArray/binary>>, Map),
+  generate_array_getters_erl(MemberList, StructName, LengthMembers, <<Result/binary, NewLines/binary>>).
 
 generate_enum_get_int(ElemList) ->
   Line = <<"{{ErlName}}_get_int(Atom) ->\n"
@@ -481,13 +547,24 @@ generate_functions_erl([Fun|FunList]) ->
                 "\t\t\t{error, Msg}\n"
                 "\tend.\n\n">>;
     true ->
-      Body2 = <<"\treceive\n"
-                "\t\t{_, {data, DataList}} ->\n"
-                "\t\t\t{RetParam1, R1} = parse_{{RetType}}(DataList),\n"
-                "{{RetParams}}"
-                "\t\tMsg ->\n"
-                "\t\t\t{error, Msg}\n"
-                "\tend.\n\n">>
+      case length(RPTypes) of
+        0 ->
+          Body2 = <<"\treceive\n"
+                    "\t\t{_, {data, DataList}} ->\n"
+                    "\t\t\t{RetParam1, _R1} = parse_{{RetType}}(DataList),\n"
+                    "{{RetParams}}"
+                    "\t\tMsg ->\n"
+                    "\t\t\t{error, Msg}\n"
+                    "\tend.\n\n">>;
+        _ ->
+          Body2 = <<"\treceive\n"
+                    "\t\t{_, {data, DataList}} ->\n"
+                    "\t\t\t{RetParam1, R1} = parse_{{RetType}}(DataList),\n"
+                    "{{RetParams}}"
+                    "\t\tMsg ->\n"
+                    "\t\t\t{error, Msg}\n"
+                    "\tend.\n\n">>
+      end
   end,
 
   Map = #{"ErlName"=>atom_to_list(ErlName),
@@ -498,8 +575,9 @@ generate_functions_erl([Fun|FunList]) ->
           "Vars"=>string:join(VarList,", "),
           "RetType"=>atom_to_list(RetType),
           "RetParams"=>RetParams},
-  Content = <<Header/binary, Body1/binary, Body2/binary>>,
-  write_file(?ERL_FILENAME, binary_to_list(bbmustache:render(Content, Map)), [append]),
+  FunContent = bbmustache:render(<<Header/binary, Body1/binary, Body2/binary>>, Map),
+  FunContentArrays = generate_fun_with_array_size_erl(ErlName, Params, Descr),
+  write_file(?ERL_FILENAME, <<FunContent/binary, FunContentArrays/binary>>, [append]),
   generate_functions_erl(FunList).
 
 fun_params_to_string(Params) ->
@@ -520,6 +598,25 @@ fun_params_to_string([{_,P,O}|Params], Result, Cnt) ->
       end
   end,
   fun_params_to_string(Params, NewResult, Cnt+1).
+
+fun_params_to_tuple_info(Params) ->
+  fun_params_to_tuple_info(Params, [], 1).
+fun_params_to_tuple_info([], Result, _Cnt) -> lists:reverse(Result);
+fun_params_to_tuple_info([{_,P,O}|Params], Result, Cnt) ->
+  case lists:member(return, O) of
+    true ->
+      NewResult = Result;
+    _ ->
+      case P of
+        {pointer, Type} ->
+          Name = "P_"++string:titlecase(atom_to_list(Type)) ++ "_" ++ integer_to_list(Cnt),
+          NewResult = [{Name,Cnt,Type,O}|Result];
+        Type ->
+          Name = string:titlecase(atom_to_list(Type)) ++ "_" ++ integer_to_list(Cnt),
+          NewResult = [{Name,Cnt,Type,O}|Result]
+      end
+  end,
+  fun_params_to_tuple_info(Params, NewResult, Cnt+1).
 
 generate_body_parameters_to_send(Params, StrParams) ->
   generate_body_parameters_to_send(Params, StrParams, "", 1).
@@ -542,10 +639,19 @@ generate_fun_return_params_erl([void|ParamList]) ->
   generate_fun_return_params_erl(ParamList, <<"">>, [], 1);
 generate_fun_return_params_erl([_|ParamList]) ->
   generate_fun_return_params_erl(ParamList, <<"">>, ["RetParam1"], 2).
-generate_fun_return_params_erl([], Result, ParamNames, _Cnt) ->
-  PN = string:join(lists:reverse(ParamNames), ", "),
-  Line = bbmustache:render(<<"\t\t\t{{{{PNames}}}};\n">>, #{"PNames"=>PN}),
-  binary_to_list(<<Result/binary, Line/binary>>);
+generate_fun_return_params_erl([P|[]], Result, ParamNames, Cnt) ->
+  % Para cada parámetro de salida se pasa a Erlang el contenido del puntero
+  Line = <<"\t\t\t{RetParam{{Cnt}}, _R{{Cnt}}} = parse_{{Type}}(R{{PrevCnt}}),\n">>,
+  NewPName = "RetParam"++integer_to_list(Cnt),
+  case P of
+    {pointer, T} -> Type = T;
+    T -> Type = T
+  end,
+  PN = string:join(lists:reverse([NewPName|ParamNames]), ", "),
+  Map = #{"Cnt"=>integer_to_list(Cnt), "Type"=>Type, "PrevCnt"=>integer_to_list(Cnt-1), "PNames"=>PN},
+  FinalLine = <<"\t\t\t{{{{PNames}}}};\n">>,
+  NewResult = bbmustache:render(<<Result/binary, Line/binary, FinalLine/binary>>, Map),
+  binary_to_list(NewResult);
 generate_fun_return_params_erl([P|ParamList], Result, ParamNames, Cnt) ->
   % Para cada parámetro de salida se pasa a Erlang el contenido del puntero
   Line = <<"\t\t\t{RetParam{{Cnt}}, R{{Cnt}}} = parse_{{Type}}(R{{PrevCnt}}),\n">>,
@@ -557,6 +663,81 @@ generate_fun_return_params_erl([P|ParamList], Result, ParamNames, Cnt) ->
   Map = #{"Cnt"=>integer_to_list(Cnt), "Type"=>Type, "PrevCnt"=>integer_to_list(Cnt-1)},
   NewLine = bbmustache:render(Line, Map),
   generate_fun_return_params_erl(ParamList, <<Result/binary, NewLine/binary>>, [NewPName|ParamNames], Cnt+1).
+
+generate_fun_with_array_size_erl(FunName, Params, Descr) ->
+  TupleParams = fun_params_to_tuple_info(Params),
+  LengthParams = [{Name, Index, IndexPtr} ||
+                  {Name, Index, [IndexPtr]} <- [{Name,Index,[IndexPtr || {length_of, IndexPtr}<-Opt]} || {Name,Index,_,Opt}<-TupleParams, length(Opt)>0]],
+  case LengthParams of
+    [] -> <<"">>;
+    _ ->
+      LengthIndexes = [I || {_,I,_}<-LengthParams],
+      PtrIndexes = [I || {_,_,I}<-LengthParams],
+      HParams1 = [{Name,Index} || {Name,Index,_,_}<-TupleParams, lists:member(Index, LengthIndexes)==false],
+      HParams2 = [case lists:member(Index, PtrIndexes) of
+                    true -> "List"++integer_to_list(Index);
+                    false -> Name
+                  end ||
+                  {Name,Index}<-HParams1],
+      Line = <<"{{FunName}}({{HParamsMod}}) ->\n">>,
+      Map = #{"FunName"=> FunName, "HParamsMod"=>string:join(HParams2, ", ")},
+      Header = bbmustache:render(Line, Map),
+      generate_fun_with_array_size_erl(FunName, TupleParams, Descr, LengthParams, Header, [])
+  end.
+generate_fun_with_array_size_erl(_FunName, _TupleParams, Descr, [], Result, []) ->
+  case Descr of
+    void ->
+      Line = <<"\tok.\n\n">>;
+    _ ->
+      Line = <<"\tValue.\n\n">>
+  end,
+  <<Result/binary, Line/binary>>;
+generate_fun_with_array_size_erl(FunName, TupleParams, Descr, [], Result, [{PtrName,PtrType}|PtrToDelete]) ->
+  Line = <<"\tdelete_{{Type}}({{PtrName}}),\n">>,
+  Map = #{"Type"=>PtrType, "PtrName"=>PtrName},
+  NewLine = bbmustache:render(Line, Map),
+  generate_fun_with_array_size_erl(FunName, TupleParams, Descr, [], <<Result/binary, NewLine/binary>>, PtrToDelete);
+generate_fun_with_array_size_erl(FunName, TupleParams, Descr, [{Name,Index,IndexPtr}|[]], Result, PtrToDelete) ->
+  Lines = <<"\t{{ParamPtr}} = list_to_{{Type}}_array({{List}}),\n"
+            "\t{{ParamSize}} = length({{List}}),\n">>,
+  case Descr of
+    void ->
+      FunLine = <<"\t{{FunName}}({{HParams}}),\n">>;
+    _ ->
+      FunLine = <<"\tValue = {{FunName}}({{HParams}}),\n">>
+  end,
+  PtrName = element(1, lists:nth(IndexPtr,TupleParams)),
+  PtrType = element(3, lists:nth(IndexPtr,TupleParams)),
+  ListName = "List"++integer_to_list(IndexPtr),
+  StrParams = [N || {N,_,_,_}<-TupleParams],
+  Map = #{"Type" => PtrType,
+          "ParamPtr" => PtrName,
+          "ParamSize" => Name,
+          "List" => ListName,
+          "FunName" => FunName,
+          "HParams" => string:join(StrParams, ", ")},
+  NewLines = bbmustache:render(<<Lines/binary, FunLine/binary>>, Map),
+  case lists:member(free_after, element(4, lists:nth(Index, TupleParams))) of
+    true -> NewPtrToDelete = [{PtrName,PtrType}|PtrToDelete];
+    false -> NewPtrToDelete = PtrToDelete
+  end,
+  generate_fun_with_array_size_erl(FunName, TupleParams, Descr, [], <<Result/binary, NewLines/binary>>, NewPtrToDelete);
+generate_fun_with_array_size_erl(FunName, TupleParams, Descr, [{Name,Index,IndexPtr}|LengthParams], Result, PtrToDelete) ->
+  Lines = <<"\t{{ParamPtr}} = list_to_{{Type}}_array({{List}}),\n"
+            "\t{{ParamSize}} = length({{List}}),\n">>,
+  PtrName = element(1, lists:nth(IndexPtr,TupleParams)),
+  PtrType = element(3, lists:nth(IndexPtr,TupleParams)),
+  ListName = "List"++IndexPtr,
+  Map = #{"Type" => PtrType,
+          "ParamPtr" => PtrName,
+          "ParamSize" => Name,
+          "List" => ListName},
+  NewLines = bbmustache:render(Lines, Map),
+  case lists:member(free_after, element(4, lists:nth(Index, TupleParams))) of
+    true -> NewPtrToDelete = [{PtrName,PtrType}|PtrToDelete];
+    false -> NewPtrToDelete = PtrToDelete
+  end,
+  generate_fun_with_array_size_erl(FunName, TupleParams, Descr, LengthParams, <<Result/binary, NewLines/binary>>, NewPtrToDelete).
 
 generate_init_c(CLib) ->
   {ok, File} = file:read_file("resources/init_c_code.c"),
@@ -588,119 +769,104 @@ generate_types_parser_c([]) ->
 generate_types_parser_c([TypeSpec|TypeList]) ->
   %io:format("Type spec: ~p~n", [Type]),
   #type_spec{erlang_name= ErlName, c_name=CName, type_descr=TypeDescr} = TypeSpec,
-  if
-    is_tuple(TypeDescr) -> {Type, Desc} = TypeDescr;
-    true -> Type = TypeDescr, Desc = nil
+  case is_tuple(TypeDescr) of
+    true ->
+      case tuple_size(TypeDescr) of
+        2 ->
+          {Type, Desc} = TypeDescr;
+        3 ->
+          case is_tuple(element(2,TypeDescr)) of
+            true -> {_, {Type, _}, Desc} = TypeDescr;
+            false -> {_, Type, Desc} = TypeDescr
+          end
+      end;
+    false ->
+      Type = TypeDescr,
+      Desc = undefined
   end,
-  ContentMap = #{"ErlName"=>ErlName, "CName"=>CName, "Type"=>Type, "Desc"=>Desc, "Port"=>atom_to_list(?PORT_NAME)},
+  ContentMap = #{"ErlName"=>ErlName,
+                  "CName"=>CName,
+                  "Type"=>Type,
+                  "Desc"=>Desc,
+                  "DescC"=>get_type_name(Desc),
+                  "Port"=>atom_to_list(?PORT_NAME)},
   add_type_name(ErlName, CName),
 
   case TypeDescr of
     {T, opaque} when (T==struct) or (T==union) ->
-      Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                    "\tbyte *current_in = in;\n\n"
-                    "\tcurrent_in = read_pointer(current_in, (void **) &result);\n\n"
-                    "\treturn current_in;\n}\n\n"
-                  "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                    "\tbyte *current_out = out;\n\n"
-                    "\tcurrent_out = write_pointer(&value, current_out, len);\n\n"
-                    "\treturn current_out;\n}\n\n">>;
+      case file:read_file("resources/opaque_fun_templates.c") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     {struct, MemberList} ->
       ErlNameStr = atom_to_list(ErlName),
       ReadStruct = generate_read_struct_c(MemberList),
       WriteStruct = generate_write_struct_c(MemberList),
-      DerefStruct = <<"void pointer_deref_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                        "\tbyte *current_in = in, *current_out = out;\n"
-                        "\t*len_out = 0; current_in+=4;\n\n"
-                        "\t{{CName}} *pointer;\n"
-                        "\tcurrent_in = read_pointer(current_in, (void **) &pointer);\n"
-                        "\tcurrent_out = write_{{ErlName}}(pointer, current_out, len_out);\n}\n\n"
-                      "void pointer_deref_{{ErlName}}_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                        "\tbyte *current_in = in, *current_out = out;\n"
-                        "\t*len_out = 0; current_in+=4;\n\n"
-                        "\t{{CName}} *pointer;\n"
-                        "\tcurrent_in = read_pointer(current_in, (void **) &pointer);\n"
-                        "\tcurrent_in = read_{{ErlName}}(current_in, pointer);\n}\n\n">>,
-      NewDeleteStruct = <<"void new_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                            "\tbyte *current_in = in, *current_out = out;\n"
-                            "\t*len_out = 0; current_in+=4;\n\n"
-                            "\t{{CName}} *ptr = malloc(sizeof({{CName}}));\n"
-                            "\tcurrent_out = write_pointer(&ptr, current_out, len_out);\n}\n\n"
-                          "void delete_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                            "\tbyte *current_in = in, *current_out = out;\n"
-                            "\t*len_out = 0; current_in+=4;\n\n"
-                            "\t{{CName}} *ptr;\n"
-                            "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-                            "\tfree(ptr);\n}\n\n">>,
+      case file:read_file("resources/struct_fun_templates.c") of
+        {ok, Handlers} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Handlers = <<"">>
+      end,
       add_fun_code("pointer_deref_"++ErlNameStr++"_Handler"),
+      add_fun_code("pointer_deref_"++ErlNameStr++"_array_Handler"),
       add_fun_code("pointer_deref_"++ErlNameStr++"_assign_Handler"),
+      add_fun_code("pointer_deref_"++ErlNameStr++"_array_assign_Handler"),
       add_fun_code("new_"++ErlNameStr++"_Handler"),
+      add_fun_code("new_"++ErlNameStr++"_array_Handler"),
       add_fun_code("delete_"++ErlNameStr++"_Handler"),
       GettersSetters = generate_getters_setters_c(MemberList, ErlNameStr, CName),
-      Content = <<ReadStruct/binary, WriteStruct/binary, DerefStruct/binary, NewDeleteStruct/binary, GettersSetters/binary>>;
+      Content = <<ReadStruct/binary, WriteStruct/binary, Handlers/binary, GettersSetters/binary>>;
     {union, MemberList} ->
-      ReadWrite = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                      "\tbyte *current_in = in;\n\n"
-                      "\tcurrent_in = read_pointer(current_in, (void **) &result);\n\n"
-                      "\treturn current_in;\n}\n\n"
-                    "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                      "\tbyte *current_out = out;\n\n"
-                      "\tcurrent_out = write_pointer(&value, current_out, len);\n\n"
-                      "\treturn current_out;\n}\n\n">>,
+      ErlNameStr = atom_to_list(ErlName),
+      case file:read_file("resources/union_fun_templates.c") of
+        {ok, UnionFuncs} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          UnionFuncs = <<"">>
+      end,
+      add_fun_code("new_"++ErlNameStr++"_Handler"),
+      add_fun_code("new_"++ErlNameStr++"_array_Handler"),
+      add_fun_code("delete_"++ErlNameStr++"_Handler"),
       GettersSetters = generate_getters_setters_c(MemberList, atom_to_list(ErlName), CName),
-      Content = <<ReadWrite/binary, GettersSetters/binary>>;
+      Content = <<UnionFuncs/binary, GettersSetters/binary>>;
     {enum, _ElemList} ->
-      Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                    "\tbyte *current_in = in;\n\n"
-                    "\tcurrent_in = read_int(current_in, result);\n\n"
-                    "\treturn current_in;\n}\n\n"
-                  "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                    "\tbyte *current_out = out;\n\n"
-                    "\tcurrent_out = write_int(value, current_out, len);\n\n"
-                    "\treturn current_out;\n}\n\n">>;
-    {array, _TD} ->
-      Content = <<"">>; % De momento no
+      case file:read_file("resources/enum_fun_templates.c") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
+    {fixed_array, _TD, _Num} ->
+      case file:read_file("resources/fixed_array_fun_templates.c") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     {pointer, _TD} ->
-      add_fun_code("pointer_deref_"++atom_to_list(ErlName)++"_Handler"),
-      add_fun_code("pointer_deref_"++atom_to_list(ErlName)++"assign_Handler"),
-      Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                    "\tbyte *current_in = in;\n\n"
-                    "\tcurrent_in = read_pointer(current_in, result);\n\n"
-                    "\treturn current_in;\n}\n\n"
-                  "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                    "\tbyte *current_out = out;\n\n"
-                    "\tcurrent_out = write_pointer(value, current_out, len);\n\n"
-                    "\treturn current_out;\n}\n\n"
-                  "void pointer_deref_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                    "\tbyte *current_in = in, *current_out = out;\n"
-                    "\t*len_out = 0; current_in+=4;\n\n"
-                    "\t{{CName}} *pointer;\n"
-                    "\tcurrent_in = read_{{ErlName}}(current_in, (void **) pointer);\n"
-                    "\tcurrent_out = write_{{Desc}}(*pointer, current_out, len_out);\n}\n\n"
-                  "void pointer_deref_{{ErlName}}_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
-                    "\tbyte *current_in = in, *current_out = out;\n"
-                    "\t*len_out = 0; current_in+=4;\n\n"
-                    "\t{{CName}} *pointer;\n"
-                    "\tcurrent_in = read_pointer(current_in, (void **) pointer);\n"
-                    "\tcurrent_in = read_{{Desc}}(current_in, *pointer);\n}\n\n">>;
+      case file:read_file("resources/pointertype_fun_templates.c") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     {T, _NBits} when (T==int) or (T==float) ->
-      Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                    "\tbyte *current_in = in;\n\n"
-                    "\tcurrent_in = read_{{Type}}{{Desc}}(current_in, result);\n\n"
-                    "\treturn current_in;\n}\n\n"
-                  "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                    "\tbyte *current_out = out;\n\n"
-                    "\tcurrent_out = write_{{Type}}{{Desc}}(value, current_out, len);\n\n"
-                    "\treturn current_out;\n}\n\n">>;
+      case file:read_file("resources/type_nbits_fun_templates.c") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end;
     _ ->
-      Content = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
-                    "\tbyte *current_in = in;\n\n"
-                    "\tcurrent_in = read_{{Type}}(current_in, result);\n\n"
-                    "\treturn current_in;\n}\n\n"
-                  "byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
-                    "\tbyte *current_out = out;\n\n"
-                    "\tcurrent_out = write_{{Type}}(value, current_out, len);\n\n"
-                    "\treturn current_out;\n}\n\n">>
+      case file:read_file("resources/generic_type_fun_templates.c") of
+        {ok, Content} -> ok;
+        {error, Error} ->
+          io:format("Error reading file: ~p~n", [Error]),
+          Content = <<"">>
+      end
   end,
   write_file("sdl_ports_gen.c", binary_to_list(bbmustache:render(Content,ContentMap)), [append]),
   generate_types_parser_c(TypeList).
@@ -714,12 +880,18 @@ generate_read_struct_c([], Result) ->
   <<Result/binary, EndFun/binary>>;
 generate_read_struct_c([M|MemberList], Result) ->
   #struct_member{c_name=CName, type_descr=TypeDescr} = M,
-  Line = <<"\tcurrent_in = read_{{ParamType}}(current_in, &(result->{{CName}}));\n">>,
-  case is_tuple(TypeDescr)==true of
-    true -> {Type,_} = TypeDescr;
+  case is_tuple(TypeDescr) of
+    true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
   end,
-  Map = #{"ParamType"=>Type, "CName"=>CName},
+  case Type of
+    fixed_array ->
+      Line = <<"\tcurrent_in = read_{{ParamType}}_array(current_in, result->{{CName}}, {{Size}});\n">>,
+      Map = #{"ParamType"=>element(2,TypeDescr), "CName"=>CName, "Size"=>element(3,TypeDescr)};
+    _ ->
+      Line = <<"\tcurrent_in = read_{{ParamType}}(current_in, &(result->{{CName}}));\n">>,
+      Map = #{"ParamType"=>Type, "CName"=>CName}
+  end,
   NewLine = bbmustache:render(Line, Map),
   generate_read_struct_c(MemberList, <<Result/binary, NewLine/binary>>).
 
@@ -732,12 +904,18 @@ generate_write_struct_c([], Result) ->
   <<Result/binary, EndFun/binary>>;
 generate_write_struct_c([M|MemberList], Result) ->
   #struct_member{c_name=CName, type_descr=TypeDescr} = M,
-  Line = <<"\tcurrent_out = write_{{ParamType}}(&(value->{{CName}}), current_out, len);\n">>,
-  case is_tuple(TypeDescr)==true of
-    true -> {Type,_} = TypeDescr;
+  case is_tuple(TypeDescr) of
+    true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
   end,
-  Map = #{"ParamType"=>Type, "CName"=>CName},
+  case Type of
+    fixed_array ->
+      Line = <<"\tcurrent_out = write_{{ParamType}}_array(value->{{CName}}, current_out, len, {{Size}});\n">>,
+      Map = #{"ParamType"=>element(2,TypeDescr), "CName"=>CName, "Size"=>element(3,TypeDescr)};
+    _ ->
+      Line = <<"\tcurrent_out = write_{{ParamType}}(&(value->{{CName}}), current_out, len);\n">>,
+      Map = #{"ParamType"=>Type, "CName"=>CName}
+  end,
   NewLine = bbmustache:render(Line, Map),
   generate_write_struct_c(MemberList, <<Result/binary, NewLine/binary>>).
 
@@ -747,57 +925,50 @@ generate_getters_setters_c([], _StructErlName, _StructCName, Result) -> Result;
 generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) ->
   #struct_member{erlang_name=AttribErl, c_name=AttribC, type_descr=TypeDescr} = M,
   case is_tuple(TypeDescr) of
-    true ->
-      TypeErl = atom_to_list(element(1,TypeDescr)),
-      TypeC = get_type_name(element(2,TypeDescr))++"*";
-    false ->
-      TypeErl = atom_to_list(TypeDescr),
-      TypeC = get_type_name(TypeDescr)
+    true -> Type = element(1, TypeDescr);
+    false -> Type = TypeDescr
   end,
-  case TypeC of
-    "string" ->
+  case Type of
+    fixed_array ->
       Get = <<"void {{StructErl}}_get_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\t{{TypeC}} value;\n"
-              "\tstrcpy(value, ptr->{{AttribC}});\n"
-              "\tcurrent_out = write_{{TypeErl}}(&value, current_out, len_out);\n}\n\n">>,
+              "\tcurrent_out = write_{{TypeErl}}_array(ptr->{{AttribC}}, current_out, len_out, {{Size}});\n}\n\n">>,
       Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\t{{TypeC}} value;\n"
-              "\tcurrent_in = read_{{TypeErl}}(current_in, &value);\n"
-              "\tstrcpy(ptr->{{AttribC}}, value);\n}\n\n">>;
+              "\tcurrent_in = read_{{TypeErl}}_array(current_in, ptr->{{AttribC}}, {{Size}});\n}\n\n">>,
+      TypeErl = element(2, TypeDescr),
+      Size = element(3, TypeDescr);
     _ ->
       Get = <<"void {{StructErl}}_get_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\t{{TypeC}} value;\n"
-              "\tvalue = ptr->{{AttribC}};\n"
-              "\tcurrent_out = write_{{TypeErl}}(&value, current_out, len_out);\n}\n\n">>,
+              "\tcurrent_out = write_{{TypeErl}}(&(ptr->{{AttribC}}), current_out, len_out);\n}\n\n">>,
       Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\t{{TypeC}} value;\n"
-              "\tcurrent_in = read_{{TypeErl}}(current_in, &value);\n"
-              "\tptr->{{AttribC}} = value;\n}\n\n">>
+              "\tcurrent_in = read_{{TypeErl}}(current_in, &(ptr->{{AttribC}}));\n}\n\n">>,
+      TypeErl = Type,
+      Size = undefined
   end,
+
   add_fun_code(StructErlName++"_get_"++atom_to_list(AttribErl)++"_Handler"),
   add_fun_code(StructErlName++"_set_"++atom_to_list(AttribErl)++"_Handler"),
   Map = #{"StructErl" => StructErlName,
           "StructC" => StructCName,
-          "AttribErl" => atom_to_list(AttribErl),
+          "AttribErl" => AttribErl,
           "AttribC" => AttribC,
           "TypeErl" => TypeErl,
-          "TypeC" => TypeC},
+          "Size" => Size},
   NewLines = bbmustache:render(<<Get/binary, Set/binary>>, Map),
   generate_getters_setters_c(MemberList, StructErlName, StructCName, <<Result/binary, NewLines/binary>>).
 
@@ -806,8 +977,8 @@ generate_functions_c([]) ->
   write_file(?C_FILENAME, binary_to_list(Array)++?SEPARATOR_C, [append]),
   ok;
 generate_functions_c([F|FunList]) ->
-  #fun_spec{c_name=CName, params=Params, type_descr=Descr} = F,
-  HandlerName = CName++"_Handler",
+  #fun_spec{erlang_name=ErlName, c_name=CName, params=Params, type_descr=Descr} = F,
+  HandlerName = atom_to_list(ErlName)++"_Handler",
   InitLines = <<"void {{HandlerName}}(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n">>,

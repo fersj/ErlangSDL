@@ -14,6 +14,9 @@
 -define(SDLK_DOWN, 81 bor ?SDLK_SCANCODE_MASK).
 -define(SDLK_UP, 82 bor ?SDLK_SCANCODE_MASK).
 
+-record(arrayA, {id, values}).
+-record(arrayB, {id, values}).
+-record(arrayC, {id, values, size}).
 -record(color, {r, g, b, a}).
 -record(palette, {ncolors, colors, version, refcount}).
 -record(pixel_format, {format, palette, bits_per_pixel, bytes_per_pixel, r_mask, g_mask, b_mask, a_mask, r_loss, g_loss, b_loss, a_loss, r_shift, g_shift, b_shift, a_shift, refcount, next}).
