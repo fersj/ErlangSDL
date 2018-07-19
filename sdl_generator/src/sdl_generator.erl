@@ -48,7 +48,7 @@ generate_code(Filename) ->
       generate_init_port(Info#generator_info.port_name, Info#generator_info.c_handler_file),
       generate_native_types_parser_erl(),
       generate_types_parser_erl(TypeList),
-      generate_functions_erl(FunList),
+      generate_functions_erl(FunList, TypeList),
 
       reset_fun_code(1),
 
@@ -73,7 +73,7 @@ generate_init_erl(ModuleName) ->
   NewContent = bbmustache:render(Content, #{"Module"=>ModuleName}),
   write_file(get_erl_filename(), NewContent, [append]).
 
-% TODO Añadir los bytelist_to_XXX, XXX_to_bytelist y parse_XXX ???
+% TODO Añadir los bytelist_to_XXX, XXX_to_bytelist y parse_XXX... etc para quitar el export_all
 generate_export(NativeFucsList, TypeList, FunList) ->
   generate_export(NativeFucsList, TypeList, FunList, lists:reverse(NativeFucsList)++["init_port/0"]).
 generate_export(_NativeFucsList, [], [], Result) ->
@@ -158,7 +158,7 @@ generate_native_types_parser_erl() ->
   write_file(get_erl_filename(), Content++?SEPARATOR_ERL, [append]).
 
 generate_types_parser_erl([]) ->
-  write_file("sdl_ports_gen.erl", ?SEPARATOR_ERL, [append]);
+  write_file(get_erl_filename(), ?SEPARATOR_ERL, [append]);
 generate_types_parser_erl([TypeSpec|TypeList]) ->
   %io:format("Type spec: ~p~n", [Type]),
   #type_spec{erlang_name=ErlName, type_descr=TypeDescr} = TypeSpec,
@@ -289,7 +289,7 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
           Content = <<"">>
       end
   end,
-  write_file("sdl_ports_gen.erl", binary_to_list(bbmustache:render(Content,FinalMap)), [append]),
+  write_file(get_erl_filename(), binary_to_list(bbmustache:render(Content,FinalMap)), [append]),
   generate_types_parser_erl(TypeList).
 
 generate_struct_to_bytelist(Members, StructName) ->
@@ -509,9 +509,9 @@ generate_enum_get_atom([E|ElemList], Result, Cnt) ->
   NewLine = bbmustache:render(Line, Map),
   generate_enum_get_atom(ElemList, <<Result/binary, NewLine/binary>>, Cnt+1).
 
-generate_functions_erl([]) -> ok;
-generate_functions_erl([Fun|FunList]) ->
-  #fun_spec{erlang_name=ErlName, params=Params, type_descr=Descr} = Fun,
+generate_functions_erl([], _TypeList) -> ok;
+generate_functions_erl([Fun|FunList], TypeList) ->
+  #fun_spec{erlang_name=ErlName, params=Params, type_descr=Descr, option=Opt} = Fun,
   StrParams = fun_params_to_string(Params),
   VarList = case ["Param"++integer_to_list(I) || I <- lists:seq(1,length(StrParams))] of
               [] -> ["[]"];
@@ -522,15 +522,39 @@ generate_functions_erl([Fun|FunList]) ->
             "{{BodyParams}}"
             "\tResultCall = call_port_owner(?PORT_NAME, [Code, {{Vars}}]),\n">>,
   case Descr of
-    {pointer, _Type} ->
+    {pointer, PtrType} ->
       RetType = pointer;
     _ ->
-      RetType = Descr
+      RetType = Descr,
+      PtrType = undefined
   end,
   RPTypes = [T || {_,T,O} <- Params, lists:member(return, O)],
   case length(RPTypes) of
     0 -> RetParams = "\t\t\tRetParam1;\n";
     _ -> RetParams = generate_fun_return_params_erl([RetType|RPTypes])
+  end,
+  case lists:member(auto_managed, Opt) of
+    true ->
+      case find_type_spec_by_erlname(PtrType, TypeList) of
+        undefined ->
+          GCLines = "\t\t\tcase RetParamAux of\n"
+                    "\t\t\t\t{raw_pointer, P} ->\n"
+                    "\t\t\t\t\tRetParam1 = erlang_gc:manage_ptr(?MODULE, delete_"++atom_to_list(PtrType)++", P);\n"
+                    "\t\t\t\tError -> RetParam1 = Error\n"
+                    "\t\t\tend,\n";
+        RetSpec ->
+          Destructor = case [F || {destructor, F}<-RetSpec#type_spec.option] of
+                          [] -> "delete_"++atom_to_list(PtrType);
+                          [D] -> atom_to_list(D)
+                        end,
+          GCLines = "\t\t\tcase RetParamAux of\n"
+                    "\t\t\t\t{raw_pointer, P} ->\n"
+                    "\t\t\t\t\tRetParam1 = erlang_gc:manage_ptr(?MODULE, "++Destructor++", P);\n"
+                    "\t\t\t\tError -> RetParam1 = Error\n"
+                    "\t\t\tend,\n"
+      end;
+    false ->
+      GCLines = "\t\t\tRetParam1 = RetParamAux,\n"
   end,
   if
     (RetType==void) and (length(RPTypes)==0) ->
@@ -553,7 +577,8 @@ generate_functions_erl([Fun|FunList]) ->
         0 ->
           Body2 = <<"\tcase ResultCall of\n"
                     "\t\t{datalist, DataList} ->\n"
-                    "\t\t\t{RetParam1, _R1} = parse_{{RetType}}(DataList),\n"
+                    "\t\t\t{RetParamAux, _R1} = parse_{{RetType}}(DataList),\n"
+                    "{{{GCLines}}}"
                     "{{RetParams}}"
                     "\t\tMsg ->\n"
                     "\t\t\t{error, Msg}\n"
@@ -561,7 +586,8 @@ generate_functions_erl([Fun|FunList]) ->
         _ ->
           Body2 = <<"\tcase ResultCall of\n"
                     "\t\t{datalist, DataList} ->\n"
-                    "\t\t\t{RetParam1, R1} = parse_{{RetType}}(DataList),\n"
+                    "\t\t\t{RetParamAux, R1} = parse_{{RetType}}(DataList),\n"
+                    "{{{GCLines}}}"
                     "{{RetParams}}"
                     "\t\tMsg ->\n"
                     "\t\t\t{error, Msg}\n"
@@ -569,17 +595,18 @@ generate_functions_erl([Fun|FunList]) ->
       end
   end,
 
-  Map = #{"ErlName"=>atom_to_list(ErlName),
-          "HParams"=>string:join(StrParams, ", "),
-          "BodyParams"=>generate_body_parameters_to_send(Params, StrParams),
-          "Code"=>integer_to_list(get_fun_code(atom_to_list(ErlName))),
-          "Vars"=>string:join(VarList,", "),
-          "RetType"=>atom_to_list(RetType),
-          "RetParams"=>RetParams},
+  Map = #{"ErlName" => atom_to_list(ErlName),
+          "HParams" => string:join(StrParams, ", "),
+          "BodyParams" => generate_body_parameters_to_send(Params, StrParams),
+          "Code" => integer_to_list(get_fun_code(atom_to_list(ErlName))),
+          "Vars" => string:join(VarList,", "),
+          "RetType" => atom_to_list(RetType),
+          "RetParams" => RetParams,
+          "GCLines" => GCLines},
   FunContent = bbmustache:render(<<Header/binary, Body1/binary, Body2/binary>>, Map),
   FunContentArrays = generate_fun_with_array_size_erl(ErlName, Params, Descr),
   write_file(get_erl_filename(), <<FunContent/binary, FunContentArrays/binary>>, [append]),
-  generate_functions_erl(FunList).
+  generate_functions_erl(FunList, TypeList).
 
 fun_params_to_string(Params) ->
   fun_params_to_string(Params, "", 1).
@@ -766,7 +793,7 @@ generate_native_types_parser_c() ->
   ok.
 
 generate_types_parser_c([]) ->
-  write_file("sdl_ports_gen.c", ?SEPARATOR_C, [append]);
+  write_file(get_c_filename(), ?SEPARATOR_C, [append]);
 generate_types_parser_c([TypeSpec|TypeList]) ->
   %io:format("Type spec: ~p~n", [Type]),
   #type_spec{erlang_name= ErlName, c_name=CName, type_descr=TypeDescr} = TypeSpec,
@@ -868,7 +895,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
           Content = <<"">>
       end
   end,
-  write_file("sdl_ports_gen.c", binary_to_list(bbmustache:render(Content,ContentMap)), [append]),
+  write_file(get_c_filename(), binary_to_list(bbmustache:render(Content,ContentMap)), [append]),
   generate_types_parser_c(TypeList).
 
 generate_read_struct_c(MemberList) ->
@@ -1082,15 +1109,15 @@ generate_main_c() ->
   Content = unicode:characters_to_list(File),
   write_file(get_c_filename(), Content, [append]).
 
-% find_type_spec_by_erlname(_Type, []) -> nil;
-% find_type_spec_by_erlname(Type, [TS|TypeSpecList]) ->
-%   {_,Name,_,_,_} = TS,
-%   case Type==Name of
-%     true -> TS;
-%     false -> find_type_spec_by_erlname(Type, TypeSpecList)
-%   end.
-%
-% find_type_spec_by_cname(_Type, []) -> nil;
+find_type_spec_by_erlname(_Type, []) -> undefined;
+find_type_spec_by_erlname(Type, [TS|TypeSpecList]) ->
+  {_,Name,_,_,_} = TS,
+  case Type==Name of
+    true -> TS;
+    false -> find_type_spec_by_erlname(Type, TypeSpecList)
+  end.
+
+% find_type_spec_by_cname(_Type, []) -> undefined;
 % find_type_spec_by_cname(Type, [TS|TypeSpecList]) ->
 %   {_,_,Name,_,_} = TS,
 %   case Type==Name of
@@ -1098,7 +1125,6 @@ generate_main_c() ->
 %     false -> find_type_spec_by_cname(Type, TypeSpecList)
 %   end.
 
-% TODO hacer tambien un read_file para simplificar el codigo
 write_file(File, Content, Modes) ->
   case file:write_file(File, Content, Modes) of
     ok -> ok;

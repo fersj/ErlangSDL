@@ -44,8 +44,14 @@ pointer_deref_{{ErlName}}_array_assign(Pointer, Index, Value) ->
 new_{{ErlName}}() ->
 	new_int().
 
+new_{{ErlName}}_auto() ->
+	new_int_auto().
+
 new_{{ErlName}}_array(Size) ->
 	new_int_array(Size).
+
+new_{{ErlName}}_array_auto(Size) ->
+	new_int_array_auto(Size).
 
 delete_{{ErlName}}(Pointer) ->
 	delete_int(Pointer).

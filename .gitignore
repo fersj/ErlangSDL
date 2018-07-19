@@ -5,3 +5,4 @@
 *.beam
 ports/sdl_handler
 sdl_generator/sdl_ports_gen
+sdl_generator/generated/sdl_ports_gen

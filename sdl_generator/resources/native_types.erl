@@ -108,6 +108,14 @@ new_int8() ->
 			{error, Msg}
 	end.
 
+new_int8_auto() ->
+	Pointer = new_int8(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int8, P);
+		Error -> Error
+	end.
+
 new_int8_array(Size) ->
 	Code = int_to_bytelist(6),
 	SList = int_to_bytelist(Size),
@@ -117,6 +125,14 @@ new_int8_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int8_array_auto(Size) ->
+	Pointer = new_int8_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int8, P);
+		Error -> Error
 	end.
 
 delete_int8(Pointer) ->
@@ -204,6 +220,14 @@ new_int16() ->
 			{error, Msg}
 	end.
 
+new_int16_auto() ->
+	Pointer = new_int16(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int16, P);
+		Error -> Error
+	end.
+
 new_int16_array(Size) ->
 	Code = int_to_bytelist(13),
 	SList = int_to_bytelist(Size),
@@ -213,6 +237,14 @@ new_int16_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int16_array_auto(Size) ->
+	Pointer = new_int16_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int16, P);
+		Error -> Error
 	end.
 
 delete_int16(Pointer) ->
@@ -300,6 +332,14 @@ new_int32() ->
 			{error, Msg}
 	end.
 
+new_int32_auto() ->
+	Pointer = new_int32(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int32, P);
+		Error -> Error
+	end.
+
 new_int32_array(Size) ->
 	Code = int_to_bytelist(20),
 	SList = int_to_bytelist(Size),
@@ -309,6 +349,14 @@ new_int32_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int32_array_auto(Size) ->
+	Pointer = new_int32_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int32, P);
+		Error -> Error
 	end.
 
 delete_int32(Pointer) ->
@@ -396,6 +444,14 @@ new_int64() ->
 			{error, Msg}
 	end.
 
+new_int64_auto() ->
+	Pointer = new_int64(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int64, P);
+		Error -> Error
+	end.
+
 new_int64_array(Size) ->
 	Code = int_to_bytelist(27),
 	SList = int_to_bytelist(Size),
@@ -405,6 +461,14 @@ new_int64_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int64_array_auto(Size) ->
+	Pointer = new_int64_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int64, P);
+		Error -> Error
 	end.
 
 delete_int64(Pointer) ->
@@ -449,8 +513,14 @@ pointer_deref_int_array_assign(Pointer, Index, Value) ->
 new_int() ->
 	new_int32().
 
+new_int_auto() ->
+	new_int32_auto().
+
 new_int_array(Size) ->
 	new_int32_array(Size).
+
+new_int_array_auto(Size) ->
+	new_int32_array_auto(Size).
 
 delete_int(Pointer) ->
 	delete_int32(Pointer).
@@ -562,6 +632,14 @@ new_float() ->
 			{error, Msg}
 	end.
 
+new_float_auto() ->
+	Pointer = new_float(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_float, P);
+		Error -> Error
+	end.
+
 new_float_array(Size) ->
 	Code = int_to_bytelist(34),
 	SList = int_to_bytelist(Size),
@@ -571,6 +649,14 @@ new_float_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_float_array_auto(Size) ->
+	Pointer = new_float_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_float, P);
+		Error -> Error
 	end.
 
 delete_float(Pointer) ->
@@ -688,6 +774,14 @@ new_double() ->
 			{error, Msg}
 	end.
 
+new_double_auto() ->
+	Pointer = new_double(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_double, P);
+		Error -> Error
+	end.
+
 new_double_array(Size) ->
 	Code = int_to_bytelist(41),
 	SList = int_to_bytelist(Size),
@@ -697,6 +791,14 @@ new_double_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_double_array_auto(Size) ->
+	Pointer = new_double_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_double, P);
+		Error -> Error
 	end.
 
 delete_double(Pointer) ->
@@ -836,6 +938,14 @@ new_string() ->
 			{error, Msg}
 	end.
 
+new_string_auto() ->
+	Pointer = new_string(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_string, P);
+		Error -> Error
+	end.
+
 new_string_array(Size) ->
 	Code = int_to_bytelist(48),
 	SList = int_to_bytelist(Size),
@@ -845,6 +955,14 @@ new_string_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_string_array_auto(Size) ->
+	Pointer = new_string_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_string, P);
+		Error -> Error
 	end.
 
 delete_string(Pointer) ->
@@ -894,14 +1012,19 @@ string_array_to_list(Pointer, Size) ->
 
 % ---- Pointer ----
 
+get_ptr({managed_pointer, _} = Managed) ->
+	erlang_gc:get_wrapped_pointer(Managed);
+get_ptr({raw_pointer, Ptr}) -> Ptr.
+
 pointer_to_bytelist(Value) ->
-	int_to_bytelist(Value, 64).
+	int_to_bytelist(get_ptr(Value), 64).
 
 bytelist_to_pointer(Bytelist) ->
-	bytelist_to_int(Bytelist, 64).
+	{raw_pointer, bytelist_to_int(Bytelist, 64)}.
 
 parse_pointer(Bytelist) ->
-	parse_int(Bytelist, 64).
+	{RawPtr, RestBytes} = parse_int(Bytelist, 64),
+	{{raw_pointer, RawPtr}, RestBytes}.
 
 pointer_array_to_bytelist(List, Size) when length(List)==Size ->
 	[pointer_to_bytelist(E) || E<-List].
@@ -980,6 +1103,14 @@ new_pointer() ->
 			{error, Msg}
 	end.
 
+new_pointer_auto() ->
+	Pointer = new_pointer(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_pointer, P);
+		Error -> Error
+	end.
+
 new_pointer_array(Size) ->
 	Code = int_to_bytelist(55),
 	SList = int_to_bytelist(Size),
@@ -989,6 +1120,14 @@ new_pointer_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_pointer_array_auto(Size) ->
+	Pointer = new_pointer_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_pointer, P);
+		Error -> Error
 	end.
 
 delete_pointer(Pointer) ->

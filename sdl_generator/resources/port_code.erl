@@ -46,7 +46,7 @@ init_port() ->
 	Pid = spawn(fun() -> start_port_owner("{{CHandlerPath}}") end),
 	%io:format("PID Owner: ~w~n", [Pid]),
 	register(?PORT_NAME, Pid),
-	%code:ensure_loaded(erlang_gc),
+	code:ensure_loaded(erlang_gc),
 	io:format("{{PortName}} initialized.~n"),
 	ok.
 

@@ -1,6 +1,6 @@
 {spec,
   % {GENERATOR_INFO, erl_file_gen, hrl_file_gen, erl_module_name, port_name,  c_file_gen, c_handler_file, c_lib_import}
-  {generator_info, "sdl_ports_gen.erl", "sdl_ports_gen.hrl", "sdl_ports_gen", "sdl_port", "sdl_ports_gen.c", "../sdl_generator/sdl_ports_gen", "SDL2/SDL.h"},
+  {generator_info, "generated/sdl_ports_gen.erl", "generated/sdl_ports_gen.hrl", "sdl_ports_gen", "sdl_port", "generated/sdl_ports_gen.c", "../sdl_generator/generated/sdl_ports_gen", "SDL2/SDL.h"},
   {erlang_header,
 "-compile(export_all)."
   },
@@ -130,7 +130,7 @@ int max (int *array, int size) {
         {struct_member, clip_rect, "clip_rect", rect, [read_only]},
         {struct_member, map, "map", {pointer, blit_map}, [internal]},
         {struct_member, refcount, "refcount", int, []}
-      ]}, []},
+      ]}, [{destructor, free_surface}]},
     {type_spec, scancode, "SDL_Scancode",
       {enum, [
         {scancode_unknown, "SDL_SCANCODE_UNKNOWN", 0},
@@ -662,7 +662,7 @@ int max (int *array, int size) {
       {param_spec, int, []},
       {param_spec, uint32, []}
       ],
-      {pointer, window}, []},
+      {pointer, window}, [auto_managed]},
     {fun_spec, get_window_surface, "SDL_GetWindowSurface", [
       {param_spec, {pointer, window}, []}
       ],
@@ -670,7 +670,7 @@ int max (int *array, int size) {
     {fun_spec, load_bmp, "SDL_LoadBMP", [
       {param_spec, string, [const]}
       ],
-      {pointer, surface}, []},
+      {pointer, surface}, [auto_managed]},
     {fun_spec, free_surface, "SDL_FreeSurface", [
       {param_spec, {pointer, surface}, []}
       ],

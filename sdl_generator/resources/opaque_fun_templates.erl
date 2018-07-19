@@ -25,6 +25,9 @@ parse_{{ErlName}}_array(Bytelist, Size) ->
 new_{{ErlName}}_array(Size) ->
 	new_pointer_array(Size).
 
+new_{{ErlName}}_array_auto(Size) ->
+	new_pointer_array_auto(Size).
+
 delete_{{ErlName}}(Pointer) ->
 	delete_pointer(Pointer).
 

@@ -60,7 +60,7 @@
 -export([main/1, start/0]).
 
 %% API include
--include("_checkouts/sdl_generator/sdl_ports_gen.hrl").
+-include("../sdl_generator/generated/sdl_ports_gen.hrl").
 
 -define(SCREEN_WIDTH, 1280).
 -define(SCREEN_HEIGHT, 800).

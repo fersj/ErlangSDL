@@ -31,8 +31,14 @@ pointer_deref_{{ErlName}}_array_assign(Pointer, Index, Value) ->
 new_{{ErlName}}() ->
 	new_string().
 
+new_{{ErlName}}_auto() ->
+	new_string_auto().
+
 new_{{ErlName}}_array(Size) ->
 	new_string_array(Size).
+
+new_{{ErlName}}_array_auto(Size) ->
+	new_string_array_auto(Size).
 
 delete_{{ErlName}}(Pointer) ->
 	delete_string(Pointer).
@@ -42,3 +48,4 @@ list_to_{{ErlName}}_array(List) ->
 
 {{ErlName}}_array_to_list(Pointer, Size) ->
 	string_array_to_list(Pointer, Size, {{Desc}}).
+

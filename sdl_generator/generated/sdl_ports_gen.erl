@@ -835,10 +835,10 @@ call_port_owner(PortOwner, List) ->
 	end.
 
 init_port() ->
-	Pid = spawn(fun() -> start_port_owner("../sdl_generator/sdl_ports_gen") end),
+	Pid = spawn(fun() -> start_port_owner("../sdl_generator/generated/sdl_ports_gen") end),
 	%io:format("PID Owner: ~w~n", [Pid]),
 	register(?PORT_NAME, Pid),
-	%code:ensure_loaded(erlang_gc),
+	code:ensure_loaded(erlang_gc),
 	io:format("sdl_port initialized.~n"),
 	ok.
 
@@ -952,6 +952,14 @@ new_int8() ->
 			{error, Msg}
 	end.
 
+new_int8_auto() ->
+	Pointer = new_int8(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int8, P);
+		Error -> Error
+	end.
+
 new_int8_array(Size) ->
 	Code = int_to_bytelist(6),
 	SList = int_to_bytelist(Size),
@@ -961,6 +969,14 @@ new_int8_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int8_array_auto(Size) ->
+	Pointer = new_int8_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int8, P);
+		Error -> Error
 	end.
 
 delete_int8(Pointer) ->
@@ -1048,6 +1064,14 @@ new_int16() ->
 			{error, Msg}
 	end.
 
+new_int16_auto() ->
+	Pointer = new_int16(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int16, P);
+		Error -> Error
+	end.
+
 new_int16_array(Size) ->
 	Code = int_to_bytelist(13),
 	SList = int_to_bytelist(Size),
@@ -1057,6 +1081,14 @@ new_int16_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int16_array_auto(Size) ->
+	Pointer = new_int16_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int16, P);
+		Error -> Error
 	end.
 
 delete_int16(Pointer) ->
@@ -1144,6 +1176,14 @@ new_int32() ->
 			{error, Msg}
 	end.
 
+new_int32_auto() ->
+	Pointer = new_int32(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int32, P);
+		Error -> Error
+	end.
+
 new_int32_array(Size) ->
 	Code = int_to_bytelist(20),
 	SList = int_to_bytelist(Size),
@@ -1153,6 +1193,14 @@ new_int32_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int32_array_auto(Size) ->
+	Pointer = new_int32_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int32, P);
+		Error -> Error
 	end.
 
 delete_int32(Pointer) ->
@@ -1240,6 +1288,14 @@ new_int64() ->
 			{error, Msg}
 	end.
 
+new_int64_auto() ->
+	Pointer = new_int64(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int64, P);
+		Error -> Error
+	end.
+
 new_int64_array(Size) ->
 	Code = int_to_bytelist(27),
 	SList = int_to_bytelist(Size),
@@ -1249,6 +1305,14 @@ new_int64_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_int64_array_auto(Size) ->
+	Pointer = new_int64_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_int64, P);
+		Error -> Error
 	end.
 
 delete_int64(Pointer) ->
@@ -1293,8 +1357,14 @@ pointer_deref_int_array_assign(Pointer, Index, Value) ->
 new_int() ->
 	new_int32().
 
+new_int_auto() ->
+	new_int32_auto().
+
 new_int_array(Size) ->
 	new_int32_array(Size).
+
+new_int_array_auto(Size) ->
+	new_int32_array_auto(Size).
 
 delete_int(Pointer) ->
 	delete_int32(Pointer).
@@ -1406,6 +1476,14 @@ new_float() ->
 			{error, Msg}
 	end.
 
+new_float_auto() ->
+	Pointer = new_float(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_float, P);
+		Error -> Error
+	end.
+
 new_float_array(Size) ->
 	Code = int_to_bytelist(34),
 	SList = int_to_bytelist(Size),
@@ -1415,6 +1493,14 @@ new_float_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_float_array_auto(Size) ->
+	Pointer = new_float_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_float, P);
+		Error -> Error
 	end.
 
 delete_float(Pointer) ->
@@ -1532,6 +1618,14 @@ new_double() ->
 			{error, Msg}
 	end.
 
+new_double_auto() ->
+	Pointer = new_double(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_double, P);
+		Error -> Error
+	end.
+
 new_double_array(Size) ->
 	Code = int_to_bytelist(41),
 	SList = int_to_bytelist(Size),
@@ -1541,6 +1635,14 @@ new_double_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_double_array_auto(Size) ->
+	Pointer = new_double_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_double, P);
+		Error -> Error
 	end.
 
 delete_double(Pointer) ->
@@ -1680,6 +1782,14 @@ new_string() ->
 			{error, Msg}
 	end.
 
+new_string_auto() ->
+	Pointer = new_string(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_string, P);
+		Error -> Error
+	end.
+
 new_string_array(Size) ->
 	Code = int_to_bytelist(48),
 	SList = int_to_bytelist(Size),
@@ -1689,6 +1799,14 @@ new_string_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_string_array_auto(Size) ->
+	Pointer = new_string_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_string, P);
+		Error -> Error
 	end.
 
 delete_string(Pointer) ->
@@ -1738,14 +1856,19 @@ string_array_to_list(Pointer, Size) ->
 
 % ---- Pointer ----
 
+get_ptr({managed_pointer, _} = Managed) ->
+	erlang_gc:get_wrapped_pointer(Managed);
+get_ptr({raw_pointer, Ptr}) -> Ptr.
+
 pointer_to_bytelist(Value) ->
-	int_to_bytelist(Value, 64).
+	int_to_bytelist(get_ptr(Value), 64).
 
 bytelist_to_pointer(Bytelist) ->
-	bytelist_to_int(Bytelist, 64).
+	{raw_pointer, bytelist_to_int(Bytelist, 64)}.
 
 parse_pointer(Bytelist) ->
-	parse_int(Bytelist, 64).
+	{RawPtr, RestBytes} = parse_int(Bytelist, 64),
+	{{raw_pointer, RawPtr}, RestBytes}.
 
 pointer_array_to_bytelist(List, Size) when length(List)==Size ->
 	[pointer_to_bytelist(E) || E<-List].
@@ -1824,6 +1947,14 @@ new_pointer() ->
 			{error, Msg}
 	end.
 
+new_pointer_auto() ->
+	Pointer = new_pointer(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_pointer, P);
+		Error -> Error
+	end.
+
 new_pointer_array(Size) ->
 	Code = int_to_bytelist(55),
 	SList = int_to_bytelist(Size),
@@ -1833,6 +1964,14 @@ new_pointer_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_pointer_array_auto(Size) ->
+	Pointer = new_pointer_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_pointer, P);
+		Error -> Error
 	end.
 
 delete_pointer(Pointer) ->
@@ -1958,6 +2097,14 @@ new_arrayA() ->
 			{error, Msg}
 	end.
 
+new_arrayA_auto() ->
+	Pointer = new_arrayA(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_arrayA, P);
+		Error -> Error
+	end.
+
 new_arrayA_array(Size) ->
 	Code = int_to_bytelist(62),
 	SList = int_to_bytelist(Size),
@@ -1967,6 +2114,14 @@ new_arrayA_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_arrayA_array_auto(Size) ->
+	Pointer = new_arrayA_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_arrayA, P);
+		Error -> Error
 	end.
 
 delete_arrayA(Pointer) ->
@@ -2136,6 +2291,14 @@ new_arrayB() ->
 			{error, Msg}
 	end.
 
+new_arrayB_auto() ->
+	Pointer = new_arrayB(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_arrayB, P);
+		Error -> Error
+	end.
+
 new_arrayB_array(Size) ->
 	Code = int_to_bytelist(73),
 	SList = int_to_bytelist(Size),
@@ -2145,6 +2308,14 @@ new_arrayB_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_arrayB_array_auto(Size) ->
+	Pointer = new_arrayB_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_arrayB, P);
+		Error -> Error
 	end.
 
 delete_arrayB(Pointer) ->
@@ -2317,6 +2488,14 @@ new_arrayC() ->
 			{error, Msg}
 	end.
 
+new_arrayC_auto() ->
+	Pointer = new_arrayC(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_arrayC, P);
+		Error -> Error
+	end.
+
 new_arrayC_array(Size) ->
 	Code = int_to_bytelist(84),
 	SList = int_to_bytelist(Size),
@@ -2326,6 +2505,14 @@ new_arrayC_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_arrayC_array_auto(Size) ->
+	Pointer = new_arrayC_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_arrayC, P);
+		Error -> Error
 	end.
 
 delete_arrayC(Pointer) ->
@@ -2471,8 +2658,14 @@ pointer_deref_uint64_array_assign(Pointer, Index, Value) ->
 new_uint64() ->
 	new_int64().
 
+new_uint64_auto() ->
+	new_int64_auto().
+
 new_uint64_array(Size) ->
 	new_int64_array(Size).
+
+new_uint64_array_auto(Size) ->
+	new_int64_array_auto(Size).
 
 delete_uint64(Pointer) ->
 	delete_int64(Pointer).
@@ -2516,8 +2709,14 @@ pointer_deref_uint32_array_assign(Pointer, Index, Value) ->
 new_uint32() ->
 	new_int32().
 
+new_uint32_auto() ->
+	new_int32_auto().
+
 new_uint32_array(Size) ->
 	new_int32_array(Size).
+
+new_uint32_array_auto(Size) ->
+	new_int32_array_auto(Size).
 
 delete_uint32(Pointer) ->
 	delete_int32(Pointer).
@@ -2561,8 +2760,14 @@ pointer_deref_uint16_array_assign(Pointer, Index, Value) ->
 new_uint16() ->
 	new_int16().
 
+new_uint16_auto() ->
+	new_int16_auto().
+
 new_uint16_array(Size) ->
 	new_int16_array(Size).
+
+new_uint16_array_auto(Size) ->
+	new_int16_array_auto(Size).
 
 delete_uint16(Pointer) ->
 	delete_int16(Pointer).
@@ -2606,8 +2811,14 @@ pointer_deref_uint8_array_assign(Pointer, Index, Value) ->
 new_uint8() ->
 	new_int8().
 
+new_uint8_auto() ->
+	new_int8_auto().
+
 new_uint8_array(Size) ->
 	new_int8_array(Size).
+
+new_uint8_array_auto(Size) ->
+	new_int8_array_auto(Size).
 
 delete_uint8(Pointer) ->
 	delete_int8(Pointer).
@@ -2651,8 +2862,14 @@ pointer_deref_sint64_array_assign(Pointer, Index, Value) ->
 new_sint64() ->
 	new_int64().
 
+new_sint64_auto() ->
+	new_int64_auto().
+
 new_sint64_array(Size) ->
 	new_int64_array(Size).
+
+new_sint64_array_auto(Size) ->
+	new_int64_array_auto(Size).
 
 delete_sint64(Pointer) ->
 	delete_int64(Pointer).
@@ -2696,8 +2913,14 @@ pointer_deref_sint32_array_assign(Pointer, Index, Value) ->
 new_sint32() ->
 	new_int32().
 
+new_sint32_auto() ->
+	new_int32_auto().
+
 new_sint32_array(Size) ->
 	new_int32_array(Size).
+
+new_sint32_array_auto(Size) ->
+	new_int32_array_auto(Size).
 
 delete_sint32(Pointer) ->
 	delete_int32(Pointer).
@@ -2741,8 +2964,14 @@ pointer_deref_sint16_array_assign(Pointer, Index, Value) ->
 new_sint16() ->
 	new_int16().
 
+new_sint16_auto() ->
+	new_int16_auto().
+
 new_sint16_array(Size) ->
 	new_int16_array(Size).
+
+new_sint16_array_auto(Size) ->
+	new_int16_array_auto(Size).
 
 delete_sint16(Pointer) ->
 	delete_int16(Pointer).
@@ -2786,8 +3015,14 @@ pointer_deref_sint8_array_assign(Pointer, Index, Value) ->
 new_sint8() ->
 	new_int8().
 
+new_sint8_auto() ->
+	new_int8_auto().
+
 new_sint8_array(Size) ->
 	new_int8_array(Size).
+
+new_sint8_array_auto(Size) ->
+	new_int8_array_auto(Size).
 
 delete_sint8(Pointer) ->
 	delete_int8(Pointer).
@@ -2824,6 +3059,9 @@ parse_window_array(Bytelist, Size) ->
 
 new_window_array(Size) ->
 	new_pointer_array(Size).
+
+new_window_array_auto(Size) ->
+	new_pointer_array_auto(Size).
 
 delete_window(Pointer) ->
 	delete_pointer(Pointer).
@@ -2934,6 +3172,14 @@ new_color() ->
 			{error, Msg}
 	end.
 
+new_color_auto() ->
+	Pointer = new_color(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_color, P);
+		Error -> Error
+	end.
+
 new_color_array(Size) ->
 	Code = int_to_bytelist(97),
 	SList = int_to_bytelist(Size),
@@ -2943,6 +3189,14 @@ new_color_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_color_array_auto(Size) ->
+	Pointer = new_color_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_color, P);
+		Error -> Error
 	end.
 
 delete_color(Pointer) ->
@@ -3164,6 +3418,14 @@ new_palette() ->
 			{error, Msg}
 	end.
 
+new_palette_auto() ->
+	Pointer = new_palette(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_palette, P);
+		Error -> Error
+	end.
+
 new_palette_array(Size) ->
 	Code = int_to_bytelist(112),
 	SList = int_to_bytelist(Size),
@@ -3173,6 +3435,14 @@ new_palette_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_palette_array_auto(Size) ->
+	Pointer = new_palette_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_palette, P);
+		Error -> Error
 	end.
 
 delete_palette(Pointer) ->
@@ -3436,6 +3706,14 @@ new_pixel_format() ->
 			{error, Msg}
 	end.
 
+new_pixel_format_auto() ->
+	Pointer = new_pixel_format(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_pixel_format, P);
+		Error -> Error
+	end.
+
 new_pixel_format_array(Size) ->
 	Code = int_to_bytelist(127),
 	SList = int_to_bytelist(Size),
@@ -3445,6 +3723,14 @@ new_pixel_format_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_pixel_format_array_auto(Size) ->
+	Pointer = new_pixel_format_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_pixel_format, P);
+		Error -> Error
 	end.
 
 delete_pixel_format(Pointer) ->
@@ -3988,6 +4274,14 @@ new_rect() ->
 			{error, Msg}
 	end.
 
+new_rect_auto() ->
+	Pointer = new_rect(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_rect, P);
+		Error -> Error
+	end.
+
 new_rect_array(Size) ->
 	Code = int_to_bytelist(170),
 	SList = int_to_bytelist(Size),
@@ -3997,6 +4291,14 @@ new_rect_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_rect_array_auto(Size) ->
+	Pointer = new_rect_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_rect, P);
+		Error -> Error
 	end.
 
 delete_rect(Pointer) ->
@@ -4145,6 +4447,9 @@ parse_blit_map_array(Bytelist, Size) ->
 new_blit_map_array(Size) ->
 	new_pointer_array(Size).
 
+new_blit_map_array_auto(Size) ->
+	new_pointer_array_auto(Size).
+
 delete_blit_map(Pointer) ->
 	delete_pointer(Pointer).
 
@@ -4278,6 +4583,14 @@ new_surface() ->
 			{error, Msg}
 	end.
 
+new_surface_auto() ->
+	Pointer = new_surface(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_surface, P);
+		Error -> Error
+	end.
+
 new_surface_array(Size) ->
 	Code = int_to_bytelist(185),
 	SList = int_to_bytelist(Size),
@@ -4287,6 +4600,14 @@ new_surface_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_surface_array_auto(Size) ->
+	Pointer = new_surface_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_surface, P);
+		Error -> Error
 	end.
 
 delete_surface(Pointer) ->
@@ -5136,8 +5457,14 @@ pointer_deref_scancode_array_assign(Pointer, Index, Value) ->
 new_scancode() ->
 	new_int().
 
+new_scancode_auto() ->
+	new_int_auto().
+
 new_scancode_array(Size) ->
 	new_int_array(Size).
+
+new_scancode_array_auto(Size) ->
+	new_int_array_auto(Size).
 
 delete_scancode(Pointer) ->
 	delete_int(Pointer).
@@ -5191,8 +5518,14 @@ pointer_deref_keycode_array_assign(Pointer, Index, Value) ->
 new_keycode() ->
 	new_sint32().
 
+new_keycode_auto() ->
+	new_sint32_auto().
+
 new_keycode_array(Size) ->
 	new_sint32_array(Size).
+
+new_keycode_array_auto(Size) ->
+	new_sint32_array_auto(Size).
 
 delete_keycode(Pointer) ->
 	delete_sint32(Pointer).
@@ -5303,6 +5636,14 @@ new_keysym() ->
 			{error, Msg}
 	end.
 
+new_keysym_auto() ->
+	Pointer = new_keysym(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_keysym, P);
+		Error -> Error
+	end.
+
 new_keysym_array(Size) ->
 	Code = int_to_bytelist(216),
 	SList = int_to_bytelist(Size),
@@ -5312,6 +5653,14 @@ new_keysym_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_keysym_array_auto(Size) ->
+	Pointer = new_keysym_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_keysym, P);
+		Error -> Error
 	end.
 
 delete_keysym(Pointer) ->
@@ -5466,8 +5815,14 @@ pointer_deref_joystick_id_array_assign(Pointer, Index, Value) ->
 new_joystick_id() ->
 	new_sint32().
 
+new_joystick_id_auto() ->
+	new_sint32_auto().
+
 new_joystick_id_array(Size) ->
 	new_sint32_array(Size).
+
+new_joystick_id_array_auto(Size) ->
+	new_sint32_array_auto(Size).
 
 delete_joystick_id(Pointer) ->
 	delete_sint32(Pointer).
@@ -5504,6 +5859,9 @@ parse_syswm_msg_array(Bytelist, Size) ->
 
 new_syswm_msg_array(Size) ->
 	new_pointer_array(Size).
+
+new_syswm_msg_array_auto(Size) ->
+	new_pointer_array_auto(Size).
 
 delete_syswm_msg(Pointer) ->
 	delete_pointer(Pointer).
@@ -5547,8 +5905,14 @@ pointer_deref_touch_id_array_assign(Pointer, Index, Value) ->
 new_touch_id() ->
 	new_sint64().
 
+new_touch_id_auto() ->
+	new_sint64_auto().
+
 new_touch_id_array(Size) ->
 	new_sint64_array(Size).
+
+new_touch_id_array_auto(Size) ->
+	new_sint64_array_auto(Size).
 
 delete_touch_id(Pointer) ->
 	delete_sint64(Pointer).
@@ -5592,8 +5956,14 @@ pointer_deref_finger_id_array_assign(Pointer, Index, Value) ->
 new_finger_id() ->
 	new_sint64().
 
+new_finger_id_auto() ->
+	new_sint64_auto().
+
 new_finger_id_array(Size) ->
 	new_sint64_array(Size).
+
+new_finger_id_array_auto(Size) ->
+	new_sint64_array_auto(Size).
 
 delete_finger_id(Pointer) ->
 	delete_sint64(Pointer).
@@ -5637,8 +6007,14 @@ pointer_deref_gesture_id_array_assign(Pointer, Index, Value) ->
 new_gesture_id() ->
 	new_sint64().
 
+new_gesture_id_auto() ->
+	new_sint64_auto().
+
 new_gesture_id_array(Size) ->
 	new_sint64_array(Size).
+
+new_gesture_id_array_auto(Size) ->
+	new_sint64_array_auto(Size).
 
 delete_gesture_id(Pointer) ->
 	delete_sint64(Pointer).
@@ -5743,6 +6119,14 @@ new_common_event() ->
 			{error, Msg}
 	end.
 
+new_common_event_auto() ->
+	Pointer = new_common_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_common_event, P);
+		Error -> Error
+	end.
+
 new_common_event_array(Size) ->
 	Code = int_to_bytelist(231),
 	SList = int_to_bytelist(Size),
@@ -5752,6 +6136,14 @@ new_common_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_common_event_array_auto(Size) ->
+	Pointer = new_common_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_common_event, P);
+		Error -> Error
 	end.
 
 delete_common_event(Pointer) ->
@@ -5942,6 +6334,14 @@ new_window_event() ->
 			{error, Msg}
 	end.
 
+new_window_event_auto() ->
+	Pointer = new_window_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_window_event, P);
+		Error -> Error
+	end.
+
 new_window_event_array(Size) ->
 	Code = int_to_bytelist(242),
 	SList = int_to_bytelist(Size),
@@ -5951,6 +6351,14 @@ new_window_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_window_event_array_auto(Size) ->
+	Pointer = new_window_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_window_event, P);
+		Error -> Error
 	end.
 
 delete_window_event(Pointer) ->
@@ -6299,6 +6707,14 @@ new_keyboard_event() ->
 			{error, Msg}
 	end.
 
+new_keyboard_event_auto() ->
+	Pointer = new_keyboard_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_keyboard_event, P);
+		Error -> Error
+	end.
+
 new_keyboard_event_array(Size) ->
 	Code = int_to_bytelist(267),
 	SList = int_to_bytelist(Size),
@@ -6308,6 +6724,14 @@ new_keyboard_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_keyboard_event_array_auto(Size) ->
+	Pointer = new_keyboard_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_keyboard_event, P);
+		Error -> Error
 	end.
 
 delete_keyboard_event(Pointer) ->
@@ -6627,6 +7051,14 @@ new_text_editing_event() ->
 			{error, Msg}
 	end.
 
+new_text_editing_event_auto() ->
+	Pointer = new_text_editing_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_text_editing_event, P);
+		Error -> Error
+	end.
+
 new_text_editing_event_array(Size) ->
 	Code = int_to_bytelist(290),
 	SList = int_to_bytelist(Size),
@@ -6636,6 +7068,14 @@ new_text_editing_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_text_editing_event_array_auto(Size) ->
+	Pointer = new_text_editing_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_text_editing_event, P);
+		Error -> Error
 	end.
 
 delete_text_editing_event(Pointer) ->
@@ -6903,6 +7343,14 @@ new_text_input_event() ->
 			{error, Msg}
 	end.
 
+new_text_input_event_auto() ->
+	Pointer = new_text_input_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_text_input_event, P);
+		Error -> Error
+	end.
+
 new_text_input_event_array(Size) ->
 	Code = int_to_bytelist(309),
 	SList = int_to_bytelist(Size),
@@ -6912,6 +7360,14 @@ new_text_input_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_text_input_event_array_auto(Size) ->
+	Pointer = new_text_input_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_text_input_event, P);
+		Error -> Error
 	end.
 
 delete_text_input_event(Pointer) ->
@@ -7148,6 +7604,14 @@ new_mouse_motion_event() ->
 			{error, Msg}
 	end.
 
+new_mouse_motion_event_auto() ->
+	Pointer = new_mouse_motion_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_mouse_motion_event, P);
+		Error -> Error
+	end.
+
 new_mouse_motion_event_array(Size) ->
 	Code = int_to_bytelist(324),
 	SList = int_to_bytelist(Size),
@@ -7157,6 +7621,14 @@ new_mouse_motion_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_mouse_motion_event_array_auto(Size) ->
+	Pointer = new_mouse_motion_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_mouse_motion_event, P);
+		Error -> Error
 	end.
 
 delete_mouse_motion_event(Pointer) ->
@@ -7508,6 +7980,14 @@ new_mouse_button_event() ->
 			{error, Msg}
 	end.
 
+new_mouse_button_event_auto() ->
+	Pointer = new_mouse_button_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_mouse_button_event, P);
+		Error -> Error
+	end.
+
 new_mouse_button_event_array(Size) ->
 	Code = int_to_bytelist(349),
 	SList = int_to_bytelist(Size),
@@ -7517,6 +7997,14 @@ new_mouse_button_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_mouse_button_event_array_auto(Size) ->
+	Pointer = new_mouse_button_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_mouse_button_event, P);
+		Error -> Error
 	end.
 
 delete_mouse_button_event(Pointer) ->
@@ -7862,6 +8350,14 @@ new_mouse_wheel_event() ->
 			{error, Msg}
 	end.
 
+new_mouse_wheel_event_auto() ->
+	Pointer = new_mouse_wheel_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_mouse_wheel_event, P);
+		Error -> Error
+	end.
+
 new_mouse_wheel_event_array(Size) ->
 	Code = int_to_bytelist(374),
 	SList = int_to_bytelist(Size),
@@ -7871,6 +8367,14 @@ new_mouse_wheel_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_mouse_wheel_event_array_auto(Size) ->
+	Pointer = new_mouse_wheel_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_mouse_wheel_event, P);
+		Error -> Error
 	end.
 
 delete_mouse_wheel_event(Pointer) ->
@@ -8173,6 +8677,14 @@ new_joy_axis_event() ->
 			{error, Msg}
 	end.
 
+new_joy_axis_event_auto() ->
+	Pointer = new_joy_axis_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_axis_event, P);
+		Error -> Error
+	end.
+
 new_joy_axis_event_array(Size) ->
 	Code = int_to_bytelist(395),
 	SList = int_to_bytelist(Size),
@@ -8182,6 +8694,14 @@ new_joy_axis_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_joy_axis_event_array_auto(Size) ->
+	Pointer = new_joy_axis_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_axis_event, P);
+		Error -> Error
 	end.
 
 delete_joy_axis_event(Pointer) ->
@@ -8510,6 +9030,14 @@ new_joy_ball_event() ->
 			{error, Msg}
 	end.
 
+new_joy_ball_event_auto() ->
+	Pointer = new_joy_ball_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_ball_event, P);
+		Error -> Error
+	end.
+
 new_joy_ball_event_array(Size) ->
 	Code = int_to_bytelist(418),
 	SList = int_to_bytelist(Size),
@@ -8519,6 +9047,14 @@ new_joy_ball_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_joy_ball_event_array_auto(Size) ->
+	Pointer = new_joy_ball_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_ball_event, P);
+		Error -> Error
 	end.
 
 delete_joy_ball_event(Pointer) ->
@@ -8864,6 +9400,14 @@ new_joy_hat_event() ->
 			{error, Msg}
 	end.
 
+new_joy_hat_event_auto() ->
+	Pointer = new_joy_hat_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_hat_event, P);
+		Error -> Error
+	end.
+
 new_joy_hat_event_array(Size) ->
 	Code = int_to_bytelist(443),
 	SList = int_to_bytelist(Size),
@@ -8873,6 +9417,14 @@ new_joy_hat_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_joy_hat_event_array_auto(Size) ->
+	Pointer = new_joy_hat_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_hat_event, P);
+		Error -> Error
 	end.
 
 delete_joy_hat_event(Pointer) ->
@@ -9172,6 +9724,14 @@ new_joy_button_event() ->
 			{error, Msg}
 	end.
 
+new_joy_button_event_auto() ->
+	Pointer = new_joy_button_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_button_event, P);
+		Error -> Error
+	end.
+
 new_joy_button_event_array(Size) ->
 	Code = int_to_bytelist(464),
 	SList = int_to_bytelist(Size),
@@ -9181,6 +9741,14 @@ new_joy_button_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_joy_button_event_array_auto(Size) ->
+	Pointer = new_joy_button_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_button_event, P);
+		Error -> Error
 	end.
 
 delete_joy_button_event(Pointer) ->
@@ -9468,6 +10036,14 @@ new_joy_device_event() ->
 			{error, Msg}
 	end.
 
+new_joy_device_event_auto() ->
+	Pointer = new_joy_device_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_device_event, P);
+		Error -> Error
+	end.
+
 new_joy_device_event_array(Size) ->
 	Code = int_to_bytelist(485),
 	SList = int_to_bytelist(Size),
@@ -9477,6 +10053,14 @@ new_joy_device_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_joy_device_event_array_auto(Size) ->
+	Pointer = new_joy_device_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_joy_device_event, P);
+		Error -> Error
 	end.
 
 delete_joy_device_event(Pointer) ->
@@ -9690,6 +10274,14 @@ new_controller_axis_event() ->
 			{error, Msg}
 	end.
 
+new_controller_axis_event_auto() ->
+	Pointer = new_controller_axis_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_controller_axis_event, P);
+		Error -> Error
+	end.
+
 new_controller_axis_event_array(Size) ->
 	Code = int_to_bytelist(498),
 	SList = int_to_bytelist(Size),
@@ -9699,6 +10291,14 @@ new_controller_axis_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_controller_axis_event_array_auto(Size) ->
+	Pointer = new_controller_axis_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_controller_axis_event, P);
+		Error -> Error
 	end.
 
 delete_controller_axis_event(Pointer) ->
@@ -10044,6 +10644,14 @@ new_controller_button_event() ->
 			{error, Msg}
 	end.
 
+new_controller_button_event_auto() ->
+	Pointer = new_controller_button_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_controller_button_event, P);
+		Error -> Error
+	end.
+
 new_controller_button_event_array(Size) ->
 	Code = int_to_bytelist(523),
 	SList = int_to_bytelist(Size),
@@ -10053,6 +10661,14 @@ new_controller_button_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_controller_button_event_array_auto(Size) ->
+	Pointer = new_controller_button_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_controller_button_event, P);
+		Error -> Error
 	end.
 
 delete_controller_button_event(Pointer) ->
@@ -10340,6 +10956,14 @@ new_controller_device_event() ->
 			{error, Msg}
 	end.
 
+new_controller_device_event_auto() ->
+	Pointer = new_controller_device_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_controller_device_event, P);
+		Error -> Error
+	end.
+
 new_controller_device_event_array(Size) ->
 	Code = int_to_bytelist(544),
 	SList = int_to_bytelist(Size),
@@ -10349,6 +10973,14 @@ new_controller_device_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_controller_device_event_array_auto(Size) ->
+	Pointer = new_controller_device_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_controller_device_event, P);
+		Error -> Error
 	end.
 
 delete_controller_device_event(Pointer) ->
@@ -10556,6 +11188,14 @@ new_audio_device_event() ->
 			{error, Msg}
 	end.
 
+new_audio_device_event_auto() ->
+	Pointer = new_audio_device_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_audio_device_event, P);
+		Error -> Error
+	end.
+
 new_audio_device_event_array(Size) ->
 	Code = int_to_bytelist(557),
 	SList = int_to_bytelist(Size),
@@ -10565,6 +11205,14 @@ new_audio_device_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_audio_device_event_array_auto(Size) ->
+	Pointer = new_audio_device_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_audio_device_event, P);
+		Error -> Error
 	end.
 
 delete_audio_device_event(Pointer) ->
@@ -10849,6 +11497,14 @@ new_quit_event() ->
 			{error, Msg}
 	end.
 
+new_quit_event_auto() ->
+	Pointer = new_quit_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_quit_event, P);
+		Error -> Error
+	end.
+
 new_quit_event_array(Size) ->
 	Code = int_to_bytelist(578),
 	SList = int_to_bytelist(Size),
@@ -10858,6 +11514,14 @@ new_quit_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_quit_event_array_auto(Size) ->
+	Pointer = new_quit_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_quit_event, P);
+		Error -> Error
 	end.
 
 delete_quit_event(Pointer) ->
@@ -11039,6 +11703,14 @@ new_user_event() ->
 			{error, Msg}
 	end.
 
+new_user_event_auto() ->
+	Pointer = new_user_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_user_event, P);
+		Error -> Error
+	end.
+
 new_user_event_array(Size) ->
 	Code = int_to_bytelist(589),
 	SList = int_to_bytelist(Size),
@@ -11048,6 +11720,14 @@ new_user_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_user_event_array_auto(Size) ->
+	Pointer = new_user_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_user_event, P);
+		Error -> Error
 	end.
 
 delete_user_event(Pointer) ->
@@ -11312,6 +11992,14 @@ new_syswm_event() ->
 			{error, Msg}
 	end.
 
+new_syswm_event_auto() ->
+	Pointer = new_syswm_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_syswm_event, P);
+		Error -> Error
+	end.
+
 new_syswm_event_array(Size) ->
 	Code = int_to_bytelist(608),
 	SList = int_to_bytelist(Size),
@@ -11321,6 +12009,14 @@ new_syswm_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_syswm_event_array_auto(Size) ->
+	Pointer = new_syswm_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_syswm_event, P);
+		Error -> Error
 	end.
 
 delete_syswm_event(Pointer) ->
@@ -11534,6 +12230,14 @@ new_touch_finger_event() ->
 			{error, Msg}
 	end.
 
+new_touch_finger_event_auto() ->
+	Pointer = new_touch_finger_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_touch_finger_event, P);
+		Error -> Error
+	end.
+
 new_touch_finger_event_array(Size) ->
 	Code = int_to_bytelist(621),
 	SList = int_to_bytelist(Size),
@@ -11543,6 +12247,14 @@ new_touch_finger_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_touch_finger_event_array_auto(Size) ->
+	Pointer = new_touch_finger_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_touch_finger_event, P);
+		Error -> Error
 	end.
 
 delete_touch_finger_event(Pointer) ->
@@ -11894,6 +12606,14 @@ new_multi_gesture_event() ->
 			{error, Msg}
 	end.
 
+new_multi_gesture_event_auto() ->
+	Pointer = new_multi_gesture_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_multi_gesture_event, P);
+		Error -> Error
+	end.
+
 new_multi_gesture_event_array(Size) ->
 	Code = int_to_bytelist(646),
 	SList = int_to_bytelist(Size),
@@ -11903,6 +12623,14 @@ new_multi_gesture_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_multi_gesture_event_array_auto(Size) ->
+	Pointer = new_multi_gesture_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_multi_gesture_event, P);
+		Error -> Error
 	end.
 
 delete_multi_gesture_event(Pointer) ->
@@ -12251,6 +12979,14 @@ new_dollar_gesture_event() ->
 			{error, Msg}
 	end.
 
+new_dollar_gesture_event_auto() ->
+	Pointer = new_dollar_gesture_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_dollar_gesture_event, P);
+		Error -> Error
+	end.
+
 new_dollar_gesture_event_array(Size) ->
 	Code = int_to_bytelist(671),
 	SList = int_to_bytelist(Size),
@@ -12260,6 +12996,14 @@ new_dollar_gesture_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_dollar_gesture_event_array_auto(Size) ->
+	Pointer = new_dollar_gesture_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_dollar_gesture_event, P);
+		Error -> Error
 	end.
 
 delete_dollar_gesture_event(Pointer) ->
@@ -12573,6 +13317,14 @@ new_drop_event() ->
 			{error, Msg}
 	end.
 
+new_drop_event_auto() ->
+	Pointer = new_drop_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_drop_event, P);
+		Error -> Error
+	end.
+
 new_drop_event_array(Size) ->
 	Code = int_to_bytelist(694),
 	SList = int_to_bytelist(Size),
@@ -12582,6 +13334,14 @@ new_drop_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_drop_event_array_auto(Size) ->
+	Pointer = new_drop_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_drop_event, P);
+		Error -> Error
 	end.
 
 delete_drop_event(Pointer) ->
@@ -12731,6 +13491,14 @@ new_event() ->
 			{error, Msg}
 	end.
 
+new_event_auto() ->
+	Pointer = new_event(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_event, P);
+		Error -> Error
+	end.
+
 new_event_array(Size) ->
 	Code = int_to_bytelist(705),
 	SList = int_to_bytelist(Size),
@@ -12740,6 +13508,14 @@ new_event_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_event_array_auto(Size) ->
+	Pointer = new_event_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_event, P);
+		Error -> Error
 	end.
 
 delete_event(Pointer) ->
@@ -13342,7 +14118,8 @@ init(Uint32_1) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_int(DataList),
+			{RetParamAux, _R1} = parse_int(DataList),
+			RetParam1 = RetParamAux,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13369,7 +14146,12 @@ create_window(String_1, Int_2, Int_3, Int_4, Int_5, Uint32_6) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4, Param5, Param6]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_pointer(DataList),
+			{RetParamAux, _R1} = parse_pointer(DataList),
+			case RetParamAux of
+				{raw_pointer, P} ->
+					RetParam1 = erlang_gc:manage_ptr(?MODULE, delete_window, P);
+				Error -> RetParam1 = Error
+			end,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13381,7 +14163,8 @@ get_window_surface(P_Window_1) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_pointer(DataList),
+			{RetParamAux, _R1} = parse_pointer(DataList),
+			RetParam1 = RetParamAux,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13393,7 +14176,12 @@ load_bmp(String_1) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_pointer(DataList),
+			{RetParamAux, _R1} = parse_pointer(DataList),
+			case RetParamAux of
+				{raw_pointer, P} ->
+					RetParam1 = erlang_gc:manage_ptr(?MODULE, free_surface, P);
+				Error -> RetParam1 = Error
+			end,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13419,7 +14207,8 @@ blit_surface(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_int(DataList),
+			{RetParamAux, _R1} = parse_int(DataList),
+			RetParam1 = RetParamAux,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13434,7 +14223,8 @@ blit_scaled(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_int(DataList),
+			{RetParamAux, _R1} = parse_int(DataList),
+			RetParam1 = RetParamAux,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13446,7 +14236,8 @@ update_window_surface(P_Window_1) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_int(DataList),
+			{RetParamAux, _R1} = parse_int(DataList),
+			RetParam1 = RetParamAux,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13482,7 +14273,8 @@ get_error() ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_string(DataList),
+			{RetParamAux, _R1} = parse_string(DataList),
+			RetParam1 = RetParamAux,
 			RetParam1;
 		Msg ->
 			{error, Msg}
@@ -13493,7 +14285,8 @@ poll_event() ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, R1} = parse_int(DataList),
+			{RetParamAux, R1} = parse_int(DataList),
+			RetParam1 = RetParamAux,
 			{RetParam2, _R2} = parse_event(R1),
 			{RetParam1, RetParam2};
 		Msg ->
@@ -13507,7 +14300,8 @@ maxint(P_Int_1, Int_2) ->
 	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2]),
 	case ResultCall of
 		{datalist, DataList} ->
-			{RetParam1, _R1} = parse_int(DataList),
+			{RetParamAux, _R1} = parse_int(DataList),
+			RetParam1 = RetParamAux,
 			RetParam1;
 		Msg ->
 			{error, Msg}

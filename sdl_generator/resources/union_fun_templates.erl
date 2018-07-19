@@ -26,6 +26,14 @@ new_{{ErlName}}() ->
 			{error, Msg}
 	end.
 
+new_{{ErlName}}_auto() ->
+	Pointer = new_{{ErlName}}(),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_{{ErlName}}, P);
+		Error -> Error
+	end.
+
 new_{{ErlName}}_array(Size) ->
 	Code = int_to_bytelist({{CodeNewArray}}),
 	SList = int_to_bytelist(Size),
@@ -35,6 +43,14 @@ new_{{ErlName}}_array(Size) ->
 			bytelist_to_pointer(DataList);
 		Msg ->
 			{error, Msg}
+	end.
+
+new_{{ErlName}}_array_auto(Size) ->
+	Pointer = new_{{ErlName}}_array(Size),
+	case Pointer of
+		{raw_pointer, P} ->
+			erlang_gc:manage_ptr(?MODULE, delete_{{ErlName}}, P);
+		Error -> Error
 	end.
 
 delete_{{ErlName}}(Pointer) ->
