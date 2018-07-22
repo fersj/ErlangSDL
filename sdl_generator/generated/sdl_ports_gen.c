@@ -53,7 +53,9 @@ byte * read_int8(byte *in, int8_t *result) {
 byte * read_int16(byte *in, int16_t *result) {
 	byte *current_in = in;
 
-	*result = (((int16_t)*current_in++) << 8) | ((int16_t)*current_in++);
+	// *result = (((int16_t)*current_in++) << 8) | ((int16_t)*current_in++);
+	*result = (((int16_t)*current_in++) << 8);
+	*result = *result | ((int16_t)*current_in++);
 
 	return current_in;
 }
@@ -61,8 +63,12 @@ byte * read_int16(byte *in, int16_t *result) {
 byte * read_int32(byte *in, int *result) {
 	byte *current_in = in;
 
-	*result = (((int)*current_in++) << 24) | (((int)*current_in++) << 16) |
-						(((int)*current_in++) << 8) | ((int)*current_in++);
+	// *result = (((int)*current_in++) << 24) | (((int)*current_in++) << 16) |
+	// 					(((int)*current_in++) << 8) | ((int)*current_in++);
+	*result = (((int)*current_in++) << 24);
+	*result = *result | (((int)*current_in++) << 16);
+	*result = *result | (((int)*current_in++) << 8);
+	*result = *result | ((int)*current_in++);
 
 	return current_in;
 }
@@ -71,10 +77,19 @@ byte * read_int64(byte *in, int64_t *result) {
 	byte *current_in = in;
 
 	current_in = in;
-	*result = (((int64_t)*current_in++) << 56) | (((int64_t)*current_in++) << 48) |
-				(((int64_t)*current_in++) << 40) | (((int64_t)*current_in++) << 32) |
-				(((int64_t)*current_in++) << 24) | (((int64_t)*current_in++) << 16) |
-				(((int64_t)*current_in++) << 8) | ((int64_t)*current_in++);
+	// *result = (((int64_t)*current_in++) << 56) | (((int64_t)*current_in++) << 48) |
+	// 			(((int64_t)*current_in++) << 40) | (((int64_t)*current_in++) << 32) |
+	// 			(((int64_t)*current_in++) << 24) | (((int64_t)*current_in++) << 16) |
+	// 			(((int64_t)*current_in++) << 8) | ((int64_t)*current_in++);
+	*result = (((int64_t)*current_in++) << 56);
+	*result = *result | (((int64_t)*current_in++) << 48);
+	*result = *result | (((int64_t)*current_in++) << 40);
+	*result = *result | (((int64_t)*current_in++) << 32);
+	*result = *result | (((int64_t)*current_in++) << 24);
+	*result = *result | (((int64_t)*current_in++) << 16);
+	*result = *result | (((int64_t)*current_in++) << 8);
+	*result = *result | ((int64_t)*current_in++);
+	
 	return current_in;
 }
 
@@ -256,7 +271,7 @@ void new_int8_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int8_t *ptr = malloc(sizeof(int8_t));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int8_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -266,7 +281,7 @@ void new_int8_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	int size;
 	current_in = read_int(current_in, &size);
 	int8_t *ptr = malloc(sizeof(int8_t)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int8_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -325,7 +340,7 @@ void new_int16_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int16_t *ptr = malloc(sizeof(int16_t));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int16_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -335,7 +350,7 @@ void new_int16_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	int16_t *ptr = malloc(sizeof(int16_t)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int16_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -392,7 +407,7 @@ void new_int32_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int *ptr = malloc(sizeof(int));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int32_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -402,7 +417,7 @@ void new_int32_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	int *ptr = malloc(sizeof(int)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int32_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -461,7 +476,7 @@ void new_int64_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int64_t *ptr = malloc(sizeof(int64_t));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int64_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -471,7 +486,7 @@ void new_int64_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	int64_t *ptr = malloc(sizeof(int64_t)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int64_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -608,7 +623,7 @@ void new_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	float *ptr = malloc(sizeof(float));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_float_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -618,7 +633,7 @@ void new_float_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	float *ptr = malloc(sizeof(float)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -727,7 +742,7 @@ void new_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	double *ptr = malloc(sizeof(double));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_double_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -737,7 +752,7 @@ void new_double_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	double *ptr = malloc(sizeof(double)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -773,7 +788,7 @@ byte * read_string(byte *in, string *result) {
 byte * write_string(string *str, byte *out, size_t *len) {
 	byte *current_out = out;
 
-	int strsize = (int) strlen(*str);
+	int strsize = (int) strlen((const char *) *str);
 
 	for (long i=0; i<strsize; i++) {
 		*current_out++ = (*str)[i]; (*len)++;
@@ -828,7 +843,7 @@ void pointer_deref_string_assign_Handler(byte *in, size_t len_in, byte *out, siz
 	string *ptr, value;
 	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_string(current_in, &value);
-	strcpy(*ptr, value);
+	strcpy((char *) *ptr, (const char *) value);
 }
 
 void pointer_deref_string_array_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -840,7 +855,7 @@ void pointer_deref_string_array_assign_Handler(byte *in, size_t len_in, byte *ou
 	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_int(current_in, &index);
 	current_in = read_string(current_in, &value);
-	strcpy(ptr[index], value);
+	strcpy((char *) ptr[index], (const char *) value);
 }
 
 void new_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -848,7 +863,7 @@ void new_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	string *ptr = malloc(sizeof(string));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_string_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -858,7 +873,7 @@ void new_string_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	string *ptr = malloc(sizeof(string)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -876,7 +891,7 @@ byte * read_pointer(byte *in, void **result) {
 	byte *current_in = in;
 	uintptr_t p;
 
-	current_in = read_int64(current_in, &p);
+	current_in = read_int64(current_in, (int64_t *) &p);
 	*result = (void *) p;
 
 	return current_in;
@@ -886,7 +901,7 @@ byte * write_pointer(void **pointer, byte *out, size_t *len) {
 	byte *current_out = out;
 	uintptr_t p = (uintptr_t) (*pointer);
 
-	current_out = write_int64(&p, current_out, len);
+	current_out = write_int64((int64_t *) &p, current_out, len);
 
 	return current_out;
 }
@@ -914,7 +929,7 @@ void pointer_deref_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	*len_out = 0; current_in+=4;
 
 	void **ptr;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_out = write_pointer(ptr, current_out, len_out);
 }
 
@@ -924,7 +939,7 @@ void pointer_deref_pointer_array_Handler(byte *in, size_t len_in, byte *out, siz
 
 	void **ptr;
 	int index;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_int(current_in, &index);
 	current_out = write_pointer(&(ptr[index]), current_out, len_out);
 }
@@ -934,7 +949,7 @@ void pointer_deref_pointer_assign_Handler(byte *in, size_t len_in, byte *out, si
 	*len_out = 0; current_in+=4;
 
 	void **ptr, *value;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_pointer(current_in, &value);
 	*ptr = value;
 }
@@ -945,9 +960,9 @@ void pointer_deref_pointer_array_assign_Handler(byte *in, size_t len_in, byte *o
 
 	void **ptr, *value;
 	int index;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_int(current_in, &index);
-	current_in = read_string(current_in, &value);
+	current_in = read_pointer(current_in, &value);
 	ptr[index] = value;
 }
 
@@ -956,7 +971,7 @@ void new_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	void **ptr = malloc(sizeof(void *));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_pointer_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -966,7 +981,7 @@ void new_pointer_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 	int size;
 	current_in = read_int(current_in, &size);
 	void **ptr = malloc(sizeof(void *)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -974,7 +989,7 @@ void delete_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	*len_out = 0; current_in+=4;
 
 	void **ptr;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	free(ptr);
 }
 
@@ -1062,7 +1077,7 @@ void new_arrayA_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	ArrayA *ptr = malloc(sizeof(ArrayA));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_arrayA_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1072,7 +1087,7 @@ void new_arrayA_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	ArrayA *ptr = malloc(sizeof(ArrayA)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_arrayA_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1124,7 +1139,7 @@ byte * read_arrayB(byte *in, ArrayB *result) {
 	byte *current_in = in;
 
 	current_in = read_int(current_in, &(result->id));
-	current_in = read_pointer(current_in, &(result->values));
+	current_in = read_pointer(current_in, (void **) &(result->values));
 
 	return current_in;
 }
@@ -1133,7 +1148,7 @@ byte * write_arrayB(ArrayB *value, byte *out, size_t *len) {
 	byte *current_out = out;
 
 	current_out = write_int(&(value->id), current_out, len);
-	current_out = write_pointer(&(value->values), current_out, len);
+	current_out = write_pointer((void **) &(value->values), current_out, len);
 
 	return current_out;
 }
@@ -1202,7 +1217,7 @@ void new_arrayB_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	ArrayB *ptr = malloc(sizeof(ArrayB));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_arrayB_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1212,7 +1227,7 @@ void new_arrayB_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	ArrayB *ptr = malloc(sizeof(ArrayB)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_arrayB_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1248,7 +1263,7 @@ void arrayB_get_values_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 
 	ArrayB *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->values), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->values), current_out, len_out);
 }
 
 void arrayB_set_values_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1257,14 +1272,14 @@ void arrayB_set_values_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 
 	ArrayB *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->values));
+	current_in = read_pointer(current_in, (void **) &(ptr->values));
 }
 
 byte * read_arrayC(byte *in, ArrayC *result) {
 	byte *current_in = in;
 
 	current_in = read_int(current_in, &(result->id));
-	current_in = read_pointer(current_in, &(result->values));
+	current_in = read_pointer(current_in, (void **) &(result->values));
 	current_in = read_int(current_in, &(result->size));
 
 	return current_in;
@@ -1274,7 +1289,7 @@ byte * write_arrayC(ArrayC *value, byte *out, size_t *len) {
 	byte *current_out = out;
 
 	current_out = write_int(&(value->id), current_out, len);
-	current_out = write_pointer(&(value->values), current_out, len);
+	current_out = write_pointer((void **) &(value->values), current_out, len);
 	current_out = write_int(&(value->size), current_out, len);
 
 	return current_out;
@@ -1344,7 +1359,7 @@ void new_arrayC_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	ArrayC *ptr = malloc(sizeof(ArrayC));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_arrayC_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1354,7 +1369,7 @@ void new_arrayC_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	ArrayC *ptr = malloc(sizeof(ArrayC)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_arrayC_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1390,7 +1405,7 @@ void arrayC_get_values_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 
 	ArrayC *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->values), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->values), current_out, len_out);
 }
 
 void arrayC_set_values_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1399,7 +1414,7 @@ void arrayC_set_values_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 
 	ArrayC *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->values));
+	current_in = read_pointer(current_in, (void **) &(ptr->values));
 }
 
 void arrayC_get_size_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1421,131 +1436,131 @@ void arrayC_set_size_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 }
 
 byte * read_uint64(byte *in, Uint64 *result) {
-	return read_int64(in, result);
+	return read_int64(in, (int64_t *) result);
 }
 
 byte * write_uint64(Uint64 *value, byte *out, size_t *len) {
-	return write_int64(value, out, len);
+	return write_int64((int64_t *) value, out, len);
 }
 
 byte * read_uint64_array(byte *in, Uint64 *array, int n) {
-	return read_int64_array(in, array, n);
+	return read_int64_array(in, (int64_t *) array, n);
 }
 
 byte * write_uint64_array(Uint64 *array, byte *out, size_t *len, int n) {
-	return write_int64_array(array, out, len, n);
+	return write_int64_array((int64_t *) array, out, len, n);
 }
 
 byte * read_uint32(byte *in, Uint32 *result) {
-	return read_int32(in, result);
+	return read_int32(in, (int32_t *) result);
 }
 
 byte * write_uint32(Uint32 *value, byte *out, size_t *len) {
-	return write_int32(value, out, len);
+	return write_int32((int32_t *) value, out, len);
 }
 
 byte * read_uint32_array(byte *in, Uint32 *array, int n) {
-	return read_int32_array(in, array, n);
+	return read_int32_array(in, (int32_t *) array, n);
 }
 
 byte * write_uint32_array(Uint32 *array, byte *out, size_t *len, int n) {
-	return write_int32_array(array, out, len, n);
+	return write_int32_array((int32_t *) array, out, len, n);
 }
 
 byte * read_uint16(byte *in, Uint16 *result) {
-	return read_int16(in, result);
+	return read_int16(in, (int16_t *) result);
 }
 
 byte * write_uint16(Uint16 *value, byte *out, size_t *len) {
-	return write_int16(value, out, len);
+	return write_int16((int16_t *) value, out, len);
 }
 
 byte * read_uint16_array(byte *in, Uint16 *array, int n) {
-	return read_int16_array(in, array, n);
+	return read_int16_array(in, (int16_t *) array, n);
 }
 
 byte * write_uint16_array(Uint16 *array, byte *out, size_t *len, int n) {
-	return write_int16_array(array, out, len, n);
+	return write_int16_array((int16_t *) array, out, len, n);
 }
 
 byte * read_uint8(byte *in, Uint8 *result) {
-	return read_int8(in, result);
+	return read_int8(in, (int8_t *) result);
 }
 
 byte * write_uint8(Uint8 *value, byte *out, size_t *len) {
-	return write_int8(value, out, len);
+	return write_int8((int8_t *) value, out, len);
 }
 
 byte * read_uint8_array(byte *in, Uint8 *array, int n) {
-	return read_int8_array(in, array, n);
+	return read_int8_array(in, (int8_t *) array, n);
 }
 
 byte * write_uint8_array(Uint8 *array, byte *out, size_t *len, int n) {
-	return write_int8_array(array, out, len, n);
+	return write_int8_array((int8_t *) array, out, len, n);
 }
 
 byte * read_sint64(byte *in, Sint64 *result) {
-	return read_int64(in, result);
+	return read_int64(in, (int64_t *) result);
 }
 
 byte * write_sint64(Sint64 *value, byte *out, size_t *len) {
-	return write_int64(value, out, len);
+	return write_int64((int64_t *) value, out, len);
 }
 
 byte * read_sint64_array(byte *in, Sint64 *array, int n) {
-	return read_int64_array(in, array, n);
+	return read_int64_array(in, (int64_t *) array, n);
 }
 
 byte * write_sint64_array(Sint64 *array, byte *out, size_t *len, int n) {
-	return write_int64_array(array, out, len, n);
+	return write_int64_array((int64_t *) array, out, len, n);
 }
 
 byte * read_sint32(byte *in, Sint32 *result) {
-	return read_int32(in, result);
+	return read_int32(in, (int32_t *) result);
 }
 
 byte * write_sint32(Sint32 *value, byte *out, size_t *len) {
-	return write_int32(value, out, len);
+	return write_int32((int32_t *) value, out, len);
 }
 
 byte * read_sint32_array(byte *in, Sint32 *array, int n) {
-	return read_int32_array(in, array, n);
+	return read_int32_array(in, (int32_t *) array, n);
 }
 
 byte * write_sint32_array(Sint32 *array, byte *out, size_t *len, int n) {
-	return write_int32_array(array, out, len, n);
+	return write_int32_array((int32_t *) array, out, len, n);
 }
 
 byte * read_sint16(byte *in, Sint16 *result) {
-	return read_int16(in, result);
+	return read_int16(in, (int16_t *) result);
 }
 
 byte * write_sint16(Sint16 *value, byte *out, size_t *len) {
-	return write_int16(value, out, len);
+	return write_int16((int16_t *) value, out, len);
 }
 
 byte * read_sint16_array(byte *in, Sint16 *array, int n) {
-	return read_int16_array(in, array, n);
+	return read_int16_array(in, (int16_t *) array, n);
 }
 
 byte * write_sint16_array(Sint16 *array, byte *out, size_t *len, int n) {
-	return write_int16_array(array, out, len, n);
+	return write_int16_array((int16_t *) array, out, len, n);
 }
 
 byte * read_sint8(byte *in, Sint8 *result) {
-	return read_int8(in, result);
+	return read_int8(in, (int8_t *) result);
 }
 
 byte * write_sint8(Sint8 *value, byte *out, size_t *len) {
-	return write_int8(value, out, len);
+	return write_int8((int8_t *) value, out, len);
 }
 
 byte * read_sint8_array(byte *in, Sint8 *array, int n) {
-	return read_int8_array(in, array, n);
+	return read_int8_array(in, (int8_t *) array, n);
 }
 
 byte * write_sint8_array(Sint8 *array, byte *out, size_t *len, int n) {
-	return write_int8_array(array, out, len, n);
+	return write_int8_array((int8_t *) array, out, len, n);
 }
 
 byte * read_window(byte *in, SDL_Window *result) {
@@ -1666,7 +1681,7 @@ void new_color_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Color *ptr = malloc(sizeof(SDL_Color));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_color_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1676,7 +1691,7 @@ void new_color_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_Color *ptr = malloc(sizeof(SDL_Color)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_color_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1764,7 +1779,7 @@ byte * read_palette(byte *in, SDL_Palette *result) {
 	byte *current_in = in;
 
 	current_in = read_int(current_in, &(result->ncolors));
-	current_in = read_pointer(current_in, &(result->colors));
+	current_in = read_pointer(current_in, (void **) &(result->colors));
 	current_in = read_uint32(current_in, &(result->version));
 	current_in = read_int(current_in, &(result->refcount));
 
@@ -1775,7 +1790,7 @@ byte * write_palette(SDL_Palette *value, byte *out, size_t *len) {
 	byte *current_out = out;
 
 	current_out = write_int(&(value->ncolors), current_out, len);
-	current_out = write_pointer(&(value->colors), current_out, len);
+	current_out = write_pointer((void **) &(value->colors), current_out, len);
 	current_out = write_uint32(&(value->version), current_out, len);
 	current_out = write_int(&(value->refcount), current_out, len);
 
@@ -1846,7 +1861,7 @@ void new_palette_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Palette *ptr = malloc(sizeof(SDL_Palette));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_palette_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1856,7 +1871,7 @@ void new_palette_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_Palette *ptr = malloc(sizeof(SDL_Palette)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_palette_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1892,7 +1907,7 @@ void palette_get_colors_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 
 	SDL_Palette *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->colors), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->colors), current_out, len_out);
 }
 
 void palette_set_colors_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1901,7 +1916,7 @@ void palette_set_colors_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 
 	SDL_Palette *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->colors));
+	current_in = read_pointer(current_in, (void **) &(ptr->colors));
 }
 
 void palette_get_version_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -1944,7 +1959,7 @@ byte * read_pixel_format(byte *in, SDL_PixelFormat *result) {
 	byte *current_in = in;
 
 	current_in = read_uint32(current_in, &(result->format));
-	current_in = read_pointer(current_in, &(result->palette));
+	current_in = read_pointer(current_in, (void **) &(result->palette));
 	current_in = read_uint8(current_in, &(result->BitsPerPixel));
 	current_in = read_uint8(current_in, &(result->BytesPerPixel));
 	current_in = read_uint32(current_in, &(result->Rmask));
@@ -1960,7 +1975,7 @@ byte * read_pixel_format(byte *in, SDL_PixelFormat *result) {
 	current_in = read_uint8(current_in, &(result->Bshift));
 	current_in = read_uint8(current_in, &(result->Ashift));
 	current_in = read_int(current_in, &(result->refcount));
-	current_in = read_pointer(current_in, &(result->next));
+	current_in = read_pointer(current_in, (void **) &(result->next));
 
 	return current_in;
 }
@@ -1969,7 +1984,7 @@ byte * write_pixel_format(SDL_PixelFormat *value, byte *out, size_t *len) {
 	byte *current_out = out;
 
 	current_out = write_uint32(&(value->format), current_out, len);
-	current_out = write_pointer(&(value->palette), current_out, len);
+	current_out = write_pointer((void **) &(value->palette), current_out, len);
 	current_out = write_uint8(&(value->BitsPerPixel), current_out, len);
 	current_out = write_uint8(&(value->BytesPerPixel), current_out, len);
 	current_out = write_uint32(&(value->Rmask), current_out, len);
@@ -1985,7 +2000,7 @@ byte * write_pixel_format(SDL_PixelFormat *value, byte *out, size_t *len) {
 	current_out = write_uint8(&(value->Bshift), current_out, len);
 	current_out = write_uint8(&(value->Ashift), current_out, len);
 	current_out = write_int(&(value->refcount), current_out, len);
-	current_out = write_pointer(&(value->next), current_out, len);
+	current_out = write_pointer((void **) &(value->next), current_out, len);
 
 	return current_out;
 }
@@ -2054,7 +2069,7 @@ void new_pixel_format_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	*len_out = 0; current_in+=4;
 
 	SDL_PixelFormat *ptr = malloc(sizeof(SDL_PixelFormat));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_pixel_format_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2064,7 +2079,7 @@ void new_pixel_format_array_Handler(byte *in, size_t len_in, byte *out, size_t *
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_PixelFormat *ptr = malloc(sizeof(SDL_PixelFormat)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_pixel_format_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2100,7 +2115,7 @@ void pixel_format_get_palette_Handler(byte *in, size_t len_in, byte *out, size_t
 
 	SDL_PixelFormat *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->palette), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->palette), current_out, len_out);
 }
 
 void pixel_format_set_palette_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2109,7 +2124,7 @@ void pixel_format_set_palette_Handler(byte *in, size_t len_in, byte *out, size_t
 
 	SDL_PixelFormat *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->palette));
+	current_in = read_pointer(current_in, (void **) &(ptr->palette));
 }
 
 void pixel_format_get_bits_per_pixel_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2388,7 +2403,7 @@ void pixel_format_get_next_Handler(byte *in, size_t len_in, byte *out, size_t *l
 
 	SDL_PixelFormat *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->next), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->next), current_out, len_out);
 }
 
 void pixel_format_set_next_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2397,7 +2412,7 @@ void pixel_format_set_next_Handler(byte *in, size_t len_in, byte *out, size_t *l
 
 	SDL_PixelFormat *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->next));
+	current_in = read_pointer(current_in, (void **) &(ptr->next));
 }
 
 byte * read_rect(byte *in, SDL_Rect *result) {
@@ -2486,7 +2501,7 @@ void new_rect_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Rect *ptr = malloc(sizeof(SDL_Rect));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_rect_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2496,7 +2511,7 @@ void new_rect_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_Rect *ptr = malloc(sizeof(SDL_Rect)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_rect_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2616,16 +2631,16 @@ byte * read_surface(byte *in, SDL_Surface *result) {
 	byte *current_in = in;
 
 	current_in = read_uint32(current_in, &(result->flags));
-	current_in = read_pointer(current_in, &(result->format));
+	current_in = read_pointer(current_in, (void **) &(result->format));
 	current_in = read_int(current_in, &(result->w));
 	current_in = read_int(current_in, &(result->h));
 	current_in = read_int(current_in, &(result->pitch));
-	current_in = read_pointer(current_in, &(result->pixels));
-	current_in = read_pointer(current_in, &(result->userdata));
+	current_in = read_pointer(current_in, (void **) &(result->pixels));
+	current_in = read_pointer(current_in, (void **) &(result->userdata));
 	current_in = read_int(current_in, &(result->locked));
-	current_in = read_pointer(current_in, &(result->lock_data));
+	current_in = read_pointer(current_in, (void **) &(result->lock_data));
 	current_in = read_rect(current_in, &(result->clip_rect));
-	current_in = read_pointer(current_in, &(result->map));
+	current_in = read_pointer(current_in, (void **) &(result->map));
 	current_in = read_int(current_in, &(result->refcount));
 
 	return current_in;
@@ -2635,16 +2650,16 @@ byte * write_surface(SDL_Surface *value, byte *out, size_t *len) {
 	byte *current_out = out;
 
 	current_out = write_uint32(&(value->flags), current_out, len);
-	current_out = write_pointer(&(value->format), current_out, len);
+	current_out = write_pointer((void **) &(value->format), current_out, len);
 	current_out = write_int(&(value->w), current_out, len);
 	current_out = write_int(&(value->h), current_out, len);
 	current_out = write_int(&(value->pitch), current_out, len);
-	current_out = write_pointer(&(value->pixels), current_out, len);
-	current_out = write_pointer(&(value->userdata), current_out, len);
+	current_out = write_pointer((void **) &(value->pixels), current_out, len);
+	current_out = write_pointer((void **) &(value->userdata), current_out, len);
 	current_out = write_int(&(value->locked), current_out, len);
-	current_out = write_pointer(&(value->lock_data), current_out, len);
+	current_out = write_pointer((void **) &(value->lock_data), current_out, len);
 	current_out = write_rect(&(value->clip_rect), current_out, len);
-	current_out = write_pointer(&(value->map), current_out, len);
+	current_out = write_pointer((void **) &(value->map), current_out, len);
 	current_out = write_int(&(value->refcount), current_out, len);
 
 	return current_out;
@@ -2714,7 +2729,7 @@ void new_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Surface *ptr = malloc(sizeof(SDL_Surface));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_surface_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2724,7 +2739,7 @@ void new_surface_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_Surface *ptr = malloc(sizeof(SDL_Surface)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2760,7 +2775,7 @@ void surface_get_format_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->format), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->format), current_out, len_out);
 }
 
 void surface_set_format_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2769,7 +2784,7 @@ void surface_set_format_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->format));
+	current_in = read_pointer(current_in, (void **) &(ptr->format));
 }
 
 void surface_get_w_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2832,7 +2847,7 @@ void surface_get_pixels_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->pixels), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->pixels), current_out, len_out);
 }
 
 void surface_set_pixels_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2841,7 +2856,7 @@ void surface_set_pixels_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->pixels));
+	current_in = read_pointer(current_in, (void **) &(ptr->pixels));
 }
 
 void surface_get_userdata_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2850,7 +2865,7 @@ void surface_get_userdata_Handler(byte *in, size_t len_in, byte *out, size_t *le
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->userdata), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->userdata), current_out, len_out);
 }
 
 void surface_set_userdata_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2859,7 +2874,7 @@ void surface_set_userdata_Handler(byte *in, size_t len_in, byte *out, size_t *le
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->userdata));
+	current_in = read_pointer(current_in, (void **) &(ptr->userdata));
 }
 
 void surface_get_locked_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2886,7 +2901,7 @@ void surface_get_lock_data_Handler(byte *in, size_t len_in, byte *out, size_t *l
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->lock_data), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->lock_data), current_out, len_out);
 }
 
 void surface_set_lock_data_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2895,7 +2910,7 @@ void surface_set_lock_data_Handler(byte *in, size_t len_in, byte *out, size_t *l
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->lock_data));
+	current_in = read_pointer(current_in, (void **) &(ptr->lock_data));
 }
 
 void surface_get_clip_rect_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2922,7 +2937,7 @@ void surface_get_map_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->map), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->map), current_out, len_out);
 }
 
 void surface_set_map_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2931,7 +2946,7 @@ void surface_set_map_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 
 	SDL_Surface *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->map));
+	current_in = read_pointer(current_in, (void **) &(ptr->map));
 }
 
 void surface_get_refcount_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -2953,19 +2968,19 @@ void surface_set_refcount_Handler(byte *in, size_t len_in, byte *out, size_t *le
 }
 
 byte * read_scancode(byte *in, SDL_Scancode *result) {
-	return read_int(in, result);
+	return read_int(in, (int *) result);
 }
 
 byte * write_scancode(SDL_Scancode *value, byte *out, size_t *len) {
-	return write_int(value, out, len);
+	return write_int((int *) value, out, len);
 }
 
 byte * read_scancode_array(byte *in, SDL_Scancode *array, int n) {
-	return read_int_array(in, array, n);
+	return read_int_array(in, (int *) array, n);
 }
 
 byte * write_scancode_array(SDL_Scancode *array, byte *out, size_t *len, int n) {
-	return write_int_array(array, out, len, n);
+	return write_int_array((int *) array, out, len, n);
 }
 
 byte * read_keycode(byte *in, SDL_Keycode *result) {
@@ -3070,7 +3085,7 @@ void new_keysym_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Keysym *ptr = malloc(sizeof(SDL_Keysym));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_keysym_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3080,7 +3095,7 @@ void new_keysym_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_Keysym *ptr = malloc(sizeof(SDL_Keysym)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_keysym_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3342,7 +3357,7 @@ void new_common_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	*len_out = 0; current_in+=4;
 
 	SDL_CommonEvent *ptr = malloc(sizeof(SDL_CommonEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_common_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3352,7 +3367,7 @@ void new_common_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_CommonEvent *ptr = malloc(sizeof(SDL_CommonEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_common_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3496,7 +3511,7 @@ void new_window_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	*len_out = 0; current_in+=4;
 
 	SDL_WindowEvent *ptr = malloc(sizeof(SDL_WindowEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_window_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3506,7 +3521,7 @@ void new_window_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_WindowEvent *ptr = malloc(sizeof(SDL_WindowEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_window_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3774,7 +3789,7 @@ void new_keyboard_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 	*len_out = 0; current_in+=4;
 
 	SDL_KeyboardEvent *ptr = malloc(sizeof(SDL_KeyboardEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_keyboard_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3784,7 +3799,7 @@ void new_keyboard_event_array_Handler(byte *in, size_t len_in, byte *out, size_t
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_KeyboardEvent *ptr = malloc(sizeof(SDL_KeyboardEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_keyboard_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -3946,7 +3961,7 @@ byte * read_text_editing_event(byte *in, SDL_TextEditingEvent *result) {
 	current_in = read_uint32(current_in, &(result->type));
 	current_in = read_uint32(current_in, &(result->timestamp));
 	current_in = read_uint32(current_in, &(result->windowID));
-	current_in = read_string(current_in, &(result->text));
+	current_in = read_string(current_in, (string *) result->text);
 	current_in = read_sint32(current_in, &(result->start));
 	current_in = read_sint32(current_in, &(result->length));
 
@@ -3959,7 +3974,7 @@ byte * write_text_editing_event(SDL_TextEditingEvent *value, byte *out, size_t *
 	current_out = write_uint32(&(value->type), current_out, len);
 	current_out = write_uint32(&(value->timestamp), current_out, len);
 	current_out = write_uint32(&(value->windowID), current_out, len);
-	current_out = write_string(&(value->text), current_out, len);
+	current_out = write_string((string *) value->text, current_out, len);
 	current_out = write_sint32(&(value->start), current_out, len);
 	current_out = write_sint32(&(value->length), current_out, len);
 
@@ -4030,7 +4045,7 @@ void new_text_editing_event_Handler(byte *in, size_t len_in, byte *out, size_t *
 	*len_out = 0; current_in+=4;
 
 	SDL_TextEditingEvent *ptr = malloc(sizeof(SDL_TextEditingEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_text_editing_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4040,7 +4055,7 @@ void new_text_editing_event_array_Handler(byte *in, size_t len_in, byte *out, si
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_TextEditingEvent *ptr = malloc(sizeof(SDL_TextEditingEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_text_editing_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4112,7 +4127,7 @@ void text_editing_event_get_text_Handler(byte *in, size_t len_in, byte *out, siz
 
 	SDL_TextEditingEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_string(&(ptr->text), current_out, len_out);
+	current_out = write_string((string *) ptr->text, current_out, len_out);
 }
 
 void text_editing_event_set_text_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4121,7 +4136,7 @@ void text_editing_event_set_text_Handler(byte *in, size_t len_in, byte *out, siz
 
 	SDL_TextEditingEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_string(current_in, &(ptr->text));
+	current_in = read_string(current_in, (string *) ptr->text);
 }
 
 void text_editing_event_get_start_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4166,7 +4181,7 @@ byte * read_text_input_event(byte *in, SDL_TextInputEvent *result) {
 	current_in = read_uint32(current_in, &(result->type));
 	current_in = read_uint32(current_in, &(result->timestamp));
 	current_in = read_uint32(current_in, &(result->windowID));
-	current_in = read_string(current_in, &(result->text));
+	current_in = read_string(current_in, (string *) result->text);
 
 	return current_in;
 }
@@ -4177,7 +4192,7 @@ byte * write_text_input_event(SDL_TextInputEvent *value, byte *out, size_t *len)
 	current_out = write_uint32(&(value->type), current_out, len);
 	current_out = write_uint32(&(value->timestamp), current_out, len);
 	current_out = write_uint32(&(value->windowID), current_out, len);
-	current_out = write_string(&(value->text), current_out, len);
+	current_out = write_string((string *) value->text, current_out, len);
 
 	return current_out;
 }
@@ -4246,7 +4261,7 @@ void new_text_input_event_Handler(byte *in, size_t len_in, byte *out, size_t *le
 	*len_out = 0; current_in+=4;
 
 	SDL_TextInputEvent *ptr = malloc(sizeof(SDL_TextInputEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_text_input_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4256,7 +4271,7 @@ void new_text_input_event_array_Handler(byte *in, size_t len_in, byte *out, size
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_TextInputEvent *ptr = malloc(sizeof(SDL_TextInputEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_text_input_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4328,7 +4343,7 @@ void text_input_event_get_text_Handler(byte *in, size_t len_in, byte *out, size_
 
 	SDL_TextInputEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_string(&(ptr->text), current_out, len_out);
+	current_out = write_string((string *) ptr->text, current_out, len_out);
 }
 
 void text_input_event_set_text_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4337,7 +4352,7 @@ void text_input_event_set_text_Handler(byte *in, size_t len_in, byte *out, size_
 
 	SDL_TextInputEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_string(current_in, &(ptr->text));
+	current_in = read_string(current_in, (string *) ptr->text);
 }
 
 byte * read_mouse_motion_event(byte *in, SDL_MouseMotionEvent *result) {
@@ -4436,7 +4451,7 @@ void new_mouse_motion_event_Handler(byte *in, size_t len_in, byte *out, size_t *
 	*len_out = 0; current_in+=4;
 
 	SDL_MouseMotionEvent *ptr = malloc(sizeof(SDL_MouseMotionEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_mouse_motion_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4446,7 +4461,7 @@ void new_mouse_motion_event_array_Handler(byte *in, size_t len_in, byte *out, si
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_MouseMotionEvent *ptr = malloc(sizeof(SDL_MouseMotionEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_mouse_motion_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4716,7 +4731,7 @@ void new_mouse_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *
 	*len_out = 0; current_in+=4;
 
 	SDL_MouseButtonEvent *ptr = malloc(sizeof(SDL_MouseButtonEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_mouse_button_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4726,7 +4741,7 @@ void new_mouse_button_event_array_Handler(byte *in, size_t len_in, byte *out, si
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_MouseButtonEvent *ptr = malloc(sizeof(SDL_MouseButtonEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_mouse_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -4992,7 +5007,7 @@ void new_mouse_wheel_event_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	*len_out = 0; current_in+=4;
 
 	SDL_MouseWheelEvent *ptr = malloc(sizeof(SDL_MouseWheelEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_mouse_wheel_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5002,7 +5017,7 @@ void new_mouse_wheel_event_array_Handler(byte *in, size_t len_in, byte *out, siz
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_MouseWheelEvent *ptr = malloc(sizeof(SDL_MouseWheelEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_mouse_wheel_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5234,7 +5249,7 @@ void new_joy_axis_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 	*len_out = 0; current_in+=4;
 
 	SDL_JoyAxisEvent *ptr = malloc(sizeof(SDL_JoyAxisEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_joy_axis_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5244,7 +5259,7 @@ void new_joy_axis_event_array_Handler(byte *in, size_t len_in, byte *out, size_t
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_JoyAxisEvent *ptr = malloc(sizeof(SDL_JoyAxisEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_joy_axis_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5496,7 +5511,7 @@ void new_joy_ball_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 	*len_out = 0; current_in+=4;
 
 	SDL_JoyBallEvent *ptr = malloc(sizeof(SDL_JoyBallEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_joy_ball_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5506,7 +5521,7 @@ void new_joy_ball_event_array_Handler(byte *in, size_t len_in, byte *out, size_t
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_JoyBallEvent *ptr = malloc(sizeof(SDL_JoyBallEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_joy_ball_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5772,7 +5787,7 @@ void new_joy_hat_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 	*len_out = 0; current_in+=4;
 
 	SDL_JoyHatEvent *ptr = malloc(sizeof(SDL_JoyHatEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_joy_hat_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -5782,7 +5797,7 @@ void new_joy_hat_event_array_Handler(byte *in, size_t len_in, byte *out, size_t 
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_JoyHatEvent *ptr = malloc(sizeof(SDL_JoyHatEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_joy_hat_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6012,7 +6027,7 @@ void new_joy_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *le
 	*len_out = 0; current_in+=4;
 
 	SDL_JoyButtonEvent *ptr = malloc(sizeof(SDL_JoyButtonEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_joy_button_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6022,7 +6037,7 @@ void new_joy_button_event_array_Handler(byte *in, size_t len_in, byte *out, size
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_JoyButtonEvent *ptr = malloc(sizeof(SDL_JoyButtonEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_joy_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6244,7 +6259,7 @@ void new_joy_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *le
 	*len_out = 0; current_in+=4;
 
 	SDL_JoyDeviceEvent *ptr = malloc(sizeof(SDL_JoyDeviceEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_joy_device_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6254,7 +6269,7 @@ void new_joy_device_event_array_Handler(byte *in, size_t len_in, byte *out, size
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_JoyDeviceEvent *ptr = malloc(sizeof(SDL_JoyDeviceEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_joy_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6416,7 +6431,7 @@ void new_controller_axis_event_Handler(byte *in, size_t len_in, byte *out, size_
 	*len_out = 0; current_in+=4;
 
 	SDL_ControllerAxisEvent *ptr = malloc(sizeof(SDL_ControllerAxisEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_controller_axis_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6426,7 +6441,7 @@ void new_controller_axis_event_array_Handler(byte *in, size_t len_in, byte *out,
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_ControllerAxisEvent *ptr = malloc(sizeof(SDL_ControllerAxisEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_controller_axis_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6692,7 +6707,7 @@ void new_controller_button_event_Handler(byte *in, size_t len_in, byte *out, siz
 	*len_out = 0; current_in+=4;
 
 	SDL_ControllerButtonEvent *ptr = malloc(sizeof(SDL_ControllerButtonEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_controller_button_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6702,7 +6717,7 @@ void new_controller_button_event_array_Handler(byte *in, size_t len_in, byte *ou
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_ControllerButtonEvent *ptr = malloc(sizeof(SDL_ControllerButtonEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_controller_button_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6924,7 +6939,7 @@ void new_controller_device_event_Handler(byte *in, size_t len_in, byte *out, siz
 	*len_out = 0; current_in+=4;
 
 	SDL_ControllerDeviceEvent *ptr = malloc(sizeof(SDL_ControllerDeviceEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_controller_device_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -6934,7 +6949,7 @@ void new_controller_device_event_array_Handler(byte *in, size_t len_in, byte *ou
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_ControllerDeviceEvent *ptr = malloc(sizeof(SDL_ControllerDeviceEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_controller_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7092,7 +7107,7 @@ void new_audio_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *
 	*len_out = 0; current_in+=4;
 
 	SDL_AudioDeviceEvent *ptr = malloc(sizeof(SDL_AudioDeviceEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_audio_device_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7102,7 +7117,7 @@ void new_audio_device_event_array_Handler(byte *in, size_t len_in, byte *out, si
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_AudioDeviceEvent *ptr = malloc(sizeof(SDL_AudioDeviceEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_audio_device_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7322,7 +7337,7 @@ void new_quit_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	*len_out = 0; current_in+=4;
 
 	SDL_QuitEvent *ptr = malloc(sizeof(SDL_QuitEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_quit_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7332,7 +7347,7 @@ void new_quit_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *le
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_QuitEvent *ptr = malloc(sizeof(SDL_QuitEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_quit_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7387,8 +7402,8 @@ byte * read_user_event(byte *in, SDL_UserEvent *result) {
 	current_in = read_uint32(current_in, &(result->timestamp));
 	current_in = read_uint32(current_in, &(result->windowID));
 	current_in = read_sint32(current_in, &(result->code));
-	current_in = read_pointer(current_in, &(result->data1));
-	current_in = read_pointer(current_in, &(result->data2));
+	current_in = read_pointer(current_in, (void **) &(result->data1));
+	current_in = read_pointer(current_in, (void **) &(result->data2));
 
 	return current_in;
 }
@@ -7400,8 +7415,8 @@ byte * write_user_event(SDL_UserEvent *value, byte *out, size_t *len) {
 	current_out = write_uint32(&(value->timestamp), current_out, len);
 	current_out = write_uint32(&(value->windowID), current_out, len);
 	current_out = write_sint32(&(value->code), current_out, len);
-	current_out = write_pointer(&(value->data1), current_out, len);
-	current_out = write_pointer(&(value->data2), current_out, len);
+	current_out = write_pointer((void **) &(value->data1), current_out, len);
+	current_out = write_pointer((void **) &(value->data2), current_out, len);
 
 	return current_out;
 }
@@ -7470,7 +7485,7 @@ void new_user_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	*len_out = 0; current_in+=4;
 
 	SDL_UserEvent *ptr = malloc(sizeof(SDL_UserEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_user_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7480,7 +7495,7 @@ void new_user_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *le
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_UserEvent *ptr = malloc(sizeof(SDL_UserEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_user_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7570,7 +7585,7 @@ void user_event_get_data1_Handler(byte *in, size_t len_in, byte *out, size_t *le
 
 	SDL_UserEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->data1), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->data1), current_out, len_out);
 }
 
 void user_event_set_data1_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7579,7 +7594,7 @@ void user_event_set_data1_Handler(byte *in, size_t len_in, byte *out, size_t *le
 
 	SDL_UserEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->data1));
+	current_in = read_pointer(current_in, (void **) &(ptr->data1));
 }
 
 void user_event_get_data2_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7588,7 +7603,7 @@ void user_event_get_data2_Handler(byte *in, size_t len_in, byte *out, size_t *le
 
 	SDL_UserEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->data2), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->data2), current_out, len_out);
 }
 
 void user_event_set_data2_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7597,7 +7612,7 @@ void user_event_set_data2_Handler(byte *in, size_t len_in, byte *out, size_t *le
 
 	SDL_UserEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->data2));
+	current_in = read_pointer(current_in, (void **) &(ptr->data2));
 }
 
 byte * read_syswm_event(byte *in, SDL_SysWMEvent *result) {
@@ -7605,7 +7620,7 @@ byte * read_syswm_event(byte *in, SDL_SysWMEvent *result) {
 
 	current_in = read_uint32(current_in, &(result->type));
 	current_in = read_uint32(current_in, &(result->timestamp));
-	current_in = read_pointer(current_in, &(result->msg));
+	current_in = read_pointer(current_in, (void **) &(result->msg));
 
 	return current_in;
 }
@@ -7615,7 +7630,7 @@ byte * write_syswm_event(SDL_SysWMEvent *value, byte *out, size_t *len) {
 
 	current_out = write_uint32(&(value->type), current_out, len);
 	current_out = write_uint32(&(value->timestamp), current_out, len);
-	current_out = write_pointer(&(value->msg), current_out, len);
+	current_out = write_pointer((void **) &(value->msg), current_out, len);
 
 	return current_out;
 }
@@ -7684,7 +7699,7 @@ void new_syswm_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	*len_out = 0; current_in+=4;
 
 	SDL_SysWMEvent *ptr = malloc(sizeof(SDL_SysWMEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_syswm_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7694,7 +7709,7 @@ void new_syswm_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_SysWMEvent *ptr = malloc(sizeof(SDL_SysWMEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_syswm_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7748,7 +7763,7 @@ void syswm_event_get_msg_Handler(byte *in, size_t len_in, byte *out, size_t *len
 
 	SDL_SysWMEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_pointer(&(ptr->msg), current_out, len_out);
+	current_out = write_pointer((void **) &(ptr->msg), current_out, len_out);
 }
 
 void syswm_event_set_msg_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7757,7 +7772,7 @@ void syswm_event_set_msg_Handler(byte *in, size_t len_in, byte *out, size_t *len
 
 	SDL_SysWMEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_pointer(current_in, &(ptr->msg));
+	current_in = read_pointer(current_in, (void **) &(ptr->msg));
 }
 
 byte * read_touch_finger_event(byte *in, SDL_TouchFingerEvent *result) {
@@ -7856,7 +7871,7 @@ void new_touch_finger_event_Handler(byte *in, size_t len_in, byte *out, size_t *
 	*len_out = 0; current_in+=4;
 
 	SDL_TouchFingerEvent *ptr = malloc(sizeof(SDL_TouchFingerEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_touch_finger_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -7866,7 +7881,7 @@ void new_touch_finger_event_array_Handler(byte *in, size_t len_in, byte *out, si
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_TouchFingerEvent *ptr = malloc(sizeof(SDL_TouchFingerEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_touch_finger_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8136,7 +8151,7 @@ void new_multi_gesture_event_Handler(byte *in, size_t len_in, byte *out, size_t 
 	*len_out = 0; current_in+=4;
 
 	SDL_MultiGestureEvent *ptr = malloc(sizeof(SDL_MultiGestureEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_multi_gesture_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8146,7 +8161,7 @@ void new_multi_gesture_event_array_Handler(byte *in, size_t len_in, byte *out, s
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_MultiGestureEvent *ptr = malloc(sizeof(SDL_MultiGestureEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_multi_gesture_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8414,7 +8429,7 @@ void new_dollar_gesture_event_Handler(byte *in, size_t len_in, byte *out, size_t
 	*len_out = 0; current_in+=4;
 
 	SDL_DollarGestureEvent *ptr = malloc(sizeof(SDL_DollarGestureEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_dollar_gesture_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8424,7 +8439,7 @@ void new_dollar_gesture_event_array_Handler(byte *in, size_t len_in, byte *out, 
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_DollarGestureEvent *ptr = malloc(sizeof(SDL_DollarGestureEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_dollar_gesture_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8585,7 +8600,7 @@ byte * read_drop_event(byte *in, SDL_DropEvent *result) {
 
 	current_in = read_uint32(current_in, &(result->type));
 	current_in = read_uint32(current_in, &(result->timestamp));
-	current_in = read_string(current_in, &(result->file));
+	current_in = read_string(current_in, (string *) result->file);
 	current_in = read_uint32(current_in, &(result->windowID));
 
 	return current_in;
@@ -8596,7 +8611,7 @@ byte * write_drop_event(SDL_DropEvent *value, byte *out, size_t *len) {
 
 	current_out = write_uint32(&(value->type), current_out, len);
 	current_out = write_uint32(&(value->timestamp), current_out, len);
-	current_out = write_string(&(value->file), current_out, len);
+	current_out = write_string((string *) value->file, current_out, len);
 	current_out = write_uint32(&(value->windowID), current_out, len);
 
 	return current_out;
@@ -8666,7 +8681,7 @@ void new_drop_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	*len_out = 0; current_in+=4;
 
 	SDL_DropEvent *ptr = malloc(sizeof(SDL_DropEvent));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_drop_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8676,7 +8691,7 @@ void new_drop_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *le
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_DropEvent *ptr = malloc(sizeof(SDL_DropEvent)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_drop_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8730,7 +8745,7 @@ void drop_event_get_file_Handler(byte *in, size_t len_in, byte *out, size_t *len
 
 	SDL_DropEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_out = write_string(&(ptr->file), current_out, len_out);
+	current_out = write_string((string *) ptr->file, current_out, len_out);
 }
 
 void drop_event_set_file_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8739,7 +8754,7 @@ void drop_event_set_file_Handler(byte *in, size_t len_in, byte *out, size_t *len
 
 	SDL_DropEvent *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
-	current_in = read_string(current_in, &(ptr->file));
+	current_in = read_string(current_in, (string *) ptr->file);
 }
 
 void drop_event_get_windowID_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8781,7 +8796,7 @@ void new_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Event *ptr = malloc(sizeof(SDL_Event));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -8791,7 +8806,7 @@ void new_event_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	SDL_Event *ptr = malloc(sizeof(SDL_Event)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_event_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -9291,7 +9306,7 @@ void create_window_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) 
 	current_in = read_uint32(current_in, &var6);
 
 	SDL_Window *retvar = SDL_CreateWindow(var1, var2, var3, var4, var5, var6);
-	current_out = write_pointer(&retvar, current_out, len_out);
+	current_out = write_pointer((void **) &retvar, current_out, len_out);
 }
 
 void get_window_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -9299,10 +9314,10 @@ void get_window_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 	*len_out = 0; current_in+=4;
 
 	SDL_Window *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 
 	SDL_Surface *retvar = SDL_GetWindowSurface(var1);
-	current_out = write_pointer(&retvar, current_out, len_out);
+	current_out = write_pointer((void **) &retvar, current_out, len_out);
 }
 
 void load_bmp_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -9313,7 +9328,7 @@ void load_bmp_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	current_in = read_string(current_in, &var1);
 
 	SDL_Surface *retvar = SDL_LoadBMP(var1);
-	current_out = write_pointer(&retvar, current_out, len_out);
+	current_out = write_pointer((void **) &retvar, current_out, len_out);
 }
 
 void free_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -9321,7 +9336,7 @@ void free_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Surface *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 
 	SDL_FreeSurface(var1);
 }
@@ -9331,13 +9346,13 @@ void blit_surface_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Surface *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 	SDL_Rect *var2;
-	current_in = read_pointer(current_in, &var2);
+	current_in = read_pointer(current_in, (void **) &var2);
 	SDL_Surface *var3;
-	current_in = read_pointer(current_in, &var3);
+	current_in = read_pointer(current_in, (void **) &var3);
 	SDL_Rect *var4;
-	current_in = read_pointer(current_in, &var4);
+	current_in = read_pointer(current_in, (void **) &var4);
 
 	int retvar = SDL_BlitSurface(var1, var2, var3, var4);
 	current_out = write_int(&retvar, current_out, len_out);
@@ -9348,13 +9363,13 @@ void blit_scaled_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	SDL_Surface *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 	SDL_Rect *var2;
-	current_in = read_pointer(current_in, &var2);
+	current_in = read_pointer(current_in, (void **) &var2);
 	SDL_Surface *var3;
-	current_in = read_pointer(current_in, &var3);
+	current_in = read_pointer(current_in, (void **) &var3);
 	SDL_Rect *var4;
-	current_in = read_pointer(current_in, &var4);
+	current_in = read_pointer(current_in, (void **) &var4);
 
 	int retvar = SDL_BlitScaled(var1, var2, var3, var4);
 	current_out = write_int(&retvar, current_out, len_out);
@@ -9365,7 +9380,7 @@ void update_window_surface_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	*len_out = 0; current_in+=4;
 
 	SDL_Window *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 
 	int retvar = SDL_UpdateWindowSurface(var1);
 	current_out = write_int(&retvar, current_out, len_out);
@@ -9376,7 +9391,7 @@ void destroy_window_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	*len_out = 0; current_in+=4;
 
 	SDL_Window *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 
 	SDL_DestroyWindow(var1);
 }
@@ -9386,7 +9401,7 @@ void get_window_size_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	*len_out = 0; current_in+=4;
 
 	SDL_Window *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 	int *var2 = malloc(sizeof(int));
 	int *var3 = malloc(sizeof(int));
 
@@ -9402,7 +9417,7 @@ void get_error_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	string retvar;
-	strcpy(retvar, SDL_GetError());
+	strcpy((char *)retvar, SDL_GetError());
 	current_out = write_string(&retvar, current_out, len_out);
 }
 
@@ -9423,7 +9438,7 @@ void maxint_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int *var1;
-	current_in = read_pointer(current_in, &var1);
+	current_in = read_pointer(current_in, (void **) &var1);
 	int var2;
 	current_in = read_int(current_in, &var2);
 

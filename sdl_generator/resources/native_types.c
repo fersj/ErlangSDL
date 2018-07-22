@@ -14,7 +14,8 @@ byte * read_int8(byte *in, int8_t *result) {
 byte * read_int16(byte *in, int16_t *result) {
 	byte *current_in = in;
 
-	*result = (((int16_t)*current_in++) << 8) | ((int16_t)*current_in++);
+	*result = (((int16_t)*current_in++) << 8);
+	*result = *result | ((int16_t)*current_in++);
 
 	return current_in;
 }
@@ -22,8 +23,10 @@ byte * read_int16(byte *in, int16_t *result) {
 byte * read_int32(byte *in, int *result) {
 	byte *current_in = in;
 
-	*result = (((int)*current_in++) << 24) | (((int)*current_in++) << 16) |
-						(((int)*current_in++) << 8) | ((int)*current_in++);
+	*result = (((int)*current_in++) << 24);
+	*result = *result | (((int)*current_in++) << 16);
+	*result = *result | (((int)*current_in++) << 8);
+	*result = *result | ((int)*current_in++);
 
 	return current_in;
 }
@@ -32,10 +35,15 @@ byte * read_int64(byte *in, int64_t *result) {
 	byte *current_in = in;
 
 	current_in = in;
-	*result = (((int64_t)*current_in++) << 56) | (((int64_t)*current_in++) << 48) |
-				(((int64_t)*current_in++) << 40) | (((int64_t)*current_in++) << 32) |
-				(((int64_t)*current_in++) << 24) | (((int64_t)*current_in++) << 16) |
-				(((int64_t)*current_in++) << 8) | ((int64_t)*current_in++);
+	*result = (((int64_t)*current_in++) << 56);
+	*result = *result | (((int64_t)*current_in++) << 48);
+	*result = *result | (((int64_t)*current_in++) << 40);
+	*result = *result | (((int64_t)*current_in++) << 32);
+	*result = *result | (((int64_t)*current_in++) << 24);
+	*result = *result | (((int64_t)*current_in++) << 16);
+	*result = *result | (((int64_t)*current_in++) << 8);
+	*result = *result | ((int64_t)*current_in++);
+
 	return current_in;
 }
 
@@ -217,7 +225,7 @@ void new_int8_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int8_t *ptr = malloc(sizeof(int8_t));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int8_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -227,7 +235,7 @@ void new_int8_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	int size;
 	current_in = read_int(current_in, &size);
 	int8_t *ptr = malloc(sizeof(int8_t)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int8_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -286,7 +294,7 @@ void new_int16_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int16_t *ptr = malloc(sizeof(int16_t));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int16_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -296,7 +304,7 @@ void new_int16_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	int16_t *ptr = malloc(sizeof(int16_t)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int16_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -353,7 +361,7 @@ void new_int32_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int *ptr = malloc(sizeof(int));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int32_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -363,7 +371,7 @@ void new_int32_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	int *ptr = malloc(sizeof(int)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int32_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -422,7 +430,7 @@ void new_int64_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	int64_t *ptr = malloc(sizeof(int64_t));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_int64_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -432,7 +440,7 @@ void new_int64_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	int64_t *ptr = malloc(sizeof(int64_t)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_int64_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -569,7 +577,7 @@ void new_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	float *ptr = malloc(sizeof(float));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_float_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -579,7 +587,7 @@ void new_float_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	int size;
 	current_in = read_int(current_in, &size);
 	float *ptr = malloc(sizeof(float)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_float_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -688,7 +696,7 @@ void new_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	double *ptr = malloc(sizeof(double));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_double_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -698,7 +706,7 @@ void new_double_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	double *ptr = malloc(sizeof(double)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_double_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -734,7 +742,7 @@ byte * read_string(byte *in, string *result) {
 byte * write_string(string *str, byte *out, size_t *len) {
 	byte *current_out = out;
 
-	int strsize = (int) strlen(*str);
+	int strsize = (int) strlen((const char *) *str);
 
 	for (long i=0; i<strsize; i++) {
 		*current_out++ = (*str)[i]; (*len)++;
@@ -789,7 +797,7 @@ void pointer_deref_string_assign_Handler(byte *in, size_t len_in, byte *out, siz
 	string *ptr, value;
 	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_string(current_in, &value);
-	strcpy(*ptr, value);
+	strcpy((char *) *ptr, (const char *) value);
 }
 
 void pointer_deref_string_array_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -801,7 +809,7 @@ void pointer_deref_string_array_assign_Handler(byte *in, size_t len_in, byte *ou
 	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_int(current_in, &index);
 	current_in = read_string(current_in, &value);
-	strcpy(ptr[index], value);
+	strcpy((char *) ptr[index], (const char *) value);
 }
 
 void new_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -809,7 +817,7 @@ void new_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	string *ptr = malloc(sizeof(string));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_string_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -819,7 +827,7 @@ void new_string_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_ou
 	int size;
 	current_in = read_int(current_in, &size);
 	string *ptr = malloc(sizeof(string)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_string_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -837,7 +845,7 @@ byte * read_pointer(byte *in, void **result) {
 	byte *current_in = in;
 	uintptr_t p;
 
-	current_in = read_int64(current_in, &p);
+	current_in = read_int64(current_in, (int64_t *) &p);
 	*result = (void *) p;
 
 	return current_in;
@@ -847,7 +855,7 @@ byte * write_pointer(void **pointer, byte *out, size_t *len) {
 	byte *current_out = out;
 	uintptr_t p = (uintptr_t) (*pointer);
 
-	current_out = write_int64(&p, current_out, len);
+	current_out = write_int64((int64_t *) &p, current_out, len);
 
 	return current_out;
 }
@@ -875,7 +883,7 @@ void pointer_deref_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	*len_out = 0; current_in+=4;
 
 	void **ptr;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_out = write_pointer(ptr, current_out, len_out);
 }
 
@@ -885,7 +893,7 @@ void pointer_deref_pointer_array_Handler(byte *in, size_t len_in, byte *out, siz
 
 	void **ptr;
 	int index;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_int(current_in, &index);
 	current_out = write_pointer(&(ptr[index]), current_out, len_out);
 }
@@ -895,7 +903,7 @@ void pointer_deref_pointer_assign_Handler(byte *in, size_t len_in, byte *out, si
 	*len_out = 0; current_in+=4;
 
 	void **ptr, *value;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_pointer(current_in, &value);
 	*ptr = value;
 }
@@ -906,9 +914,9 @@ void pointer_deref_pointer_array_assign_Handler(byte *in, size_t len_in, byte *o
 
 	void **ptr, *value;
 	int index;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_int(current_in, &index);
-	current_in = read_string(current_in, &value);
+	current_in = read_pointer(current_in, &value);
 	ptr[index] = value;
 }
 
@@ -917,7 +925,7 @@ void new_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
 	*len_out = 0; current_in+=4;
 
 	void **ptr = malloc(sizeof(void *));
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void new_pointer_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -927,7 +935,7 @@ void new_pointer_array_Handler(byte *in, size_t len_in, byte *out, size_t *len_o
 	int size;
 	current_in = read_int(current_in, &size);
 	void **ptr = malloc(sizeof(void *)*size);
-	current_out = write_pointer(&ptr, current_out, len_out);
+	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
 void delete_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -935,7 +943,7 @@ void delete_pointer_Handler(byte *in, size_t len_in, byte *out, size_t *len_out)
 	*len_out = 0; current_in+=4;
 
 	void **ptr;
-	current_in = read_pointer(current_in, &ptr);
+	current_in = read_pointer(current_in, (void **) &ptr);
 	free(ptr);
 }
 

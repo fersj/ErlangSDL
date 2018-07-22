@@ -821,6 +821,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
 
   case TypeDescr of
     {T, opaque} when (T==struct) or (T==union) ->
+      FinalMap = ContentMap,
       case file:read_file("resources/opaque_fun_templates.c") of
         {ok, Content} -> ok;
         {error, Error} ->
@@ -828,6 +829,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
           Content = <<"">>
       end;
     {struct, MemberList} ->
+      FinalMap = ContentMap,
       ErlNameStr = atom_to_list(ErlName),
       ReadStruct = generate_read_struct_c(MemberList),
       WriteStruct = generate_write_struct_c(MemberList),
@@ -847,6 +849,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
       GettersSetters = generate_getters_setters_c(MemberList, ErlNameStr, CName),
       Content = <<ReadStruct/binary, WriteStruct/binary, Handlers/binary, GettersSetters/binary>>;
     {union, MemberList} ->
+      FinalMap = ContentMap,
       ErlNameStr = atom_to_list(ErlName),
       case file:read_file("resources/union_fun_templates.c") of
         {ok, UnionFuncs} -> ok;
@@ -860,6 +863,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
       GettersSetters = generate_getters_setters_c(MemberList, atom_to_list(ErlName), CName),
       Content = <<UnionFuncs/binary, GettersSetters/binary>>;
     {enum, _ElemList} ->
+      FinalMap = ContentMap,
       case file:read_file("resources/enum_fun_templates.c") of
         {ok, Content} -> ok;
         {error, Error} ->
@@ -867,6 +871,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
           Content = <<"">>
       end;
     {fixed_array, _TD, _Num} ->
+      FinalMap = ContentMap,
       case file:read_file("resources/fixed_array_fun_templates.c") of
         {ok, Content} -> ok;
         {error, Error} ->
@@ -874,13 +879,15 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
           Content = <<"">>
       end;
     {pointer, _TD} ->
+      FinalMap = ContentMap,
       case file:read_file("resources/pointertype_fun_templates.c") of
         {ok, Content} -> ok;
         {error, Error} ->
           io:format("Error reading file: ~p~n", [Error]),
           Content = <<"">>
       end;
-    {T, _NBits} when (T==int) or (T==float) ->
+    {T, NBits} when (T==int) or (T==float) ->
+      FinalMap = maps:put("Casting", atom_to_list(T)++integer_to_list(NBits)++"_t *", ContentMap),
       case file:read_file("resources/type_nbits_fun_templates.c") of
         {ok, Content} -> ok;
         {error, Error} ->
@@ -888,6 +895,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
           Content = <<"">>
       end;
     _ ->
+      FinalMap = ContentMap,
       case file:read_file("resources/generic_type_fun_templates.c") of
         {ok, Content} -> ok;
         {error, Error} ->
@@ -895,7 +903,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
           Content = <<"">>
       end
   end,
-  write_file(get_c_filename(), binary_to_list(bbmustache:render(Content,ContentMap)), [append]),
+  write_file(get_c_filename(), binary_to_list(bbmustache:render(Content,FinalMap)), [append]),
   generate_types_parser_c(TypeList).
 
 generate_read_struct_c(MemberList) ->
@@ -915,6 +923,12 @@ generate_read_struct_c([M|MemberList], Result) ->
     fixed_array ->
       Line = <<"\tcurrent_in = read_{{ParamType}}_array(current_in, result->{{CName}}, {{Size}});\n">>,
       Map = #{"ParamType"=>element(2,TypeDescr), "CName"=>CName, "Size"=>element(3,TypeDescr)};
+    string ->
+      Line = <<"\tcurrent_in = read_{{ParamType}}(current_in, (string *) result->{{CName}});\n">>,
+      Map = #{"ParamType"=>Type, "CName"=>CName};
+    pointer ->
+      Line = <<"\tcurrent_in = read_{{ParamType}}(current_in, (void **) &(result->{{CName}}));\n">>,
+      Map = #{"ParamType"=>Type, "CName"=>CName};
     _ ->
       Line = <<"\tcurrent_in = read_{{ParamType}}(current_in, &(result->{{CName}}));\n">>,
       Map = #{"ParamType"=>Type, "CName"=>CName}
@@ -939,6 +953,12 @@ generate_write_struct_c([M|MemberList], Result) ->
     fixed_array ->
       Line = <<"\tcurrent_out = write_{{ParamType}}_array(value->{{CName}}, current_out, len, {{Size}});\n">>,
       Map = #{"ParamType"=>element(2,TypeDescr), "CName"=>CName, "Size"=>element(3,TypeDescr)};
+    string ->
+      Line = <<"\tcurrent_out = write_{{ParamType}}((string *) value->{{CName}}, current_out, len);\n">>,
+      Map = #{"ParamType"=>Type, "CName"=>CName};
+    pointer ->
+      Line = <<"\tcurrent_out = write_{{ParamType}}((void **) &(value->{{CName}}), current_out, len);\n">>,
+      Map = #{"ParamType"=>Type, "CName"=>CName};
     _ ->
       Line = <<"\tcurrent_out = write_{{ParamType}}(&(value->{{CName}}), current_out, len);\n">>,
       Map = #{"ParamType"=>Type, "CName"=>CName}
@@ -971,6 +991,36 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
               "\tcurrent_in = read_{{TypeErl}}_array(current_in, ptr->{{AttribC}}, {{Size}});\n}\n\n">>,
       TypeErl = element(2, TypeDescr),
       Size = element(3, TypeDescr);
+    string ->
+      Get = <<"void {{StructErl}}_get_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
+              "\tbyte *current_in = in, *current_out = out;\n"
+              "\t*len_out = 0; current_in+=4;\n\n"
+              "\t{{StructC}} *ptr;\n"
+              "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_out = write_{{TypeErl}}((string *) ptr->{{AttribC}}, current_out, len_out);\n}\n\n">>,
+      Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
+              "\tbyte *current_in = in, *current_out = out;\n"
+              "\t*len_out = 0; current_in+=4;\n\n"
+              "\t{{StructC}} *ptr;\n"
+              "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_in = read_{{TypeErl}}(current_in, (string *) ptr->{{AttribC}});\n}\n\n">>,
+      TypeErl = Type,
+      Size = undefined;
+    pointer ->
+      Get = <<"void {{StructErl}}_get_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
+              "\tbyte *current_in = in, *current_out = out;\n"
+              "\t*len_out = 0; current_in+=4;\n\n"
+              "\t{{StructC}} *ptr;\n"
+              "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_out = write_{{TypeErl}}((void **) &(ptr->{{AttribC}}), current_out, len_out);\n}\n\n">>,
+      Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
+              "\tbyte *current_in = in, *current_out = out;\n"
+              "\t*len_out = 0; current_in+=4;\n\n"
+              "\t{{StructC}} *ptr;\n"
+              "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_in = read_{{TypeErl}}(current_in, (void **) &(ptr->{{AttribC}}));\n}\n\n">>,
+      TypeErl = Type,
+      Size = undefined;
     _ ->
       Get = <<"void {{StructErl}}_get_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
@@ -1017,12 +1067,12 @@ generate_functions_c([F|FunList]) ->
     string ->
       RetType = string,
       FunLine = <<"\t{{RetCType}} retvar;\n"
-                  "\tstrcpy(retvar, {{CName}}());\n"
+                  "\tstrcpy((char *)retvar, {{CName}}({{FunVars}}));\n"
                   "\tcurrent_out = write_{{RetType}}(&retvar, current_out, len_out);\n">>;
     {pointer, Type} ->
       RetType = Type,
       FunLine = <<"\t{{RetCType}} *retvar = {{CName}}({{FunVars}});\n"
-                  "\tcurrent_out = write_pointer(&retvar, current_out, len_out);\n">>;
+                  "\tcurrent_out = write_pointer((void **) &retvar, current_out, len_out);\n">>;
     Type ->
       RetType = Type,
       FunLine = <<"\t{{RetCType}} retvar = {{CName}}({{FunVars}});\n"
@@ -1051,7 +1101,7 @@ generate_fun_params_c([{_,T,O}|Params], ReadLines, Vars, RetVars, Cnt) ->
   VarName = "var"++integer_to_list(Cnt),
   Return = lists:member(return, O),
   case is_tuple(T) of
-    true when Return->
+    true when Return ->
       {Type, ErlType} = T,
       Line1 = <<"\t{{CType}} *{{VarName}} = malloc(sizeof({{CType}}));\n">>,
       Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName, "ReadType"=>Type};
@@ -1060,6 +1110,7 @@ generate_fun_params_c([{_,T,O}|Params], ReadLines, Vars, RetVars, Cnt) ->
       Line1 = <<"\t{{CType}} *{{VarName}};\n">>,
       Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName, "ReadType"=>Type};
     false ->
+      Type = undefined,
       ErlType = T,
       Line1 = <<"\t{{CType}} {{VarName}};\n">>,
       Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName, "ReadType"=>ErlType}
@@ -1068,6 +1119,9 @@ generate_fun_params_c([{_,T,O}|Params], ReadLines, Vars, RetVars, Cnt) ->
     true ->
       Line2 = <<"">>,
       NewRetVars = [{VarName, ErlType}|RetVars];
+    false when Type==pointer ->
+      Line2 = <<"\tcurrent_in = read_{{ReadType}}(current_in, (void **) &{{VarName}});\n">>,
+      NewRetVars = RetVars;
     false ->
       Line2 = <<"\tcurrent_in = read_{{ReadType}}(current_in, &{{VarName}});\n">>,
       NewRetVars = RetVars
