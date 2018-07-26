@@ -512,15 +512,16 @@ generate_enum_get_atom([E|ElemList], Result, Cnt) ->
 generate_functions_erl([], _TypeList) -> ok;
 generate_functions_erl([Fun|FunList], TypeList) ->
   #fun_spec{erlang_name=ErlName, params=Params, type_descr=Descr, option=Opt} = Fun,
-  StrParams = fun_params_to_string(Params),
-  VarList = case ["Param"++integer_to_list(I) || I <- lists:seq(1,length(StrParams))] of
+  {StrParams, StrParamsNoFuns, FunParams} = fun_params_to_string(Params),
+  VarList = case ["Param"++integer_to_list(I) || I <- lists:seq(1,length(StrParamsNoFuns))] of
               [] -> ["[]"];
               List -> List
             end,
   Header = <<"{{ErlName}}({{HParams}}) ->\n">>,
   Body1 = <<"\tCode = int_to_bytelist({{Code}}),\n"
             "{{BodyParams}}"
-            "\tResultCall = call_port_owner(?PORT_NAME, [Code, {{Vars}}]),\n">>,
+            "{{{FunWrappers}}}"
+            "\tResultCall = call_port_owner(?PORT_NAME, [Code, {{Vars}}], [{{FunVars}}]),\n">>,
   case Descr of
     {pointer, PtrType} ->
       RetType = pointer;
@@ -597,35 +598,49 @@ generate_functions_erl([Fun|FunList], TypeList) ->
 
   Map = #{"ErlName" => atom_to_list(ErlName),
           "HParams" => string:join(StrParams, ", "),
-          "BodyParams" => generate_body_parameters_to_send(Params, StrParams),
+          "BodyParams" => generate_body_parameters_to_send(Params, StrParamsNoFuns),
           "Code" => integer_to_list(get_fun_code(atom_to_list(ErlName))),
           "Vars" => string:join(VarList,", "),
           "RetType" => atom_to_list(RetType),
           "RetParams" => RetParams,
-          "GCLines" => GCLines},
+          "GCLines" => GCLines,
+          "FunWrappers" => generate_fun_wrappers_erl(FunParams),
+          "FunVars" => string:join([N++"_Wrapper" || {N,_,_}<-FunParams], ", ")},
   FunContent = bbmustache:render(<<Header/binary, Body1/binary, Body2/binary>>, Map),
   FunContentArrays = generate_fun_with_array_size_erl(ErlName, Params, Descr),
   write_file(get_erl_filename(), <<FunContent/binary, FunContentArrays/binary>>, [append]),
   generate_functions_erl(FunList, TypeList).
 
 fun_params_to_string(Params) ->
-  fun_params_to_string(Params, "", 1).
-fun_params_to_string([], Result, _Cnt) -> lists:reverse(Result);
-fun_params_to_string([{_,P,O}|Params], Result, Cnt) ->
+  fun_params_to_string(Params, [], [], [], 1).
+fun_params_to_string([], Result, ResultNoFuns, FunVars, _Cnt) ->
+  {lists:reverse(Result), lists:reverse(ResultNoFuns), lists:reverse(FunVars)};
+fun_params_to_string([{_,P,O}|Params], Result, ResultNoFuns, FunVars, Cnt) ->
   case lists:member(return, O) of
     true ->
-      NewResult = Result;
-    _ ->
+      NewResult = Result,
+      NewResultNoFuns = ResultNoFuns,
+      NewFunVars = FunVars;
+    false ->
       case P of
         {pointer, Type} ->
           Elem = "P_"++string:titlecase(atom_to_list(Type)) ++ "_" ++ integer_to_list(Cnt),
+          NewResult = [Elem|Result],
+          NewResultNoFuns = [Elem|ResultNoFuns],
+          NewFunVars = FunVars;
+        {function, PTypes, RType} ->
+          Elem = "Fun"++integer_to_list(length(FunVars)+1),
+          NewFunVars = [{Elem, PTypes, RType}|FunVars],
+          NewResultNoFuns = ResultNoFuns,
           NewResult = [Elem|Result];
         _ ->
           Elem = string:titlecase(atom_to_list(P)) ++ "_" ++ integer_to_list(Cnt),
-          NewResult = [Elem|Result]
+          NewResult = [Elem|Result],
+          NewResultNoFuns = [Elem|ResultNoFuns],
+          NewFunVars = FunVars
       end
   end,
-  fun_params_to_string(Params, NewResult, Cnt+1).
+  fun_params_to_string(Params, NewResult, NewResultNoFuns, NewFunVars, Cnt+1).
 
 fun_params_to_tuple_info(Params) ->
   fun_params_to_tuple_info(Params, [], 1).
@@ -637,8 +652,11 @@ fun_params_to_tuple_info([{_,P,O}|Params], Result, Cnt) ->
     _ ->
       case P of
         {pointer, Type} ->
-          Name = "P_"++string:titlecase(atom_to_list(Type)) ++ "_" ++ integer_to_list(Cnt),
+          Name = "P_"++string:titlecase(atom_to_list(Type))++"_"++integer_to_list(Cnt),
           NewResult = [{Name,Cnt,Type,O}|Result];
+        {function, _PTypes, _RType} ->
+          Name = "Fun"++integer_to_list(Cnt),
+          NewResult = [{Name,Cnt,function,O}|Result];
         Type ->
           Name = string:titlecase(atom_to_list(Type)) ++ "_" ++ integer_to_list(Cnt),
           NewResult = [{Name,Cnt,Type,O}|Result]
@@ -657,11 +675,51 @@ generate_body_parameters_to_send([{_,T,O}|Params], [S|StrParams], Result, Cnt) -
       case T of
         {pointer, _Type} ->
           Line = "\tParam" ++ integer_to_list(Cnt) ++ " = pointer_to_bytelist("++S++"),\n";
+        {function, _, _} ->
+          Line = "";
         _ ->
           Line = "\tParam" ++ integer_to_list(Cnt) ++ " = " ++ atom_to_list(T) ++ "_to_bytelist("++S++"),\n"
       end
   end,
   generate_body_parameters_to_send(Params, StrParams, Result++Line, Cnt+1).
+
+generate_fun_wrappers_erl(FunVars) ->
+  generate_fun_wrappers_erl(FunVars, <<"\n">>).
+generate_fun_wrappers_erl([], Result) -> Result;
+generate_fun_wrappers_erl([{FunName,PTypes,RType}|FunVars], Result) ->
+  FunWrapper = <<"\t{{FunName}}_Wrapper = fun(Buf) ->\n"
+            "{{ParseArgs}}"
+            "\t\tResult = {{FunName}}({{Args}}),\n"
+            "\t\t{{RetType}}_to_bytelist(Result)\n"
+            "\tend,\n\n">>,
+  {ParseArgs, ArgNames} = generate_fun_wrapper_args_parser_erl(PTypes),
+  Map = #{"FunName" => FunName,
+          "ParseArgs" => ParseArgs,
+          "Args" => string:join(ArgNames, ", "),
+          "RetType" => RType},
+  NewFunWrapper = bbmustache:render(FunWrapper, Map),
+  generate_fun_wrappers_erl(FunVars, <<Result/binary, NewFunWrapper/binary>>).
+
+generate_fun_wrapper_args_parser_erl(PTypes) ->
+  generate_fun_wrapper_args_parser_erl(PTypes, <<"\t\tR0 = Buf,\n">>, [], 1).
+generate_fun_wrapper_args_parser_erl([P|[]], Result, ParamList, Cnt) ->
+  ParamName = "P"++integer_to_list(Cnt),
+  Line = <<"\t\t{{{Param}}, {{R}}} = parse_{{Type}}({{Bytelist}}),\n">>,
+  Map = #{"Param" => ParamName,
+          "R" => "_R"++integer_to_list(Cnt),
+          "Type" => P,
+          "Bytelist" => "R"++integer_to_list(Cnt-1)},
+  NewLine = bbmustache:render(Line, Map),
+  {<<Result/binary, NewLine/binary>>, lists:reverse([ParamName|ParamList])};
+generate_fun_wrapper_args_parser_erl([P|PTypes], Result, ParamList, Cnt) ->
+  ParamName = "Param"++integer_to_list(Cnt),
+  Line = <<"\t\t{{{Param}}, {{R}}} = parse_{{Type}}({{Bytelist}}),\n">>,
+  Map = #{"Param" => ParamName,
+          "R" => "R"++integer_to_list(Cnt),
+          "Type" => P,
+          "Bytelist" => "R"++integer_to_list(Cnt-1)},
+  NewLine = bbmustache:render(Line, Map),
+  generate_fun_wrapper_args_parser_erl(PTypes, <<Result/binary, NewLine/binary>>, [ParamName|ParamList], Cnt+1).
 
 generate_fun_return_params_erl([void|ParamList]) ->
   generate_fun_return_params_erl(ParamList, <<"">>, [], 1);
@@ -860,7 +918,7 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
       add_fun_code("new_"++ErlNameStr++"_Handler"),
       add_fun_code("new_"++ErlNameStr++"_array_Handler"),
       add_fun_code("delete_"++ErlNameStr++"_Handler"),
-      GettersSetters = generate_getters_setters_c(MemberList, atom_to_list(ErlName), CName),
+      GettersSetters = generate_getters_setters_c(MemberList, ErlNameStr, CName),
       Content = <<UnionFuncs/binary, GettersSetters/binary>>;
     {enum, _ElemList} ->
       FinalMap = ContentMap,
@@ -982,13 +1040,15 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n"
               "\tcurrent_out = write_{{TypeErl}}_array(ptr->{{AttribC}}, current_out, len_out, {{Size}});\n}\n\n">>,
       Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\tcurrent_in = read_{{TypeErl}}_array(current_in, ptr->{{AttribC}}, {{Size}});\n}\n\n">>,
+              "\tcurrent_in = read_{{TypeErl}}_array(current_in, ptr->{{AttribC}}, {{Size}});\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n}\n\n">>,
       TypeErl = element(2, TypeDescr),
       Size = element(3, TypeDescr);
     string ->
@@ -997,13 +1057,15 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n"
               "\tcurrent_out = write_{{TypeErl}}((string *) ptr->{{AttribC}}, current_out, len_out);\n}\n\n">>,
       Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\tcurrent_in = read_{{TypeErl}}(current_in, (string *) ptr->{{AttribC}});\n}\n\n">>,
+              "\tcurrent_in = read_{{TypeErl}}(current_in, (string *) ptr->{{AttribC}});\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n}\n\n">>,
       TypeErl = Type,
       Size = undefined;
     pointer ->
@@ -1012,13 +1074,15 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n"
               "\tcurrent_out = write_{{TypeErl}}((void **) &(ptr->{{AttribC}}), current_out, len_out);\n}\n\n">>,
       Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\tcurrent_in = read_{{TypeErl}}(current_in, (void **) &(ptr->{{AttribC}}));\n}\n\n">>,
+              "\tcurrent_in = read_{{TypeErl}}(current_in, (void **) &(ptr->{{AttribC}}));\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n}\n\n">>,
       TypeErl = Type,
       Size = undefined;
     _ ->
@@ -1027,13 +1091,15 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n"
               "\tcurrent_out = write_{{TypeErl}}(&(ptr->{{AttribC}}), current_out, len_out);\n}\n\n">>,
       Set = <<"void {{StructErl}}_set_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n"
               "\t{{StructC}} *ptr;\n"
               "\tcurrent_in = read_pointer(current_in, (void **) &ptr);\n"
-              "\tcurrent_in = read_{{TypeErl}}(current_in, &(ptr->{{AttribC}}));\n}\n\n">>,
+              "\tcurrent_in = read_{{TypeErl}}(current_in, &(ptr->{{AttribC}}));\n"
+              "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n}\n\n">>,
       TypeErl = Type,
       Size = undefined
   end,
@@ -1059,23 +1125,27 @@ generate_functions_c([F|FunList]) ->
   InitLines = <<"void {{HandlerName}}(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
               "\tbyte *current_in = in, *current_out = out;\n"
               "\t*len_out = 0; current_in+=4;\n\n">>,
-  {ReadLines, Vars, RetVars} = generate_fun_params_c(Params),
+  {ReadLines, Vars, RetVars, FunVars} = generate_fun_params_c(Params, atom_to_list(ErlName)),
   case Descr of
     void ->
       RetType = nil,
-      FunLine = <<"\t{{CName}}({{FunVars}});\n">>;
+      FunLine = <<"\t{{CName}}({{FunVars}});\n"
+                  "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n">>;
     string ->
       RetType = string,
       FunLine = <<"\t{{RetCType}} retvar;\n"
                   "\tstrcpy((char *)retvar, {{CName}}({{FunVars}}));\n"
+                  "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n"
                   "\tcurrent_out = write_{{RetType}}(&retvar, current_out, len_out);\n">>;
     {pointer, Type} ->
       RetType = Type,
       FunLine = <<"\t{{RetCType}} *retvar = {{CName}}({{FunVars}});\n"
+                  "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n"
                   "\tcurrent_out = write_pointer((void **) &retvar, current_out, len_out);\n">>;
     Type ->
       RetType = Type,
       FunLine = <<"\t{{RetCType}} retvar = {{CName}}({{FunVars}});\n"
+                  "\tcurrent_out = write_byte(RET_CODE, current_out, len_out);\n"
                   "\tcurrent_out = write_{{RetType}}(&retvar, current_out, len_out);\n">>
   end,
   ReturnLines = generate_fun_return_params_c(RetVars),
@@ -1086,48 +1156,51 @@ generate_functions_c([F|FunList]) ->
           "RetCType" => get_type_name(RetType),
           "RetType" => atom_to_list(RetType)},
   Content = <<InitLines/binary, ReadLines/binary, FunLine/binary, ReturnLines/binary, FinalLine/binary>>,
+  generate_fun_wrappers_c(FunVars),
   write_file(get_c_filename(), binary_to_list(bbmustache:render(Content, Map)), [append]),
   add_fun_code(HandlerName),
   generate_functions_c(FunList).
 
-generate_fun_params_c([]) ->
-  {<<"">>, [], []};
-generate_fun_params_c(Params) ->
-  generate_fun_params_c(Params, <<"">>, [], [], 1).
-generate_fun_params_c([], ReadLines, Vars, RetVars, _Cnt) ->
+generate_fun_params_c([], _FunName) ->
+  {<<"">>, [], [], []};
+generate_fun_params_c(Params, FunName) ->
+  generate_fun_params_c(Params, FunName, <<"">>, [], [], [], 1).
+generate_fun_params_c([], _FunName, ReadLines, Vars, RetVars, FunVars, _Cnt) ->
   CR = <<"\n">>,
-  {<<ReadLines/binary, CR/binary>>, lists:reverse(Vars), lists:reverse(RetVars)};
-generate_fun_params_c([{_,T,O}|Params], ReadLines, Vars, RetVars, Cnt) ->
-  VarName = "var"++integer_to_list(Cnt),
+  {<<ReadLines/binary, CR/binary>>, lists:reverse(Vars), lists:reverse(RetVars), lists:reverse(FunVars)};
+generate_fun_params_c([{_,T,O}|Params], FunName, ReadLines, Vars, RetVars, FunVars, Cnt) ->
   Return = lists:member(return, O),
-  case is_tuple(T) of
-    true when Return ->
-      {Type, ErlType} = T,
-      Line1 = <<"\t{{CType}} *{{VarName}} = malloc(sizeof({{CType}}));\n">>,
-      Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName, "ReadType"=>Type};
-    true ->
-      {Type, ErlType} = T,
-      Line1 = <<"\t{{CType}} *{{VarName}};\n">>,
-      Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName, "ReadType"=>Type};
-    false ->
-      Type = undefined,
-      ErlType = T,
-      Line1 = <<"\t{{CType}} {{VarName}};\n">>,
-      Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName, "ReadType"=>ErlType}
+  case T of
+    {function, PTypes, RType} ->
+      FunId = length(FunVars)+1,
+      VarName = FunName++"_wrapper_"++integer_to_list(FunId),
+      Lines = <<"">>,
+      Map = maps:new(),
+      NewRetVars = RetVars,
+      NewFunVars = [{VarName, FunId, PTypes, RType}|FunVars];
+    {pointer, ErlType} when Return ->
+      VarName = "var"++integer_to_list(Cnt),
+      Lines = <<"\t{{CType}} *{{VarName}} = malloc(sizeof({{CType}}));\n">>,
+      Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName},
+      NewRetVars = [{VarName, ErlType}|RetVars],
+      NewFunVars = FunVars;
+    {pointer, ErlType} ->
+      VarName = "var"++integer_to_list(Cnt),
+      Lines = <<"\t{{CType}} *{{VarName}};\n"
+                "\tcurrent_in = read_pointer(current_in, (void **) &{{VarName}});\n">>,
+      Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName},
+      NewRetVars = RetVars,
+      NewFunVars = FunVars;
+    ErlType ->
+      VarName = "var"++integer_to_list(Cnt),
+      Lines = <<"\t{{CType}} {{VarName}};\n"
+                "\tcurrent_in = read_{{ReadType}}(current_in, &{{VarName}});\n">>,
+      Map = #{"CType"=>get_type_name(ErlType), "VarName"=>VarName, "ReadType"=>ErlType},
+      NewRetVars = RetVars,
+      NewFunVars = FunVars
   end,
-  case lists:member(return, O) of
-    true ->
-      Line2 = <<"">>,
-      NewRetVars = [{VarName, ErlType}|RetVars];
-    false when Type==pointer ->
-      Line2 = <<"\tcurrent_in = read_{{ReadType}}(current_in, (void **) &{{VarName}});\n">>,
-      NewRetVars = RetVars;
-    false ->
-      Line2 = <<"\tcurrent_in = read_{{ReadType}}(current_in, &{{VarName}});\n">>,
-      NewRetVars = RetVars
-  end,
-  NewLines = bbmustache:render(<<Line1/binary, Line2/binary>>, Map),
-  generate_fun_params_c(Params, <<ReadLines/binary, NewLines/binary>>, [VarName|Vars], NewRetVars, Cnt+1).
+  NewLines = bbmustache:render(Lines, Map),
+  generate_fun_params_c(Params, FunName, <<ReadLines/binary, NewLines/binary>>, [VarName|Vars], NewRetVars, NewFunVars, Cnt+1).
 
 generate_fun_return_params_c(RetVars) ->
   generate_fun_return_params_c(RetVars, <<"">>).
@@ -1143,6 +1216,38 @@ generate_fun_return_params_c([{VN, VT}|RetVars], Result) ->
   Map = #{"Type"=>atom_to_list(VT), "Name"=>VN},
   NewLine = bbmustache:render(Line, Map),
   generate_fun_return_params_c(RetVars, <<Result/binary, NewLine/binary>>).
+
+generate_fun_wrappers_c(FunVars) ->
+  generate_fun_wrappers_c(FunVars, <<"">>).
+generate_fun_wrappers_c([], Result) ->
+  write_file(get_c_filename(), Result, [append]);
+generate_fun_wrappers_c([{FunName, FunId, PTypes, RType}|FunVars], Result) ->
+  FunCode = <<"{{RetType}} {{FunName}} ({{Args}}) {\n"
+              "\tstatic byte input_buffer[BUF_SIZE];\n"
+              "\tstatic byte output_buffer[BUF_SIZE];\n"
+              "\tbyte *current_out = output_buffer;\n"
+              "\tsize_t len_out = 0;\n\n"
+              "\tcurrent_out = write_byte(CALL_CODE, current_out, &len_out);\n"
+              "\tcurrent_out = write_byte({{FunId}}, current_out, &len_out);\n"
+              "{{{WriteArgs}}}\n"
+              "\twrite_command(output_buffer, len_out);\n\n"
+              "\twait_for_input(input_buffer, output_buffer);\n\n"
+              "\tbyte *current_in = input_buffer;\n"
+              "\tcurrent_in++;\n"
+              "\t{{RetType}} result;\n"
+              "\tcurrent_in = read_{{ErlRetType}}(current_in, &result);\n\n"
+              "\treturn result;\n}\n\n">>,
+  Args = [get_type_name(lists:nth(Id, PTypes))++" param"++integer_to_list(Id) || Id<-lists:seq(1, length(PTypes))],
+  WriteArgs = ["\tcurrent_out = write_"++atom_to_list(lists:nth(Id, PTypes))++"(&param"++integer_to_list(Id)++", current_out, &len_out);\n"
+                || Id<-lists:seq(1, length(PTypes))],
+  Map = #{"RetType" => get_type_name(RType),
+          "FunName" => FunName,
+          "Args" => string:join(Args, ", "),
+          "FunId" => integer_to_list(FunId),
+          "ErlRetType" => RType,
+          "WriteArgs" => string:join(WriteArgs, "")},
+  NewFunCode = bbmustache:render(FunCode, Map),
+  generate_fun_wrappers_c(FunVars, <<Result/binary, NewFunCode/binary>>).
 
 generate_fun_array(FunList) ->
   Line = <<"handler handlers[] = {\n\t0,\n">>,

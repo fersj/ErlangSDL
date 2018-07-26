@@ -29,6 +29,10 @@ int max (int *array, int size) {
 	}
 
 	return max;
+}
+
+int apply_int(int x, int (*f1)(int), int (*f2)(int)) {
+	return (*f1)(x) + (*f2)(x);
 }"
   },
   [
@@ -712,6 +716,12 @@ int max (int *array, int size) {
     {fun_spec, maxint, "max", [
       {param_spec, {pointer, int}, []},
       {param_spec, int, [{length_of, 1}, free_after]}
+      ],
+      int, []},
+    {fun_spec, apply_int, "apply_int", [
+      {param_spec, int, []},
+      {param_spec, {function, [int], int}, []},
+      {param_spec, {function, [int], int}, []}
       ],
       int, []}
   ]

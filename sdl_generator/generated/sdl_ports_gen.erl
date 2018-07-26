@@ -788,7 +788,8 @@
 	get_window_size/1,
 	get_error/0,
 	poll_event/0,
-	maxint/2]).
+	maxint/2,
+	apply_int/3]).
 
 -ifdef(debug).
 -define(DEBUG(X, Y), io:format(X, Y)).
@@ -798,6 +799,9 @@
 
 -define(PORT_NAME, sdl_port).
 
+-define(CALL_CODE, 10).
+-define(RET_CODE, 20).
+
 %--------------------------------------------------------
 
 start_port_owner(Name) ->
@@ -806,30 +810,57 @@ start_port_owner(Name) ->
 
 loop_port_owner(Port) ->
 	receive
-		{Pid, {call, List}} ->
+		{Pid, {call, List, Funs}} ->
 			Port ! { self(), { command, List }},
-			receive 
-				{ _, { data, Msg }} -> 
-					?DEBUG("Received binary: ~w~n", [Msg]),
-					Pid ! {self(), {datalist, Msg}};
-				Other ->
-					?DEBUG("Unknown response from port: ~w~n", [Other]),
-					Pid ! {self(), Other}
-			end,
+			loop_receive_from_c(Port, Pid, Funs),
 			loop_port_owner(Port)
-%    {_, {cast, List}} ->
-%      Port ! { self(), { command, List }},
-%      loop_port_owner(Port)
+		% {_, {cast, List}} ->
+		% 	Port ! { self(), { command, List }},
+		% 	loop_port_owner(Port)
 	end.
 
-call_port_owner(undefined, _) ->
+loop_receive_from_c(Port, Pid, Funs) ->
+		receive 
+			{ _, { data, [?RET_CODE | Msg] }} -> 
+				?DEBUG("Received result binary: ~w~n", [Msg]), 
+				Pid ! {self(), {datalist, Msg}};
+			{ _, { data, [?CALL_CODE, FunId | Msg] }} -> 
+				?DEBUG("Received call request nº ~w: ~w~n", [FunId, Msg]),
+				PortOwner = self(),
+				PidN = spawn(fun() ->
+					Fun = lists:nth(FunId, Funs),
+					Result = Fun(Msg),
+					?DEBUG("About to send RET with: ~w~n", [Result]),
+					PortOwner ! { self(), { result, [?RET_CODE | Result] } }
+				end),
+				loop_receive_from_erlang(Port, PidN),
+				loop_receive_from_c(Port, Pid, Funs);
+			Other ->
+				?DEBUG("Unknown response from port: ~w~n", [Other]),
+				Pid ! {self(), Other}
+		end.
+	
+loop_receive_from_erlang(Port, PidCaller)   ->
+	receive
+		{ PidCaller, { call, List, Funs } } ->
+			Port ! { self(), { command, List } },
+			loop_receive_from_c(Port, PidCaller, Funs),
+			loop_receive_from_erlang(Port, PidCaller);
+		{ PidCaller, { result, Result } } ->
+			Port ! { self(), { command, Result }}
+	end.
+
+call_port_owner(PortOwner, List) -> 
+	call_port_owner(PortOwner, List, []).
+
+call_port_owner(undefined, _, _) ->
 	io:format("Undefined port owner.~n");
-	
-call_port_owner(PortOwner, List) when is_atom(PortOwner) ->
-	call_port_owner(whereis(PortOwner), List);
-	
-call_port_owner(PortOwner, List) ->
-	PortOwner ! { self(), { call , List }},
+
+call_port_owner(PortOwner, List, Funs) when is_atom(PortOwner) ->
+	call_port_owner(whereis(PortOwner), List, Funs);
+
+call_port_owner(PortOwner, List, Funs) ->
+	PortOwner ! { self(), { call, [?CALL_CODE | List], Funs }},
 	receive
 		{PortOwner, X} -> X
 	end.
@@ -14115,7 +14146,8 @@ event_set_drop(Pointer, Attrib) ->
 init(Uint32_1) ->
 	Code = int_to_bytelist(757),
 	Param1 = uint32_to_bytelist(Uint32_1),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_int(DataList),
@@ -14127,7 +14159,8 @@ init(Uint32_1) ->
 
 quit() ->
 	Code = int_to_bytelist(758),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, []], []),
 	case ResultCall of
 		{datalist, _DataList} ->
 			ok;
@@ -14143,7 +14176,8 @@ create_window(String_1, Int_2, Int_3, Int_4, Int_5, Uint32_6) ->
 	Param4 = int_to_bytelist(Int_4),
 	Param5 = int_to_bytelist(Int_5),
 	Param6 = uint32_to_bytelist(Uint32_6),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4, Param5, Param6]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4, Param5, Param6], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_pointer(DataList),
@@ -14160,7 +14194,8 @@ create_window(String_1, Int_2, Int_3, Int_4, Int_5, Uint32_6) ->
 get_window_surface(P_Window_1) ->
 	Code = int_to_bytelist(760),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_pointer(DataList),
@@ -14173,7 +14208,8 @@ get_window_surface(P_Window_1) ->
 load_bmp(String_1) ->
 	Code = int_to_bytelist(761),
 	Param1 = string_to_bytelist(String_1),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_pointer(DataList),
@@ -14190,7 +14226,8 @@ load_bmp(String_1) ->
 free_surface(P_Surface_1) ->
 	Code = int_to_bytelist(762),
 	Param1 = pointer_to_bytelist(P_Surface_1),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], []),
 	case ResultCall of
 		{datalist, _DataList} ->
 			ok;
@@ -14204,7 +14241,8 @@ blit_surface(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	Param2 = pointer_to_bytelist(P_Rect_2),
 	Param3 = pointer_to_bytelist(P_Surface_3),
 	Param4 = pointer_to_bytelist(P_Rect_4),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_int(DataList),
@@ -14220,7 +14258,8 @@ blit_scaled(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 	Param2 = pointer_to_bytelist(P_Rect_2),
 	Param3 = pointer_to_bytelist(P_Surface_3),
 	Param4 = pointer_to_bytelist(P_Rect_4),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2, Param3, Param4], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_int(DataList),
@@ -14233,7 +14272,8 @@ blit_scaled(P_Surface_1, P_Rect_2, P_Surface_3, P_Rect_4) ->
 update_window_surface(P_Window_1) ->
 	Code = int_to_bytelist(765),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_int(DataList),
@@ -14246,7 +14286,8 @@ update_window_surface(P_Window_1) ->
 destroy_window(P_Window_1) ->
 	Code = int_to_bytelist(766),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], []),
 	case ResultCall of
 		{datalist, _DataList} ->
 			ok;
@@ -14257,7 +14298,8 @@ destroy_window(P_Window_1) ->
 get_window_size(P_Window_1) ->
 	Code = int_to_bytelist(767),
 	Param1 = pointer_to_bytelist(P_Window_1),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			R0 = DataList,
@@ -14270,7 +14312,8 @@ get_window_size(P_Window_1) ->
 
 get_error() ->
 	Code = int_to_bytelist(768),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, []], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_string(DataList),
@@ -14282,7 +14325,8 @@ get_error() ->
 
 poll_event() ->
 	Code = int_to_bytelist(769),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, []]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, []], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, R1} = parse_int(DataList),
@@ -14297,7 +14341,8 @@ maxint(P_Int_1, Int_2) ->
 	Code = int_to_bytelist(770),
 	Param1 = pointer_to_bytelist(P_Int_1),
 	Param2 = int_to_bytelist(Int_2),
-	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2]),
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1, Param2], []),
 	case ResultCall of
 		{datalist, DataList} ->
 			{RetParamAux, _R1} = parse_int(DataList),
@@ -14313,4 +14358,32 @@ maxint(List1) ->
 	Value = maxint(P_Int_1, Int_2),
 	delete_int(P_Int_1),
 	Value.
+
+apply_int(Int_1, Fun1, Fun2) ->
+	Code = int_to_bytelist(771),
+	Param1 = int_to_bytelist(Int_1),
+
+	Fun1_Wrapper = fun(Buf) ->
+		R0 = Buf,
+		{P1, _R1} = parse_int(R0),
+		Result = Fun1(P1),
+		int_to_bytelist(Result)
+	end,
+
+	Fun2_Wrapper = fun(Buf) ->
+		R0 = Buf,
+		{P1, _R1} = parse_int(R0),
+		Result = Fun2(P1),
+		int_to_bytelist(Result)
+	end,
+
+	ResultCall = call_port_owner(?PORT_NAME, [Code, Param1], [Fun1_Wrapper, Fun2_Wrapper]),
+	case ResultCall of
+		{datalist, DataList} ->
+			{RetParamAux, _R1} = parse_int(DataList),
+			RetParam1 = RetParamAux,
+			RetParam1;
+		Msg ->
+			{error, Msg}
+	end.
 

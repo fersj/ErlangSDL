@@ -22,6 +22,7 @@ void pointer_deref_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_
 
 	{{CName}} *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
+	current_out = write_byte(RET_CODE, current_out, len_out);
 	current_out = write_{{ErlName}}(pointer, current_out, len_out);
 }
 
@@ -33,6 +34,7 @@ void pointer_deref_{{ErlName}}_array_Handler(byte *in, size_t len_in, byte *out,
 	int index;
 	current_in = read_pointer(current_in, (void **) &ptr);
 	current_in = read_int(current_in, &index);
+	current_out = write_byte(RET_CODE, current_out, len_out);
 	current_out = write_{{ErlName}}(&(ptr[index]), current_out, len_out);
 }
 
@@ -43,6 +45,7 @@ void pointer_deref_{{ErlName}}_assign_Handler(byte *in, size_t len_in, byte *out
 	{{CName}} *pointer;
 	current_in = read_pointer(current_in, (void **) &pointer);
 	current_in = read_{{ErlName}}(current_in, pointer);
+	current_out = write_byte(RET_CODE, current_out, len_out);
 }
 
 void pointer_deref_{{ErlName}}_array_assign_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -55,6 +58,7 @@ void pointer_deref_{{ErlName}}_array_assign_Handler(byte *in, size_t len_in, byt
 	current_in = read_int(current_in, &index);
 	current_in = read_{{ErlName}}(current_in, &value);
 	ptr[index] = value;
+	current_out = write_byte(RET_CODE, current_out, len_out);
 }
 
 void new_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {
@@ -62,6 +66,7 @@ void new_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out
 	*len_out = 0; current_in+=4;
 
 	{{CName}} *ptr = malloc(sizeof({{CName}}));
+	current_out = write_byte(RET_CODE, current_out, len_out);
 	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
@@ -72,6 +77,7 @@ void new_{{ErlName}}_array_Handler(byte *in, size_t len_in, byte *out, size_t *l
 	int size;
 	current_in = read_int(current_in, &size);
 	{{CName}} *ptr = malloc(sizeof({{CName}})*size);
+	current_out = write_byte(RET_CODE, current_out, len_out);
 	current_out = write_pointer((void **) &ptr, current_out, len_out);
 }
 
@@ -82,5 +88,6 @@ void delete_{{ErlName}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_
 	{{CName}} *ptr;
 	current_in = read_pointer(current_in, (void **) &ptr);
 	free(ptr);
+	current_out = write_byte(RET_CODE, current_out, len_out);
 }
 

@@ -24,21 +24,44 @@ void write_command(byte *buf, size_t len) {
 	fflush(stdout);
 }
 
-int main() {
-	byte input_buffer[BUF_SIZE], output_buffer[BUF_SIZE];
-
+void wait_for_input(byte *input_buffer, byte *output_buffer) {
 	int len_in = read_command(input_buffer);
 	size_t len_out;
-	int code;
-	read_int(input_buffer, &code);
-	
-	while (len_in > 0 && code != 0) { 
-		handler current_handler = handlers[code];
+	byte *current_in = input_buffer;
 
-		(*current_handler)(input_buffer, len_in, output_buffer, &len_out);
+	while (len_in > 0 && input_buffer[0] == CALL_CODE) {
+		current_in++;
+
+		int opcode;
+		read_int(current_in, &opcode);
+
+		handler current_handler = handlers[opcode];
+		(*current_handler)(current_in, len_in, output_buffer, &len_out);
 
 		write_command(output_buffer, len_out);
+
 		len_in = read_command(input_buffer);
-		read_int(input_buffer, &code);
+		current_in = input_buffer;
+	}
+	
+	if (len_in == 0) {
+		printf("Closed.");
+		exit(EXIT_SUCCESS);
 	}
 }
+
+int main() {
+// #ifdef DEBUG  
+// 	log_file = fopen("log.txt", "a");
+// 	log_port("Started.\n");
+// #endif  
+
+	byte input_buffer[BUF_SIZE], output_buffer[BUF_SIZE];
+	wait_for_input(input_buffer, output_buffer);
+	
+// #ifdef DEBUG  
+// 	log_port("Finished.\n");
+// 	fclose(log_file);
+// #endif  
+}
+

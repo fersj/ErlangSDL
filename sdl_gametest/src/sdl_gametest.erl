@@ -54,7 +54,11 @@
 	destroy_window/1,
 	get_window_size/1,
 	get_error/0,
-	poll_event/0]).
+	poll_event/0,
+	apply_int/3,
+	new_int/0,
+	pointer_deref_int_assign/2,
+	pointer_deref_int/1]).
 
 %% API exports
 -export([main/1, start/0]).
@@ -267,6 +271,22 @@ start() ->
 
   %{Time, _} = timer:tc(?MODULE, loop, [WindowSurface, Background, Ship, 100, 1, 2000]),
   loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, Ship, 1),
+
+	% Result = sdl_ports_gen:apply_int(3, fun(X) -> X * 2 end, fun(X) -> X + 1 end),
+	% io:format("Result apply_int: ~p~n", [Result]),
+	%
+	% Ptr = sdl_ports_gen:new_int(),
+	% io:format("Ptr: ~p~n", [Ptr]),
+	% sdl_ports_gen:pointer_deref_int_assign(Ptr, 10),
+	% io:format("Deref int: ~p~n", [sdl_ports_gen:pointer_deref_int(Ptr)]),
+	% Fun1 = fun(X) ->
+	% 					V = sdl_ports_gen:pointer_deref_int(Ptr),
+	% 					io:format("Deref int (Fun1):~p~n",[V]),
+	% 					V + X
+	% 			 end,
+	% Fun2 = fun(X) -> X + 1 end,
+  % Result2 = sdl_ports_gen:apply_int(3, Fun1, Fun2),
+	% io:format("Result apply_int ptr: ~p~n", [Result2]),
 
   %io:format("Time: ~w ms~n", [Time / 1000]),
   sdl_ports_gen:free_surface(Ship#ship.surface),

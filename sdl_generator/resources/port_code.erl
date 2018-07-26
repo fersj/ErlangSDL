@@ -6,6 +6,9 @@
 
 -define(PORT_NAME, {{PortName}}).
 
+-define(CALL_CODE, 10).
+-define(RET_CODE, 20).
+
 %--------------------------------------------------------
 
 start_port_owner(Name) ->
@@ -14,30 +17,57 @@ start_port_owner(Name) ->
 
 loop_port_owner(Port) ->
 	receive
-		{Pid, {call, List}} ->
+		{Pid, {call, List, Funs}} ->
 			Port ! { self(), { command, List }},
-			receive 
-				{ _, { data, Msg }} -> 
-					?DEBUG("Received binary: ~w~n", [Msg]),
-					Pid ! {self(), {datalist, Msg}};
-				Other ->
-					?DEBUG("Unknown response from port: ~w~n", [Other]),
-					Pid ! {self(), Other}
-			end,
+			loop_receive_from_c(Port, Pid, Funs),
 			loop_port_owner(Port)
-%    {_, {cast, List}} ->
-%      Port ! { self(), { command, List }},
-%      loop_port_owner(Port)
+		% {_, {cast, List}} ->
+		% 	Port ! { self(), { command, List }},
+		% 	loop_port_owner(Port)
 	end.
 
-call_port_owner(undefined, _) ->
+loop_receive_from_c(Port, Pid, Funs) ->
+		receive 
+			{ _, { data, [?RET_CODE | Msg] }} -> 
+				?DEBUG("Received result binary: ~w~n", [Msg]), 
+				Pid ! {self(), {datalist, Msg}};
+			{ _, { data, [?CALL_CODE, FunId | Msg] }} -> 
+				?DEBUG("Received call request nº ~w: ~w~n", [FunId, Msg]),
+				PortOwner = self(),
+				PidN = spawn(fun() ->
+					Fun = lists:nth(FunId, Funs),
+					Result = Fun(Msg),
+					?DEBUG("About to send RET with: ~w~n", [Result]),
+					PortOwner ! { self(), { result, [?RET_CODE | Result] } }
+				end),
+				loop_receive_from_erlang(Port, PidN),
+				loop_receive_from_c(Port, Pid, Funs);
+			Other ->
+				?DEBUG("Unknown response from port: ~w~n", [Other]),
+				Pid ! {self(), Other}
+		end.
+	
+loop_receive_from_erlang(Port, PidCaller)   ->
+	receive
+		{ PidCaller, { call, List, Funs } } ->
+			Port ! { self(), { command, List } },
+			loop_receive_from_c(Port, PidCaller, Funs),
+			loop_receive_from_erlang(Port, PidCaller);
+		{ PidCaller, { result, Result } } ->
+			Port ! { self(), { command, Result }}
+	end.
+
+call_port_owner(PortOwner, List) -> 
+	call_port_owner(PortOwner, List, []).
+
+call_port_owner(undefined, _, _) ->
 	io:format("Undefined port owner.~n");
-	
-call_port_owner(PortOwner, List) when is_atom(PortOwner) ->
-	call_port_owner(whereis(PortOwner), List);
-	
-call_port_owner(PortOwner, List) ->
-	PortOwner ! { self(), { call , List }},
+
+call_port_owner(PortOwner, List, Funs) when is_atom(PortOwner) ->
+	call_port_owner(whereis(PortOwner), List, Funs);
+
+call_port_owner(PortOwner, List, Funs) ->
+	PortOwner ! { self(), { call, [?CALL_CODE | List], Funs }},
 	receive
 		{PortOwner, X} -> X
 	end.
