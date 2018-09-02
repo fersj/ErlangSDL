@@ -9497,11 +9497,11 @@ void drop_event_set_windowID_Handler(byte *in, size_t len_in, byte *out, size_t 
 }
 
 byte * read_event(byte *in, SDL_Event *result) {
-	return read_pointer(in, (void **) &result);;
+	return read_pointer(in, (void **) &result);
 }
 
 byte * write_event(SDL_Event *value, byte *out, size_t *len) {
-	return write_pointer((void **) &value, out, len);;
+	return write_pointer((void **) &value, out, len);
 }
 
 byte * read_event_array(byte *in, SDL_Event **array, int n) {

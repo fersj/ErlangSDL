@@ -1,9 +1,9 @@
 byte * read_{{ErlName}}(byte *in, {{CName}} *result) {
-	return read_pointer(in, (void **) &result);;
+	return read_pointer(in, (void **) &result);
 }
 
 byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {
-	return write_pointer((void **) &value, out, len);;
+	return write_pointer((void **) &value, out, len);
 }
 
 byte * read_{{ErlName}}_array(byte *in, {{CName}} **array, int n) {

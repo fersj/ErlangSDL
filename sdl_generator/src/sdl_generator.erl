@@ -13,13 +13,23 @@
 -define(SEPARATOR_ERL, "%--------------------------------------------------------\n\n").
 -define(SEPARATOR_C, "//--------------------------------------------------------\n\n").
 
-%% escript Entry point
-main(_Args) ->
-    generate_code(),
-    erlang:halt(0).
+%% -----------------------------------------------------------------------------
+%  escript Entry point.
+main(Args) ->
+  case length(Args) of
+    % Si no se incluye un el nombre del fichero de especificación como argumento se
+    % toma por defecto el nombre de fichero "spec_file.txt".
+    0 -> generate_code();
+    1 -> generate_code(lists:nth(1, Args))
+  end,
+  erlang:halt(0).
 
+%% -----------------------------------------------------------------------------
+%  Lee un fichero de especificación y genera el código Erlang y el código C. Si no
+%  se especifica ningun fichero se toma uno con nombre por defecto. El código generado
+%  se escribe en ficheros Erlang (.erl, .hrl) y C (.c).
 generate_code() ->
-  generate_code("resources/sdl_spec_test.txt").
+  generate_code("spec_file.txt").
 generate_code(Filename) ->
   case file:open("resources/native_types_erl_list.txt", [read]) of
     {ok, InputDeviceNF} ->
@@ -30,17 +40,23 @@ generate_code(Filename) ->
       io:format("Error reading file: ~p~n", [ErrorNF])
   end,
 
+  % Se lee el fichero de especificación y obtenemos la información de las distintas
+  % tuplas que contiene.
   case file:open(Filename, [read]) of
     {ok, InputDeviceS} ->
       {ok, {spec, Info, {erlang_header, EHeader}, {c_header, CHeader}, MacroList, TypeList, FunList}} = io:read(InputDeviceS, ""),
       file:close(InputDeviceS),
+      % Se borran los ficheros generados, en caso de existir, para generarlos de
+      % nuevo desde cero.
       file:delete(Info#generator_info.erl_file_gen),
       file:delete(Info#generator_info.hrl_file_gen),
       file:delete(Info#generator_info.c_file_gen),
 
+      % Se registra un proceso generator_helper para mantener alguna información global
+      % necesaria para la generación de código.
       register(generator_helper, spawn(fun() -> generator_helper(length(NativeFucsList)+1, Info) end)),
 
-      % Erlang code
+      % ERLANG CODE
       generate_init_erl(Info#generator_info.erl_module_name),
       write_file(Info#generator_info.erl_file_gen, EHeader++"\n\n"++?SEPARATOR_ERL, [append]),
       generate_export(NativeFucsList, TypeList, FunList),
@@ -52,28 +68,31 @@ generate_code(Filename) ->
 
       reset_fun_code(1),
 
-      % C code
+      % C CODE
       generate_init_c(Info#generator_info.c_lib_import),
       write_file(Info#generator_info.c_file_gen, CHeader++"\n\n"++?SEPARATOR_C, [append]),
       generate_native_types_parser_c(),
       generate_types_parser_c(TypeList),
       generate_functions_c(FunList),
       generate_main_c();
-      %io:format("Macros: ~p~n", [MacroList]),
-      %io:format("Types: ~p~n", [TypeList]),
-      %io:format("Funs: ~p~n", [FunList]);
     {error, ErrorS} ->
       io:format("Error reading file: ~p~n", [ErrorS])
   end,
   end_helper(),
   ok.
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero Erlang (.erl) el codigo con la definición del módulo y la
+%  importación del fichero de cabecera (.hrl).
 generate_init_erl(ModuleName) ->
   Content = read_file("resources/init_erl_code.erl"),
   NewContent = bbmustache:render(Content, #{"Module"=>ModuleName}),
   write_file(get_erl_filename(), NewContent, [append]).
 
-% TODO Añadir los bytelist_to_XXX, XXX_to_bytelist y parse_XXX... etc para quitar el export_all
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero Erlang (.erl) el código correspondiente a los export de
+%  las funciones generadas.
+%  TODO Añadir los bytelist_to_XXX, XXX_to_bytelist y parse_XXX... etc para quitar el export_all.
 generate_export(NativeFucsList, TypeList, FunList) ->
   generate_export(NativeFucsList, TypeList, FunList, lists:reverse(NativeFucsList)++["init_port/0"]).
 generate_export(_NativeFucsList, [], [], Result) ->
@@ -123,6 +142,9 @@ generate_export(NativeFucsList, [T|TypeList], FunList, Result) ->
       generate_export(NativeFucsList, TypeList, FunList, Result)
   end.
 
+%% -----------------------------------------------------------------------------
+%  Genera los export de las funciones getXXX y setXXX de los union y structs. Devuelve
+%  una lista con los nombres de las funciones de la forma: nombre_funcion/aridad.
 generate_export_setters_getters([], _StructName, Result) -> Result;
 generate_export_setters_getters([M|Members], StructName, Result) ->
   #struct_member{erlang_name=AttribName} = M,
@@ -130,6 +152,9 @@ generate_export_setters_getters([M|Members], StructName, Result) ->
   Set = StructName++"_set_"++atom_to_list(AttribName)++"/2",
   generate_export_setters_getters(Members, StructName, [Set|[Get|Result]]).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero de cabecera Erlang (.hrl) el código generado correspondiente
+%  a las macros definidas en el fichero de especificación.
 generate_macros([]) ->
   write_file(get_hrl_filename(), "\n", [append]);
 generate_macros([Macro|MacroList]) ->
@@ -140,6 +165,9 @@ generate_macros([Macro|MacroList]) ->
   end,
   generate_macros(MacroList).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero Erlang (.erl) el código de las funciones para el manejo del
+%  puerto de comunicación Erlang-C.
 generate_init_port(PortName, CHandlerFile) ->
   case file:read_file("resources/port_code.erl") of
     {ok, Content} -> ok;
@@ -152,15 +180,20 @@ generate_init_port(PortName, CHandlerFile) ->
   InitPort = bbmustache:render(Content, Map),
   write_file(get_erl_filename(), InitPort, [append]).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero Erlang (.erl) el código de las funciones para el manejo de
+%  tipos básicos.
 generate_native_types_parser_erl() ->
   {ok, File} = file:read_file("resources/native_types.erl"),
   Content = unicode:characters_to_list(File),
   write_file(get_erl_filename(), Content++?SEPARATOR_ERL, [append]).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero Erlang (.erl) el código generado para el manejo de tipos
+%  definidos en el fichero de especificación.
 generate_types_parser_erl([]) ->
   write_file(get_erl_filename(), ?SEPARATOR_ERL, [append]);
 generate_types_parser_erl([TypeSpec|TypeList]) ->
-  %io:format("Type spec: ~p~n", [Type]),
   #type_spec{erlang_name=ErlName, type_descr=TypeDescr} = TypeSpec,
   case is_tuple(TypeDescr) of
     true ->
@@ -179,6 +212,7 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
   end,
   ContentMap = #{"ErlName"=>ErlName, "Type"=>Type, "Desc"=>Desc},
 
+  % Se comprueba el tipo de dato y en función de eso se procede a generar su código.
   case TypeDescr of
     {T, opaque} when (T==struct) or (T==union) ->
       FinalMap = ContentMap,
@@ -248,7 +282,7 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
       end,
       Content = <<GetInt/binary, GetAtom/binary, EnumFuns/binary>>;
     {fixed_array, _TD, _Num} ->
-      % TODO añadir new, delete, deref y eso???
+      % TODO añadir funciones new, delete, deref...
       FinalMap = ContentMap,
       case file:read_file("resources/fixed_array_fun_templates.erl") of
         {ok, Content} -> ok;
@@ -292,6 +326,9 @@ generate_types_parser_erl([TypeSpec|TypeList]) ->
   write_file(get_erl_filename(), binary_to_list(bbmustache:render(Content,FinalMap)), [append]),
   generate_types_parser_erl(TypeList).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código Erlang para la función struct_to_bytelist que serializa el tipo
+%  struct de nombre "StructName". Devuelve el código generado en forma de bitstring.
 generate_struct_to_bytelist(Members, StructName) ->
   Init = <<"{{ErlName}}_to_bytelist(Value) ->\n"
           "\tReturn = [">>,
@@ -331,6 +368,9 @@ generate_struct_to_bytelist([M|Members], StructName, Result) ->
   NewLine = bbmustache:render(Line, Map),
   generate_struct_to_bytelist(Members, StructName, <<Result/binary, NewLine/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código Erlang para la función bytelist_to_struct que deserializa el tipo
+%  struct de nombre "StructName". Devuelve el código generado en forma de bitstring.
 generate_bytelist_to_struct(Members, StructName) ->
   InitLines = <<"bytelist_to_{{ErlName}}(Bytelist) ->\n"
           "\tR0 = Bytelist,\n">>,
@@ -372,6 +412,10 @@ generate_bytelist_to_struct([M|Members], MemberNames, StructName, Result, Cnt) -
   NewLine = bbmustache:render(Line, Map),
   generate_bytelist_to_struct(Members, [MN|MemberNames], StructName, <<Result/binary, NewLine/binary>>, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código Erlang para la función parse_struct que deserializa el tipo struct
+%  de nombre "StructName" devolviendo la lista de bytes sobrante. Devuelve el código
+%  generado en forma de bitstring.
 generate_parse_struct(Members, StructName) ->
   InitLines = <<"parse_{{ErlName}}(Bytelist) ->\n"
           "\tR0 = Bytelist,\n">>,
@@ -398,6 +442,9 @@ generate_parse_struct([M|Members], MemberNames, StructName, Result, Cnt) ->
   NewLine = bbmustache:render(Line, Map),
   generate_parse_struct(Members, [MN|MemberNames], StructName, <<Result/binary, NewLine/binary>>, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código Erlang para las funciones get y set de cada elemento del tipo
+%  struct de nombre "StructName". Devuelve el código generado en forma de bitstring.
 generate_getters_setters_erl(MemberList, StructName) ->
   generate_getters_setters_erl(MemberList, MemberList, StructName, <<"">>).
 generate_getters_setters_erl(MemberList, [], StructName, Result) ->
@@ -447,6 +494,10 @@ generate_getters_setters_erl(MemberList, [M|MemberListIt], StructName, Result) -
   NewLines = bbmustache:render(<<Get/binary, Set/binary>>, Map),
   generate_getters_setters_erl(MemberList, MemberListIt, StructName, <<Result/binary, NewLines/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código Erlang para las funciones get y set extra para obtener y modificar
+%  los elementos de tipo array de un struct en forma de listas Erlang. Devuelve el
+%  código generado en forma de bitstring.
 generate_array_getters_erl(MemberList, StructName) ->
   LengthMembers = [{Name, Index} ||
                     {Name, [Index]} <- [{Name,[Index || {length_of, Index}<-Opt]} || {_,Name,_,_,Opt}<-MemberList, length(Opt)>0]],
@@ -473,6 +524,9 @@ generate_array_getters_erl(MemberList, StructName, [{AttribS,Index}|LengthMember
   NewLines = bbmustache:render(<<GetArray/binary, SetArray/binary>>, Map),
   generate_array_getters_erl(MemberList, StructName, LengthMembers, <<Result/binary, NewLines/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código Erlang para las funciones get_int de un tipo enum. Devuelve el
+%  código generado en forma de bitstring.
 generate_enum_get_int(ElemList) ->
   Line = <<"{{ErlName}}_get_int(Atom) ->\n"
           "\tcase Atom of\n">>,
@@ -491,6 +545,9 @@ generate_enum_get_int([E|ElemList], Result, Cnt) ->
   NewLine = bbmustache:render(Line, Map),
   generate_enum_get_int(ElemList, <<Result/binary, NewLine/binary>>, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código Erlang para las funciones get_atom de un tipo enum. Devuelve el
+%  código generado en forma de bitstring.
 generate_enum_get_atom(ElemList) ->
   Line = <<"{{ErlName}}_get_atom(Int) ->\n"
           "\tcase Int of\n">>,
@@ -509,6 +566,9 @@ generate_enum_get_atom([E|ElemList], Result, Cnt) ->
   NewLine = bbmustache:render(Line, Map),
   generate_enum_get_atom(ElemList, <<Result/binary, NewLine/binary>>, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero Erlang (.erl) el código generado para las funciones definidas
+%  en el fichero de especificación.
 generate_functions_erl([], _TypeList) -> ok;
 generate_functions_erl([Fun|FunList], TypeList) ->
   #fun_spec{erlang_name=ErlName, params=Params, type_descr=Descr, option=Opt} = Fun,
@@ -611,6 +671,13 @@ generate_functions_erl([Fun|FunList], TypeList) ->
   write_file(get_erl_filename(), <<FunContent/binary, FunContentArrays/binary>>, [append]),
   generate_functions_erl(FunList, TypeList).
 
+%% -----------------------------------------------------------------------------
+%  Genera a partir de la lista de parámetros de una función una tupla que contiene:
+%    -Una lista con los nombres de variable generados para cada parámetro.
+%    -Una lista similar a la anterior pero excluyendo los parámetros funcionales.
+%    -Una lista solo con los nombres de los parámetros funcionales.
+%  La información que contiene esta tupla es utilizada en la generación del código
+%  de las funciones en Erlang.
 fun_params_to_string(Params) ->
   fun_params_to_string(Params, [], [], [], 1).
 fun_params_to_string([], Result, ResultNoFuns, FunVars, _Cnt) ->
@@ -642,6 +709,15 @@ fun_params_to_string([{_,P,O}|Params], Result, ResultNoFuns, FunVars, Cnt) ->
   end,
   fun_params_to_string(Params, NewResult, NewResultNoFuns, NewFunVars, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera a partir de la lista de parámetros de una función una lista cuyos elementos
+%  contienen:
+%    -Nombre asignado al parámetro.
+%    -Número de parámetro en fucnión de su posición en la cabecera de la función.
+%    -Tipo del parámetro.
+%    -Opciones del parámetro.
+%  Esta infomación es generada con el fin de ser utilizada en la generación de funciones
+%  Erlang, que reciben como parámetro listas que son interpretadas como arrays.
 fun_params_to_tuple_info(Params) ->
   fun_params_to_tuple_info(Params, [], 1).
 fun_params_to_tuple_info([], Result, _Cnt) -> lists:reverse(Result);
@@ -664,6 +740,9 @@ fun_params_to_tuple_info([{_,P,O}|Params], Result, Cnt) ->
   end,
   fun_params_to_tuple_info(Params, NewResult, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera la parte del código Erlang de la función correspondiente a la serialización
+%  de sus parámetros. Devuelve el código generado en forma de string.
 generate_body_parameters_to_send(Params, StrParams) ->
   generate_body_parameters_to_send(Params, StrParams, "", 1).
 generate_body_parameters_to_send(_Params, [], Result, _Cnt) -> Result;
@@ -683,6 +762,10 @@ generate_body_parameters_to_send([{_,T,O}|Params], [S|StrParams], Result, Cnt) -
   end,
   generate_body_parameters_to_send(Params, StrParams, Result++Line, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera la parte del código Erlang correspondiente a los wrappers necesarios para
+%  la ejecución de fucniones de orden superior. Devuelve el código de las funciones
+%  wrapper para cada parámetro funcional en formato bitstring.
 generate_fun_wrappers_erl(FunVars) ->
   generate_fun_wrappers_erl(FunVars, <<"\n">>).
 generate_fun_wrappers_erl([], Result) -> Result;
@@ -700,6 +783,13 @@ generate_fun_wrappers_erl([{FunName,PTypes,RType}|FunVars], Result) ->
   NewFunWrapper = bbmustache:render(FunWrapper, Map),
   generate_fun_wrappers_erl(FunVars, <<Result/binary, NewFunWrapper/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera, a partir de la lista de tipos de una función wrapper, una tupla que contiene:
+%    -Un bitstring con el código generado para serializar los parámetros de una función
+%     wrapper.
+%    -Una lista con los nombre de variable generados para cada parámetro.
+%  Esta información es utilizada para generar el código Erlang de las funciones wrapper
+%  de las funciones de orden superior.
 generate_fun_wrapper_args_parser_erl(PTypes) ->
   generate_fun_wrapper_args_parser_erl(PTypes, <<"\t\tR0 = Buf,\n">>, [], 1).
 generate_fun_wrapper_args_parser_erl([P|[]], Result, ParamList, Cnt) ->
@@ -721,12 +811,15 @@ generate_fun_wrapper_args_parser_erl([P|PTypes], Result, ParamList, Cnt) ->
   NewLine = bbmustache:render(Line, Map),
   generate_fun_wrapper_args_parser_erl(PTypes, <<Result/binary, NewLine/binary>>, [ParamName|ParamList], Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera la parte del código de la función en Erlang correspondiente a la deserialización
+%  de sus parámetros de salida (en caso de tenerlos). Devuelve el código generado en
+%  forma de string.
 generate_fun_return_params_erl([void|ParamList]) ->
   generate_fun_return_params_erl(ParamList, <<"">>, [], 1);
 generate_fun_return_params_erl([_|ParamList]) ->
   generate_fun_return_params_erl(ParamList, <<"">>, ["RetParam1"], 2).
 generate_fun_return_params_erl([P|[]], Result, ParamNames, Cnt) ->
-  % Para cada parámetro de salida se pasa a Erlang el contenido del puntero
   Line = <<"\t\t\t{RetParam{{Cnt}}, _R{{Cnt}}} = parse_{{Type}}(R{{PrevCnt}}),\n">>,
   NewPName = "RetParam"++integer_to_list(Cnt),
   case P of
@@ -739,7 +832,6 @@ generate_fun_return_params_erl([P|[]], Result, ParamNames, Cnt) ->
   NewResult = bbmustache:render(<<Result/binary, Line/binary, FinalLine/binary>>, Map),
   binary_to_list(NewResult);
 generate_fun_return_params_erl([P|ParamList], Result, ParamNames, Cnt) ->
-  % Para cada parámetro de salida se pasa a Erlang el contenido del puntero
   Line = <<"\t\t\t{RetParam{{Cnt}}, R{{Cnt}}} = parse_{{Type}}(R{{PrevCnt}}),\n">>,
   NewPName = "RetParam"++integer_to_list(Cnt),
   case P of
@@ -750,6 +842,10 @@ generate_fun_return_params_erl([P|ParamList], Result, ParamNames, Cnt) ->
   NewLine = bbmustache:render(Line, Map),
   generate_fun_return_params_erl(ParamList, <<Result/binary, NewLine/binary>>, [NewPName|ParamNames], Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código para funciones Erlang adicionales que reciben como parámetro
+%  listas que son interpretadas como arrays haciendo uso de las otras funciones
+%  de manejo de arrays generadas. Devuelve el código en forma de bitstring.
 generate_fun_with_array_size_erl(FunName, Params, Descr) ->
   TupleParams = fun_params_to_tuple_info(Params),
   LengthParams = [{Name, Index, IndexPtr} ||
@@ -825,6 +921,9 @@ generate_fun_with_array_size_erl(FunName, TupleParams, Descr, [{Name,Index,Index
   end,
   generate_fun_with_array_size_erl(FunName, TupleParams, Descr, LengthParams, <<Result/binary, NewLines/binary>>, NewPtrToDelete).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero C (.c) el código de la cabecera con la importación de librerías
+%  y la definición de constantes, macros y algunas funciones de uso general.
 generate_init_c(CLib) ->
   Content = read_file("resources/init_c_code.c"),
   NewContent = bbmustache:render(Content, #{"CLib"=>CLib}),
@@ -850,6 +949,9 @@ generate_native_types_parser_c() ->
   [add_fun_code(F) || F<-L],
   ok.
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero C (.c) el código generado para el manejo de tipos
+%  definidos en el fichero de especificación.
 generate_types_parser_c([]) ->
   write_file(get_c_filename(), ?SEPARATOR_C, [append]);
 generate_types_parser_c([TypeSpec|TypeList]) ->
@@ -964,6 +1066,9 @@ generate_types_parser_c([TypeSpec|TypeList]) ->
   write_file(get_c_filename(), binary_to_list(bbmustache:render(Content,FinalMap)), [append]),
   generate_types_parser_c(TypeList).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código C para la función read_struct que deserializa un tipo de dato
+%  struct. Devuelve el código generado en forma de bitstring.
 generate_read_struct_c(MemberList) ->
   InitFun = <<"byte * read_{{ErlName}}(byte *in, {{CName}} *result) {\n"
               "\tbyte *current_in = in;\n\n">>,
@@ -994,6 +1099,9 @@ generate_read_struct_c([M|MemberList], Result) ->
   NewLine = bbmustache:render(Line, Map),
   generate_read_struct_c(MemberList, <<Result/binary, NewLine/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código C para la función write_struct que serializa un tipo de dato
+%  struct. Devuelve el código generado en forma de bitstring.
 generate_write_struct_c(MemberList) ->
   InitFun = <<"byte * write_{{ErlName}}({{CName}} *value, byte *out, size_t *len) {\n"
               "\tbyte *current_out = out;\n\n">>,
@@ -1024,6 +1132,9 @@ generate_write_struct_c([M|MemberList], Result) ->
   NewLine = bbmustache:render(Line, Map),
   generate_write_struct_c(MemberList, <<Result/binary, NewLine/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera el código C para las funciones get y set de cada elemento de un tipo
+%  struct. Devuelve el código generado en forma de bitstring.
 generate_getters_setters_c(MemberList, StructErlName, StructCName) ->
   generate_getters_setters_c(MemberList, StructErlName, StructCName, <<"">>).
 generate_getters_setters_c([], _StructErlName, _StructCName, Result) -> Result;
@@ -1033,6 +1144,8 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
     true -> Type = element(1, TypeDescr);
     false -> Type = TypeDescr
   end,
+  % El código de las funciones get y set varía en función de si el tipo de dato
+  % es de tipo fixed_array, string, puntero u otra cosa.
   case Type of
     fixed_array ->
       Get = <<"void {{StructErl}}_get_{{AttribErl}}_Handler(byte *in, size_t len_in, byte *out, size_t *len_out) {\n"
@@ -1115,6 +1228,9 @@ generate_getters_setters_c([M|MemberList], StructErlName, StructCName, Result) -
   NewLines = bbmustache:render(<<Get/binary, Set/binary>>, Map),
   generate_getters_setters_c(MemberList, StructErlName, StructCName, <<Result/binary, NewLines/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero C (.c) el código generado para las funciones definidas
+%  en el fichero de especificación.
 generate_functions_c([]) ->
   Array = generate_fun_array(get_fun_list()),
   write_file(get_c_filename(), binary_to_list(Array)++?SEPARATOR_C, [append]),
@@ -1161,13 +1277,25 @@ generate_functions_c([F|FunList]) ->
   add_fun_code(HandlerName),
   generate_functions_c(FunList).
 
+%% -----------------------------------------------------------------------------
+%  Genera a partir de la lista de parámetros de una función una tupla que contiene:
+%    -La parte del código de la función correspondiente a la deserialización de
+%     parámetros en forma de bitstring.
+%    -Una lista con los nombres de variable generados para cada parámetro.
+%    -Una lista de tuplas con los nombres de los parámetros de salida y su tipo.
+%    -Una lista de tuplas con infomación de los parámetros funcionales (si los hay):
+%       -Nombre del parámetros funcional.
+%       -Número de parámetro en fucnión de su posición en la cabecera de la función.
+%       -Tupla con los tipos que recibe la función pasada como parámetro.
+%       -Tipo devuelto por la funcion pasada como parámetro
+%  Toda esta información es utilizada en la generación del código de las funciones de C.
 generate_fun_params_c([], _FunName) ->
   {<<"">>, [], [], []};
 generate_fun_params_c(Params, FunName) ->
   generate_fun_params_c(Params, FunName, <<"">>, [], [], [], 1).
 generate_fun_params_c([], _FunName, ReadLines, Vars, RetVars, FunVars, _Cnt) ->
-  CR = <<"\n">>,
-  {<<ReadLines/binary, CR/binary>>, lists:reverse(Vars), lists:reverse(RetVars), lists:reverse(FunVars)};
+  Line = <<"\n">>,
+  {<<ReadLines/binary, Line/binary>>, lists:reverse(Vars), lists:reverse(RetVars), lists:reverse(FunVars)};
 generate_fun_params_c([{_,T,O}|Params], FunName, ReadLines, Vars, RetVars, FunVars, Cnt) ->
   Return = lists:member(return, O),
   case T of
@@ -1202,6 +1330,9 @@ generate_fun_params_c([{_,T,O}|Params], FunName, ReadLines, Vars, RetVars, FunVa
   NewLines = bbmustache:render(Lines, Map),
   generate_fun_params_c(Params, FunName, <<ReadLines/binary, NewLines/binary>>, [VarName|Vars], NewRetVars, NewFunVars, Cnt+1).
 
+%% -----------------------------------------------------------------------------
+%  Genera la parte del código de la funcion de C correspondiente a la serialización
+%  de parámetros de salida. Devuelve el código generado en forma de bitstring.
 generate_fun_return_params_c(RetVars) ->
   generate_fun_return_params_c(RetVars, <<"">>).
 generate_fun_return_params_c([], Result) -> Result;
@@ -1217,6 +1348,10 @@ generate_fun_return_params_c([{VN, VT}|RetVars], Result) ->
   NewLine = bbmustache:render(Line, Map),
   generate_fun_return_params_c(RetVars, <<Result/binary, NewLine/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera la parte del código C correspondiente a los wrappers necesarios para la
+%  ejecución de fucniones de orden superior. Devuelve el código de las funciones
+%  wrapper para cada parámetro funcional en formato bitstring.
 generate_fun_wrappers_c(FunVars) ->
   generate_fun_wrappers_c(FunVars, <<"">>).
 generate_fun_wrappers_c([], Result) ->
@@ -1249,6 +1384,9 @@ generate_fun_wrappers_c([{FunName, FunId, PTypes, RType}|FunVars], Result) ->
   NewFunCode = bbmustache:render(FunCode, Map),
   generate_fun_wrappers_c(FunVars, <<Result/binary, NewFunCode/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Genera la parte del código C correspondiente al array que contiene las referencias
+%  a las funciones handler generadas. Devuelve el código generado en forma de bitstring.
 generate_fun_array(FunList) ->
   Line = <<"handler handlers[] = {\n\t0,\n">>,
   generate_fun_array(FunList, Line).
@@ -1263,11 +1401,16 @@ generate_fun_array([{Code,Name}|FunList], Result) ->
   NewLine = bbmustache:render(Line, Map),
   generate_fun_array(FunList, <<Result/binary, NewLine/binary>>).
 
+%% -----------------------------------------------------------------------------
+%  Escribe en el fichero C (.c) el código de la función main y de las funciones
+%  para la gestión de comunicaciones Erlang-C.
 generate_main_c() ->
   {ok, File} = file:read_file("resources/main_funcs.c"),
   Content = unicode:characters_to_list(File),
   write_file(get_c_filename(), Content, [append]).
 
+%% -----------------------------------------------------------------------------
+%  Obtiene la especificación de un tipo de dato a partir de su nombre en Erlang.
 find_type_spec_by_erlname(_Type, []) -> undefined;
 find_type_spec_by_erlname(Type, [TS|TypeSpecList]) ->
   {_,Name,_,_,_} = TS,
@@ -1276,6 +1419,8 @@ find_type_spec_by_erlname(Type, [TS|TypeSpecList]) ->
     false -> find_type_spec_by_erlname(Type, TypeSpecList)
   end.
 
+%% -----------------------------------------------------------------------------
+%  Obtiene la especificación de un tipo de dato a partir de su nombre en C.
 % find_type_spec_by_cname(_Type, []) -> undefined;
 % find_type_spec_by_cname(Type, [TS|TypeSpecList]) ->
 %   {_,_,Name,_,_} = TS,
@@ -1284,12 +1429,16 @@ find_type_spec_by_erlname(Type, [TS|TypeSpecList]) ->
 %     false -> find_type_spec_by_cname(Type, TypeSpecList)
 %   end.
 
+%% -----------------------------------------------------------------------------
+%  Escribe en un fichero "File" el contenido "Content" con las opciones "Modes".
 write_file(File, Content, Modes) ->
   case file:write_file(File, Content, Modes) of
     ok -> ok;
     {error, Reason} -> io:format("Write error: ~p~n",[Reason])
   end.
 
+%% -----------------------------------------------------------------------------
+%  Lee el contenido de un fichero "File".
 read_file(File) ->
   case file:read_file(File) of
     {ok, Content} -> Content;
@@ -1298,6 +1447,14 @@ read_file(File) ->
       <<"">>
   end.
 
+%% -----------------------------------------------------------------------------
+%  Bucle del proceso auxiliar que se encarga de mantener la siguiente información
+%  global para realizar consultas:
+%    -La información de la tupla "generator_info" del fichero de especificación.
+%    -Código de operación para funciones que se va incrementando por cada
+%     función generada.
+%    -Lista de nombres de funciones con sus códigos de operación.
+%    -Map con la correspondencia entre nombre de funcion en Erlang y C.
 generator_helper(InitCode, Info) ->
   generator_helper(InitCode, Info, [], maps:new()).
 generator_helper(Code, Info, FunList, TypeMap) ->
@@ -1332,50 +1489,79 @@ generator_helper(Code, Info, FunList, TypeMap) ->
       generator_helper(Code, Info, FunList, TypeMap)
   end.
 
+%% -----------------------------------------------------------------------------
+%  Función para solicitar al proceso generator_helper la asignación de un código de
+%  operación para la función "NameFun" y obtener el código asignado.
 get_fun_code(NameFun) ->
   generator_helper ! {self(), {fun_code, NameFun}},
   receive
     {fun_code, Code} -> Code
   end.
 
+%% -----------------------------------------------------------------------------
+%  Función para solicitar al proceso generator_helper la asignación de un código de
+%  operación para la función "NameFun".
 add_fun_code(NameFun) ->
   generator_helper ! {self(), {fun_add, NameFun}}.
 
+%% -----------------------------------------------------------------------------
+%  Función para obtener del proceso generator_helper la lista de funciones con sus
+%  códigos de operación.
 get_fun_list() ->
   generator_helper ! {self(), fun_list},
   receive
     {fun_list, FunList} -> FunList
   end.
 
+%% -----------------------------------------------------------------------------
+%  Función para solicitar al proceso generator_helper reiniciar la secuencia de
+%  códigos de operación comenzando por el número "InitCode".
 reset_fun_code(InitCode) ->
   generator_helper ! {self(), {reset, InitCode}}.
 
+%% -----------------------------------------------------------------------------
+%  Función para indicar al proceso generator_helper la correspondencia entre los
+%  nombre de una una función en Erlang y C.
 add_type_name(ErlName, CName) ->
   generator_helper ! {self(), {new_type, ErlName, CName}}.
 
+%% -----------------------------------------------------------------------------
+%  Función para obtener del proceso generator_helper el nombre de una función en C
+%  dado su nombre en Erlang.
 get_type_name(ErlName) ->
   generator_helper ! {self(), {get_type, ErlName}},
   receive
     {type_name, CName} -> CName
   end.
 
+%% -----------------------------------------------------------------------------
+%  Función para obtener del proceso generator_helper el nombre del fichero fuente
+%  de Erlang (.erl) generado.
 get_erl_filename() ->
   generator_helper ! {self(), erl_filename},
   receive
     {erl_filename, ErlFileName} -> ErlFileName
   end.
 
+%% -----------------------------------------------------------------------------
+%  Función para obtener del proceso generator_helper el nombre del fichero de cabecera
+%  de Erlang (.hrl) generado.
 get_hrl_filename() ->
   generator_helper ! {self(), hrl_filename},
   receive
     {hrl_filename, HrlFileName} -> HrlFileName
   end.
 
+%% -----------------------------------------------------------------------------
+%  Función para obtener del proceso generator_helper el nombre del fichero fuente
+%  de C (.c) generado.
 get_c_filename() ->
   generator_helper ! {self(), c_filename},
   receive
     {c_filename, CFileName} -> CFileName
   end.
 
+%% -----------------------------------------------------------------------------
+%  Función para terminar el proceso generator_helper.
 end_helper() ->
   generator_helper ! {self(), exit}.

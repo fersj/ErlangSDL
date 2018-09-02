@@ -1,6 +1,7 @@
 -module(sdl_array_tests).
 
 -import(sdl_ports_gen,[
+	init_port/1,
 	maxint/1,
 	new_arrayA/0,
 	pointer_deref_arrayA/1,
@@ -32,6 +33,9 @@
 -include("_checkouts/sdl_generator/sdl_ports_gen.hrl").
 
 test() ->
+	sdl_ports_gen:init_port(),
+	io:format("Puerto iniciado~n", []),
+
 	Value = maxint([2,3,4,5,76,23]),
 
 	io:format("Max: ~p~n", [Value]),

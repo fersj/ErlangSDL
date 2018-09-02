@@ -61,7 +61,7 @@
 	pointer_deref_int/1]).
 
 %% API exports
--export([main/1, start/0]).
+-export([main/1]).
 
 %% API include
 -include("../sdl_generator/generated/sdl_ports_gen.hrl").
@@ -179,8 +179,8 @@ destroy_shots([S|Shots], NewShots) ->
   end.
 
 
-loop(_WindowPtr, _WindowSurfacePtr, _BackgroundPtr, _Ship, 0) -> ok;
-loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, Ship, _End) ->
+loop(_WindowPtr, _WindowSurfacePtr, _BackgroundPtr, _Ship, _Cnt, 0) -> ok;
+loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, Ship, Cnt, _End) ->
   {NShip, End} = event_handler(Ship),
   MShip = move_ship(NShip),
 
@@ -220,11 +220,21 @@ loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, Ship, _End) ->
 		0 -> ok;
 		_ -> io:format("SDL update_window_surface error: ~p~n", [sdl_ports_gen:get_error()])
 	end,
-	%io:format("Hago todo~n"),
 
-  loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, OShip, End).
+	case Cnt of
+		0 ->
+			Time = timer:now_diff(erlang:timestamp(), get_time_ini())/1000000,
+			io:format("FPS: ~p~n", [250/Time]),
+			NewCnt = 250,
+			timestamp();
+		_ ->
+			NewCnt = Cnt-1
+	end,
+
+  loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, OShip, NewCnt, End).
 
 start() ->
+	register(timer_helper, spawn(fun() -> timer_loop(erlang:timestamp()) end)),
   sdl_ports_gen:init_port(),
 	io:format("Puerto iniciado~n", []),
   case sdl_ports_gen:init(?SDL_INIT_VIDEO) of
@@ -244,7 +254,7 @@ start() ->
   BackgroundPtr = sdl_ports_gen:load_bmp(BackgroundPath),
 	case BackgroundPtr of
 		0 -> io:format("SDL load_bmp error: ~p~n", [sdl_ports_gen:get_error()]);
-		_ -> io:format("BMP cargado (~p): ~p~n", [BackgroundPath, BackgroundPtr])
+		_ -> io:format("BMP cargado (~p): ~p (~px~p)~n", [BackgroundPath, BackgroundPtr, sdl_ports_gen:surface_get_w(BackgroundPtr), sdl_ports_gen:surface_get_h(BackgroundPtr)])
 	end,
 	ShipPath = "resources/img/ship1.bmp",
   ShipSurfacePtr = sdl_ports_gen:load_bmp(ShipPath),
@@ -264,32 +274,34 @@ start() ->
 	ShipH = ShipSurface#surface.h,
   Ship = #ship{surface=ShipSurfacePtr,
               x=?SCREEN_WIDTH div 2, y=?SCREEN_HEIGHT div 2,
-              vx=0, vy=0, vel=2,
+              vx=0, vy=0, vel=4,
               w=ShipW div 2, h=ShipH div 2,
               shotSurface=RaySurfacePtr, shots=[]},
 	io:format("Ship record: ~p~n", [Ship]),
 
-  %{Time, _} = timer:tc(?MODULE, loop, [WindowSurface, Background, Ship, 100, 1, 2000]),
-  loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, Ship, 1),
+  % {Time, _} = timer:tc(?MODULE, loop, [WindowPtr, WindowSurfacePtr, BackgroundPtr, Ship, 1, 1000]),
+  loop(WindowPtr, WindowSurfacePtr, BackgroundPtr, Ship, 250, 1),
 
-	% Result = sdl_ports_gen:apply_int(3, fun(X) -> X * 2 end, fun(X) -> X + 1 end),
-	% io:format("Result apply_int: ~p~n", [Result]),
-	%
-	% Ptr = sdl_ports_gen:new_int(),
-	% io:format("Ptr: ~p~n", [Ptr]),
-	% sdl_ports_gen:pointer_deref_int_assign(Ptr, 10),
-	% io:format("Deref int: ~p~n", [sdl_ports_gen:pointer_deref_int(Ptr)]),
-	% Fun1 = fun(X) ->
-	% 					V = sdl_ports_gen:pointer_deref_int(Ptr),
-	% 					io:format("Deref int (Fun1):~p~n",[V]),
-	% 					V + X
-	% 			 end,
-	% Fun2 = fun(X) -> X + 1 end,
-  % Result2 = sdl_ports_gen:apply_int(3, Fun1, Fun2),
-	% io:format("Result apply_int ptr: ~p~n", [Result2]),
-
-  %io:format("Time: ~w ms~n", [Time / 1000]),
+  % io:format("FPS (1000 frames/~p s): ~w~n", [(Time/1000000), 1000 / (Time/1000000)]),
   sdl_ports_gen:free_surface(Ship#ship.surface),
   sdl_ports_gen:free_surface(BackgroundPtr),
   sdl_ports_gen:destroy_window(WindowPtr),
   sdl_ports_gen:quit().
+
+timer_loop(T_Ini) ->
+	receive
+		{_Pid, timestamp} ->
+			timer_loop(erlang:timestamp());
+		{Pid, get_time_ini} ->
+			Pid ! {time_ini, T_Ini},
+			timer_loop(T_Ini)
+	end.
+
+timestamp() ->
+	timer_helper ! {self(), timestamp}.
+
+get_time_ini() ->
+	timer_helper ! {self(), get_time_ini},
+	receive
+		{time_ini, T_Ini} -> T_Ini
+	end.
